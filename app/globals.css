@@ -1,26 +1,36 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Leaflet map fix */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  border-radius: 0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Prose styles — @apply v4 mein bhi kaam karta hai,
+   jab file ke top pe @import "tailwindcss" ho */
+.prose h1 {
+  @apply text-3xl font-bold mb-4;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.prose h2 {
+  @apply text-2xl font-semibold mt-6 mb-3;
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.prose h3 {
+  @apply text-lg font-semibold mt-4 mb-2;
+}
+.prose p {
+  @apply my-3 leading-relaxed;
+}
+.prose ul {
+  @apply list-disc ml-6 my-3;
+}
+.prose ol {
+  @apply list-decimal ml-6 my-3;
+}
+.prose li {
+  @apply my-1;
+}
+.prose a {
+  @apply text-blue-600 underline;
 }

@@ -1,0 +1,10 @@
+{
+  "nav": { "home": "Home", "browse": "Browse", "addProperty": "Add Property", "dashboard": "Dashboard", "chat": "Chat", "admin": "Admin", "login": "Login", "register": "Register", "logout": "Logout", "favorites": "Favorites" },
+  "home": { "title": "Apna Ashta", "subtitle": "Finding rooms & homes in Ashta made easy", "browseBtn": "Browse Properties", "latest": "Latest Listings", "areas": "Popular Areas" },
+  "property": { "rent": "Rent", "deposit": "Deposit", "perMonth": "/month", "viewDetails": "View Details", "chatWithOwner": "Chat with Owner", "noResults": "No properties found", "type": "Type", "area": "Area", "address": "Address", "feature": "Feature for ₹99", "featured": "Featured" },
+  "search": { "placeholder": "Search rooms, flats...", "area": "Area", "minPrice": "Min ₹", "maxPrice": "Max ₹", "allTypes": "All Types", "newest": "Newest", "priceLow": "Price ↑", "priceHigh": "Price ↓", "search": "Search", "loadMore": "Load More", "mapView": "Map View", "listView": "List View", "saveSearch": "Save Search" },
+  "form": { "title": "Title", "description": "Description", "rent": "Rent (₹)", "deposit": "Deposit (₹)", "area": "Area", "address": "Full Address", "uploadImages": "Upload Images", "submit": "Submit for Approval", "submitting": "Submitting...", "lat": "Latitude", "lng": "Longitude" },
+  "auth": { "login": "Login", "register": "Register", "forgot": "Forgot password?", "email": "Email", "password": "Password", "name": "Name", "phone": "Phone", "role": "I am a", "owner": "Owner", "tenant": "Tenant" },
+  "admin": { "properties": "Properties", "users": "Users", "kyc": "KYC", "approve": "Approve", "reject": "Reject", "block": "Block", "unblock": "Unblock", "delete": "Delete", "verify": "Verify" },
+  "verify": { "title": "Verification", "sendOtp": "Send OTP", "otp": "OTP", "verify": "Verify", "uploadKyc": "Upload KYC" }
+}

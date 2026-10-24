@@ -1,0 +1,10 @@
+{
+  "nav": { "home": "होम", "browse": "प्रॉपर्टी", "addProperty": "प्रॉपर्टी जोड़ें", "dashboard": "डैशबोर्ड", "chat": "चैट", "admin": "एडमिन", "login": "लॉगिन", "register": "रजिस्टर", "logout": "लॉगआउट", "favorites": "पसंदीदा" },
+  "home": { "title": "अपना आष्टा", "subtitle": "आष्टा में कमरा और घर ढूंढना अब आसान", "browseBtn": "प्रॉपर्टी देखें", "latest": "नई लिस्टिंग्स", "areas": "लोकप्रिय इलाके" },
+  "property": { "rent": "किराया", "deposit": "डिपॉजिट", "perMonth": "/महीना", "viewDetails": "पूरी जानकारी", "chatWithOwner": "मालिक से चैट करें", "noResults": "कोई प्रॉपर्टी नहीं मिली", "type": "प्रकार", "area": "इलाका", "address": "पता", "feature": "₹99 में फीचर करें", "featured": "फीचर्ड" },
+  "search": { "placeholder": "कमरा, फ्लैट खोजें...", "area": "इलाका", "minPrice": "न्यूनतम ₹", "maxPrice": "अधिकतम ₹", "allTypes": "सभी प्रकार", "newest": "सबसे नई", "priceLow": "किराया ↑", "priceHigh": "किराया ↓", "search": "खोजें", "loadMore": "और दिखाएं", "mapView": "नक्शा", "listView": "सूची", "saveSearch": "सर्च सेव करें" },
+  "form": { "title": "शीर्षक", "description": "विवरण", "rent": "किराया (₹)", "deposit": "डिपॉजिट (₹)", "area": "इलाका", "address": "पूरा पता", "uploadImages": "फोटो अपलोड", "submit": "अप्रूवल भेजें", "submitting": "भेज रहे हैं...", "lat": "अक्षांश", "lng": "देशांतर" },
+  "auth": { "login": "लॉगिन", "register": "रजिस्टर", "forgot": "पासवर्ड भूल गए?", "email": "ईमेल", "password": "पासवर्ड", "name": "नाम", "phone": "फोन", "role": "मैं हूँ", "owner": "मालिक", "tenant": "किरायेदार" },
+  "admin": { "properties": "प्रॉपर्टी", "users": "यूज़र्स", "kyc": "KYC", "approve": "स्वीकारें", "reject": "अस्वीकारें", "block": "ब्लॉक", "unblock": "अनब्लॉक", "delete": "डिलीट", "verify": "वेरिफाई" },
+  "verify": { "title": "वेरिफिकेशन", "sendOtp": "OTP भेजें", "otp": "OTP", "verify": "वेरिफाई", "uploadKyc": "KYC अपलोड" }
+}
