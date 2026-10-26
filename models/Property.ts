@@ -6,16 +6,8 @@ const PropertySchema = new Schema({
   propertyType: {
     type: String,
     enum: [
-      'Room',
-      'Flat',
-      'Builder Floor',
-      'Independent House',
-      'Villa',
-      'Row House',
-      'Studio',
-      'Penthouse',
-      'Duplex',
-      'Home',
+      'Room', 'Flat', 'Builder Floor', 'Independent House', 'Villa',
+      'Row House', 'Studio', 'Penthouse', 'Duplex', 'Home',
     ],
     required: true,
   },
@@ -25,8 +17,28 @@ const PropertySchema = new Schema({
     default: undefined,
     index: true,
   },
+  furnishing: {
+    type: String,
+    enum: ['Furnished', 'Semi-furnished', 'Unfurnished'],
+    default: 'Unfurnished',
+    index: true,
+  },
+  bathrooms: { type: Number, default: 1, min: 1, max: 10 },
+  parking: {
+    type: String,
+    enum: ['None', 'Bike', 'Car', 'Both'],
+    default: 'None',
+  },
+  preferredTenants: {
+    type: [String],
+    enum: ['Family', 'Bachelors', 'Students', 'Company'],
+    default: ['Family'],
+  },
+  amenities: { type: [String], default: [] },
+  availableFrom: { type: Date, default: Date.now },
   rent: { type: Number, required: true, index: true },
   deposit: { type: Number, default: 0 },
+  maintenanceCharge: { type: Number, default: 0 },
   city: {
     type: String,
     enum: ['Ashta', 'Kothri', 'Sehore'],
@@ -51,6 +63,7 @@ const PropertySchema = new Schema({
   featured: { type: Boolean, default: false },
   featuredUntil: Date,
   views: { type: Number, default: 0 },
+  previousRent: { type: Number, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

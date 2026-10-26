@@ -1,9 +1,9 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { connectDB } from '@/lib/mongodb';
-import { Property } from '@/models/Property';
-import { propertySchema } from '@/lib/validators';
-import { ok, fail, handleError, paginate } from '@/lib/api-helpers';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { connectDB } from "@/lib/mongodb";
+import { Property } from "@/models/Property";
+import { propertySchema } from "@/lib/validators";
+import { ok, fail, handleError, paginate } from "@/lib/api-helpers";
 
 export async function GET(req: Request) {
   try {
@@ -11,29 +11,32 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams;
     const { page, limit, skip } = paginate(sp);
 
-    const city = sp.get('city');
-    const area = sp.get('area');
-    const type = sp.get('type');
-    const bhk = sp.get('bhk');
-    const min = sp.get('min');
-    const max = sp.get('max');
-    const q = sp.get('q');
-    const sort = sp.get('sort') || 'newest';
-    const lat = sp.get('lat');
-    const lng = sp.get('lng');
-    const radius = sp.get('radius');
+    const city = sp.get("city");
+    const area = sp.get("area");
+    const type = sp.get("type");
+    const bhk = sp.get("bhk");
+    const min = sp.get("min");
+    const max = sp.get("max");
+    const q = sp.get("q");
+    const sort = sp.get("sort") || "newest";
+    const lat = sp.get("lat");
+    const lng = sp.get("lng");
+    const radius = sp.get("radius");
 
-    const query: any = { status: 'approved' };
+    const query: any = { status: "approved" };
 
     if (city) {
-      if (city === 'Ashta') {
-        query.$and = [{ $or: [{ city: 'Ashta' }, { city: { $exists: false } }] }];
+      if (city === "Ashta") {
+        query.$and = [
+          { $or: [{ city: "Ashta" }, { city: { $exists: false } }] },
+        ];
       } else {
         query.city = city;
       }
     }
 
-    if (area) query.area = new RegExp(area.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    if (area)
+      query.area = new RegExp(area.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     if (type) query.propertyType = type;
     if (bhk) query.bhk = bhk;
     if (min || max) query.rent = {};
@@ -43,7 +46,7 @@ export async function GET(req: Request) {
     if (lat && lng && radius) {
       query.location = {
         $near: {
-          $geometry: { type: 'Point', coordinates: [Number(lng), Number(lat)] },
+          $geometry: { type: "Point", coordinates: [Number(lng), Number(lat)] },
           $maxDistance: Number(radius) * 1000,
         },
       };
@@ -57,7 +60,7 @@ export async function GET(req: Request) {
 
     const [items, total] = await Promise.all([
       Property.find(query)
-        .populate('owner', 'name phone')
+        .populate("owner", "name phone")
         .sort(sortMap[sort] || sortMap.newest)
         .skip(skip)
         .limit(limit)
@@ -80,9 +83,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) return fail('Unauthorized', 401);
-    if (!['owner', 'admin'].includes((session.user as any).role))
-      return fail('Only owners can create listings', 403);
+    if (!session) return fail("Unauthorized", 401);
+    if (!["owner", "admin"].includes((session.user as any).role))
+      return fail("Only owners can create listings", 403);
 
     const data = propertySchema.parse(await req.json());
     await connectDB();
@@ -92,15 +95,24 @@ export async function POST(req: Request) {
       description: data.description,
       propertyType: data.propertyType,
       bhk: data.bhk || undefined,
+      furnishing: data.furnishing,
+      bathrooms: data.bathrooms,
+      parking: data.parking,
+      preferredTenants: data.preferredTenants,
+      amenities: data.amenities,
+      availableFrom: data.availableFrom
+        ? new Date(data.availableFrom)
+        : new Date(),
       city: data.city,
       rent: data.rent,
       deposit: data.deposit,
+      maintenanceCharge: data.maintenanceCharge,
       area: data.area,
       address: data.address,
-      location: { type: 'Point', coordinates: [data.lng, data.lat] },
+      location: { type: "Point", coordinates: [data.lng, data.lat] },
       images: data.images,
       owner: (session.user as any).id,
-      status: 'pending',
+      status: "pending",
     });
 
     return ok(property, 201);
