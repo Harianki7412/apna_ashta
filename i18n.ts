@@ -1,11 +1,16 @@
 import { getRequestConfig } from 'next-intl/server';
+import { cookies } from 'next/headers';
 
-export default getRequestConfig(async ({ locale }) => {
-  // locale undefined ho sakta hai (app/page.tsx root pe)
-  const resolved = locale ?? 'en';
+const LOCALES = ['en', 'hi'] as const;
+type Locale = (typeof LOCALES)[number];
+
+export default getRequestConfig(async () => {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get('locale')?.value;
+  const locale: Locale = LOCALES.includes(raw as Locale) ? (raw as Locale) : 'en';
 
   return {
-    locale: resolved,
-    messages: (await import(`./messages/${resolved}.json`)).default,
+    locale,
+    messages: (await import(`./messages/${locale}.json`)).default,
   };
 });

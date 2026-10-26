@@ -14,6 +14,7 @@ export async function POST(req: Request) {
 
     const data = agreementSchema.parse(await req.json());
     await connectDB();
+
     const property: any = await Property.findById(data.propertyId)
       .populate('owner', 'name phone')
       .lean();
@@ -21,25 +22,47 @@ export async function POST(req: Request) {
 
     const me = (session.user as any).id;
     const role = (session.user as any).role;
-    if (property.owner._id.toString() !== me && role !== 'admin')
+    if (property.owner._id.toString() !== me && role !== 'admin') {
       return fail('Forbidden', 403);
+    }
 
     const pdfBytes = await generateRentAgreement({
-      ownerName: property.owner.name,
-      ownerPhone: property.owner.phone || 'N/A',
-      ownerAddress: 'Ashta, Madhya Pradesh',
+      place: data.place,
+      agreementDate: data.agreementDate,
+
+      ownerName: data.ownerName,
+      ownerFatherName: data.ownerFatherName,
+      ownerAddress: data.ownerAddress,
+
       tenantName: data.tenantName,
-      tenantPhone: data.tenantPhone,
+      tenantFatherName: data.tenantFatherName,
+      tenantOfficeOrInstitution: data.tenantOfficeOrInstitution,
       tenantAddress: data.tenantAddress,
-      propertyAddress: property.address,
+
+      propertyAddress: data.propertyAddress || property.address,
       propertyType: property.propertyType,
-      rentAmount: property.rent,
-      depositAmount: property.deposit || 0,
+      bhk: property.bhk,
+
       startDate: data.startDate,
-      durationMonths: data.durationMonths,
+      expiryDate: data.expiryDate,
+      rentAmount: data.rentAmount,
+      maintenanceCharge: data.maintenanceCharge,
+      securityDeposit: data.securityDeposit,
+      chequeNumber: data.chequeNumber,
+      chequeDate: data.chequeDate,
       noticePeriodDays: data.noticePeriodDays,
-      includeFurniture: data.includeFurniture,
-      city: 'Ashta',
+      city: data.city,
+
+      bedrooms: data.bedrooms,
+      fans: data.fans,
+      cflLights: data.cflLights,
+      geysers: data.geysers,
+      mirrors: data.mirrors,
+
+      witness1Name: data.witness1Name,
+      witness1Address: data.witness1Address,
+      witness2Name: data.witness2Name,
+      witness2Address: data.witness2Address,
     });
 
     return new NextResponse(Buffer.from(pdfBytes), {

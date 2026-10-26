@@ -3,9 +3,37 @@ import mongoose, { Schema, models } from 'mongoose';
 const PropertySchema = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  propertyType: { type: String, enum: ['Room', 'Home', 'Flat'], required: true },
+  propertyType: {
+    type: String,
+    enum: [
+      'Room',
+      'Flat',
+      'Builder Floor',
+      'Independent House',
+      'Villa',
+      'Row House',
+      'Studio',
+      'Penthouse',
+      'Duplex',
+      'Home',
+    ],
+    required: true,
+  },
+  bhk: {
+    type: String,
+    enum: ['1RK', '1BHK', '1.5BHK', '2BHK', '2.5BHK', '3BHK', '3.5BHK', '4BHK', '4+BHK'],
+    default: undefined,
+    index: true,
+  },
   rent: { type: Number, required: true, index: true },
   deposit: { type: Number, default: 0 },
+  city: {
+    type: String,
+    enum: ['Ashta', 'Kothri', 'Sehore'],
+    required: true,
+    default: 'Ashta',
+    index: true,
+  },
   area: { type: String, required: true, index: true },
   address: { type: String, required: true },
   location: {
@@ -22,11 +50,14 @@ const PropertySchema = new Schema({
   },
   featured: { type: Boolean, default: false },
   featuredUntil: Date,
+  views: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 
 PropertySchema.index({ location: '2dsphere' });
 PropertySchema.index({ title: 'text', description: 'text', area: 'text' });
 PropertySchema.index({ status: 1, featured: -1, createdAt: -1 });
+PropertySchema.index({ city: 1, status: 1, createdAt: -1 });
+PropertySchema.index({ propertyType: 1, bhk: 1, status: 1 });
 
 export const Property = models.Property || mongoose.model('Property', PropertySchema);

@@ -41,7 +41,7 @@ export default function FavoriteButton({ propertyId }: { propertyId: string }) {
     <button
       onClick={toggle}
       disabled={loading}
-      className={`p-2 rounded-full bg-white shadow hover:bg-gray-50 transition ${saved ? "text-red-500" : "text-gray-400"}`}
+      className={`p-2 rounded-full bg-white shadow hover:bg-gray-50 ${saved ? "text-red-500" : "text-gray-400"}`}
     >
       <Heart size={20} fill={saved ? "currentColor" : "none"} />
     </button>

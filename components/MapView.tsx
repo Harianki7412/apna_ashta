@@ -20,7 +20,6 @@ export default function MapView({ properties }: { properties: any[] }) {
         properties[0].location.coordinates[0],
       ]
     : [23.0167, 76.7167];
-
   return (
     <MapContainer
       center={center}
@@ -47,7 +46,7 @@ export default function MapView({ properties }: { properties: any[] }) {
                 />
               )}
               <p className="font-semibold mt-1 text-sm">{p.title}</p>
-              <p className="text-blue-600 text-sm">₹{p.rent}/mo</p>
+              <p className="text-brand-600 text-sm">₹{p.rent}/mo</p>
               <Link href={`/properties/${p._id}`} className="text-xs underline">
                 View
               </Link>

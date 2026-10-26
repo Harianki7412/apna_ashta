@@ -1,10 +1,30 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { ArrowLeft } from "lucide-react";
 
 export default function AdminKyc() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login?callbackUrl=/admin/kyc");
+      return;
+    }
+    if (status === "authenticated") {
+      const r = (session?.user as any)?.role;
+      if (r !== "admin") {
+        toast.error("Admin access required");
+        router.push("/");
+      }
+    }
+  }, [status, session, router]);
 
   async function load() {
     try {
@@ -14,26 +34,42 @@ export default function AdminKyc() {
       toast.error(e.message);
     }
   }
-  useEffect(() => {
-    load();
-  }, []);
 
-  async function review(userId: string, status: string) {
+  useEffect(() => {
+    if (
+      status === "authenticated" &&
+      (session?.user as any)?.role === "admin"
+    ) {
+      load();
+    }
+  }, [status, session]);
+
+  async function review(userId: string, stat: string) {
     try {
-      await api.patch("/api/admin/kyc", { userId, status });
-      toast.success(`KYC ${status}`);
+      await api.patch("/api/admin/kyc", { userId, status: stat });
+      toast.success(`KYC ${stat}`);
       load();
     } catch (e: any) {
       toast.error(e.message);
     }
   }
 
+  if (status === "loading") {
+    return <div className="skeleton h-96 rounded-2xl" />;
+  }
+
   return (
     <div>
+      <Link
+        href="/admin"
+        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-brand-600 mb-4"
+      >
+        <ArrowLeft size={16} /> Back to Admin
+      </Link>
       <h1 className="text-2xl font-bold mb-4">Pending KYC</h1>
       <div className="space-y-3">
         {users.map((u) => (
-          <div key={u._id} className="bg-white p-4 rounded shadow">
+          <div key={u._id} className="card p-4">
             <p className="font-semibold">
               {u.name} · {u.email}
             </p>
@@ -42,7 +78,8 @@ export default function AdminKyc() {
               <a
                 href={u.kycDocument}
                 target="_blank"
-                className="text-blue-600 text-sm underline"
+                rel="noopener noreferrer"
+                className="text-brand-600 text-sm underline"
               >
                 View Document
               </a>
@@ -50,22 +87,20 @@ export default function AdminKyc() {
             <div className="flex gap-2 mt-2">
               <button
                 onClick={() => review(u._id, "verified")}
-                className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+                className="btn btn-success btn-sm"
               >
                 Verify
               </button>
               <button
                 onClick={() => review(u._id, "rejected")}
-                className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                className="btn btn-danger btn-sm"
               >
                 Reject
               </button>
             </div>
           </div>
         ))}
-        {!users.length && (
-          <p className="text-gray-500">No pending KYC requests.</p>
-        )}
+        {!users.length && <p className="text-gray-500">No pending KYC.</p>}
       </div>
     </div>
   );

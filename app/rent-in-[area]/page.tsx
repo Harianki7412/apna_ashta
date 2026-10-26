@@ -28,14 +28,16 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: { area: string };
+  params: Promise<{ area: string }>;
 }): Promise<Metadata> {
-  const areaName = slugToArea(params.area);
+  const { area } = await params;
+  if (!AREAS.includes(area)) return { title: "Not Found" };
+  const areaName = slugToArea(area);
   return {
     title: `Rent in ${areaName}, Ashta — Rooms & Flats | Apna Ashta`,
     description: `Find verified rooms, flats, and homes for rent in ${areaName}, Ashta.`,
     alternates: {
-      canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in-${params.area}`,
+      canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in-${area}`,
     },
   };
 }
@@ -52,33 +54,15 @@ async function getProperties(areaName: string) {
 export default async function AreaPage({
   params,
 }: {
-  params: { area: string };
+  params: Promise<{ area: string }>;
 }) {
-  if (!AREAS.includes(params.area)) notFound();
-  const areaName = slugToArea(params.area);
+  const { area } = await params;
+  if (!AREAS.includes(area)) notFound();
+  const areaName = slugToArea(area);
   const properties = await getProperties(areaName);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    itemListElement: properties.slice(0, 10).map((p: any, i: number) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      item: {
-        "@type": "RealEstateListing",
-        name: p.title,
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/properties/${p._id}`,
-        offers: { "@type": "Offer", price: p.rent, priceCurrency: "INR" },
-      },
-    })),
-  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
       <h1 className="text-3xl font-bold mb-2">Rent in {areaName}, Ashta</h1>
       <p className="text-gray-600 mb-6">
         {properties.length} properties available
@@ -94,15 +78,14 @@ export default async function AreaPage({
       {!properties.length && (
         <p className="text-gray-500">No properties listed here yet.</p>
       )}
-
       <div className="mt-12">
         <h2 className="text-xl font-semibold mb-3">Other Areas</h2>
         <div className="flex flex-wrap gap-2">
-          {AREAS.filter((a) => a !== params.area).map((a) => (
+          {AREAS.filter((a) => a !== area).map((a) => (
             <a
               key={a}
               href={`/rent-in-${a}`}
-              className="bg-blue-50 text-blue-700 px-3 py-1 rounded hover:bg-blue-100 capitalize"
+              className="bg-brand-50 text-brand-700 px-3 py-1 rounded hover:bg-brand-100 capitalize"
             >
               {a.replace(/-/g, " ")}
             </a>

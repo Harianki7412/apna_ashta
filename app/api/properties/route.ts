@@ -11,8 +11,10 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams;
     const { page, limit, skip } = paginate(sp);
 
+    const city = sp.get('city');
     const area = sp.get('area');
     const type = sp.get('type');
+    const bhk = sp.get('bhk');
     const min = sp.get('min');
     const max = sp.get('max');
     const q = sp.get('q');
@@ -22,8 +24,18 @@ export async function GET(req: Request) {
     const radius = sp.get('radius');
 
     const query: any = { status: 'approved' };
+
+    if (city) {
+      if (city === 'Ashta') {
+        query.$and = [{ $or: [{ city: 'Ashta' }, { city: { $exists: false } }] }];
+      } else {
+        query.city = city;
+      }
+    }
+
     if (area) query.area = new RegExp(area.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     if (type) query.propertyType = type;
+    if (bhk) query.bhk = bhk;
     if (min || max) query.rent = {};
     if (min) query.rent.$gte = Number(min);
     if (max) query.rent.$lte = Number(max);
@@ -79,6 +91,8 @@ export async function POST(req: Request) {
       title: data.title,
       description: data.description,
       propertyType: data.propertyType,
+      bhk: data.bhk || undefined,
+      city: data.city,
       rent: data.rent,
       deposit: data.deposit,
       area: data.area,

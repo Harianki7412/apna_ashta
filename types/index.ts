@@ -1,0 +1,4 @@
+import { Types } from 'mongoose';
+export type Role = 'owner' | 'tenant' | 'admin';
+export interface IUser { _id: Types.ObjectId; name: string; email: string; phone?: string; role: Role; phoneVerified: boolean; kycStatus: 'none' | 'pending' | 'verified' | 'rejected'; createdAt: Date; }
+export interface IProperty { _id: Types.ObjectId; title: string; description: string; propertyType: 'Room' | 'Home' | 'Flat'; rent: number; deposit: number; area: string; address: string; location: { type: 'Point'; coordinates: [number, number] }; images: string[]; owner: Types.ObjectId; status: 'pending' | 'approved' | 'rejected' | 'rented'; featured: boolean; createdAt: Date; }

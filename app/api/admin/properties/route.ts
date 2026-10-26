@@ -13,20 +13,13 @@ async function requireAdmin() {
 export async function GET(req: Request) {
   try {
     if (!(await requireAdmin())) return fail('Forbidden', 403);
-
     const sp = new URL(req.url).searchParams;
     const status = sp.get('status') || 'pending';
     const page = Math.max(1, Number(sp.get('page') || 1));
     const limit = 20;
-
     await connectDB();
     const [items, total] = await Promise.all([
-      Property.find({ status })
-        .populate('owner', 'name email phone')
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
+      Property.find({ status }).populate('owner', 'name email phone').sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       Property.countDocuments({ status }),
     ]);
     return ok({ items, total, page, totalPages: Math.ceil(total / limit) });
@@ -38,14 +31,11 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     if (!(await requireAdmin())) return fail('Forbidden', 403);
-
     const { id, status } = await req.json();
     if (!['approved', 'rejected', 'rented'].includes(status)) return fail('Invalid status');
-
     await connectDB();
-    const updated = await Property.findByIdAndUpdate(id, { status }, { new: true });
+    const updated = await Property.findByIdAndUpdate(id, { status }, { returnDocument: 'after' });
     if (!updated) return fail('Not found', 404);
-
     await notifyUser(updated.owner.toString(), {
       type: status === 'approved' ? 'property_approved' : 'property_rejected',
       title: status === 'approved' ? 'Your property is live!' : 'Property rejected',
@@ -53,7 +43,6 @@ export async function PATCH(req: Request) {
       link: `/properties/${updated._id}`,
       email: true,
     });
-
     return ok(updated);
   } catch (e) {
     return handleError(e);

@@ -8,10 +8,8 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
-
     await connectDB();
-    const me = (session.user as any).id;
-    const convos = await Conversation.find({ participants: me })
+    const convos = await Conversation.find({ participants: (session.user as any).id })
       .populate('participants', 'name email')
       .populate('property', 'title images')
       .sort({ lastMessageAt: -1 })
@@ -27,23 +25,14 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
-
     const { otherUserId, propertyId } = await req.json();
     const me = (session.user as any).id;
     if (!otherUserId || otherUserId === me) return fail('Invalid recipient');
-
     await connectDB();
     const filter: any = { participants: { $all: [me, otherUserId] } };
     if (propertyId) filter.property = propertyId;
-
     let convo = await Conversation.findOne(filter);
-    if (!convo) {
-      convo = await Conversation.create({
-        participants: [me, otherUserId],
-        property: propertyId || undefined,
-        messages: [],
-      });
-    }
+    if (!convo) convo = await Conversation.create({ participants: [me, otherUserId], property: propertyId || undefined, messages: [] });
     return ok(convo);
   } catch (e) {
     return handleError(e);

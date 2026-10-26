@@ -26,9 +26,7 @@ export async function notifyUser(userId: string, payload: NotifyPayload) {
       const u = await User.findById(userId).select('email').lean();
       if (u?.email) {
         const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-        const html = `<p>${payload.body || ''}</p>${
-          payload.link ? `<a href="${base}${payload.link}">Open Apna Ashta</a>` : ''
-        }`;
+        const html = `<p>${payload.body || ''}</p>${payload.link ? `<a href="${base}${payload.link}">Open</a>` : ''}`;
         await sendGenericEmail(u.email, payload.title, html).catch(console.error);
       }
     }

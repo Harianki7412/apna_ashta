@@ -1,20 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X, Download } from "lucide-react";
+import { Download, X } from "lucide-react";
 
 export default function InstallPrompt() {
   const [prompt, setPrompt] = useState<any>(null);
   const [show, setShow] = useState(false);
+  const [step, setStep] = useState<"idle" | "installing" | "installed">("idle");
 
   useEffect(() => {
     if (window.matchMedia("(display-mode: standalone)").matches) return;
     const dismissed = localStorage.getItem("install-dismissed");
     if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
-
     const handler = (e: Event) => {
       e.preventDefault();
       setPrompt(e);
-      setTimeout(() => setShow(true), 15000);
+      setTimeout(() => setShow(true), 20000);
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
@@ -22,9 +22,13 @@ export default function InstallPrompt() {
 
   async function install() {
     if (!prompt) return;
+    setStep("installing");
     prompt.prompt();
     const { outcome } = await prompt.userChoice;
-    if (outcome === "accepted") setShow(false);
+    if (outcome === "accepted") {
+      setStep("installed");
+      setTimeout(() => setShow(false), 2000);
+    } else setStep("idle");
     setPrompt(null);
   }
 
@@ -34,38 +38,41 @@ export default function InstallPrompt() {
   }
 
   if (!show) return null;
-
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white border-2 border-blue-600 rounded-lg shadow-xl z-50 p-4">
+    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white border-2 border-brand-600 rounded-2xl shadow-float z-50 p-4 animate-fade-up">
       <button
         onClick={dismiss}
-        className="absolute top-2 right-2 text-gray-400"
+        className="absolute top-2 right-2 p-1 text-gray-400"
       >
-        <X size={18} />
+        <X size={16} />
       </button>
       <div className="flex items-start gap-3">
-        <div className="bg-blue-100 p-2 rounded">
-          <Download className="text-blue-600" size={24} />
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
+          <Download className="text-white" size={22} />
         </div>
-        <div className="flex-1">
-          <h3 className="font-bold text-sm">Install Apna Ashta</h3>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-sm">
+            {step === "installed" ? "Installed! 🎉" : "Install Apna Ashta"}
+          </h3>
           <p className="text-xs text-gray-600 mt-1">
-            Add to home screen for faster access and offline browsing.
+            {step === "installed"
+              ? "Look on your home screen"
+              : "Faster access + offline browsing"}
           </p>
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={install}
-              className="bg-blue-600 text-white px-3 py-1 rounded text-xs"
-            >
-              Install
-            </button>
-            <button
-              onClick={dismiss}
-              className="text-gray-500 px-2 py-1 text-xs"
-            >
-              Later
-            </button>
-          </div>
+          {step !== "installed" && (
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={install}
+                disabled={step === "installing"}
+                className="btn btn-primary btn-sm flex-1"
+              >
+                {step === "installing" ? "..." : "Install"}
+              </button>
+              <button onClick={dismiss} className="btn btn-ghost btn-sm">
+                Later
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

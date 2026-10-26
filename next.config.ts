@@ -9,8 +9,6 @@ const withPWA = withPWAInit({
   register: true,
   disable: process.env.NODE_ENV === 'development',
   fallbacks: { document: '/offline' },
-
-  // ✅ skipWaiting ab workboxOptions ke andar
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
@@ -33,9 +31,8 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }],
-  },
+  images: { remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }] },
+  experimental: { serverActions: { bodySizeLimit: '10mb' } },
 };
 
 export default withPWA(withNextIntl(nextConfig));

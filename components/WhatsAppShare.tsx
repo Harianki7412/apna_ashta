@@ -19,11 +19,8 @@ export default function WhatsAppShare({
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
   return (
-    <button
-      onClick={share}
-      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-    >
-      <MessageCircle size={18} />
+    <button onClick={share} className="btn btn-whatsapp btn-sm">
+      <MessageCircle size={16} />
       <span className="hidden sm:inline">WhatsApp</span>
     </button>
   );

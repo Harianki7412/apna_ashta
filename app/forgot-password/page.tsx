@@ -34,13 +34,11 @@ export default function ForgotPassword() {
         required
         type="email"
         placeholder="Email"
-        className="w-full border p-2 rounded"
+        className="input"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
-      <button className="w-full bg-blue-600 text-white py-2 rounded">
-        Send Reset Link
-      </button>
+      <button className="btn btn-primary w-full">Send Reset Link</button>
     </form>
   );
 }

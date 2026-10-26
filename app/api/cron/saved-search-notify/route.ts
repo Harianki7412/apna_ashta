@@ -4,15 +4,11 @@ import { Property } from '@/models/Property';
 import { notifyUser } from '@/lib/notify';
 import { ok, fail, handleError } from '@/lib/api-helpers';
 
-// Trigger via Vercel Cron (daily) or cron-job.org
-// Call: GET /api/cron/saved-search-notify?secret=CRON_SECRET
 export async function GET(req: Request) {
   try {
     const auth = req.headers.get('authorization');
     const query = new URL(req.url).searchParams.get('secret');
-    if (auth !== `Bearer ${process.env.CRON_SECRET}` && query !== process.env.CRON_SECRET) {
-      return fail('Unauthorized', 401);
-    }
+    if (auth !== `Bearer ${process.env.CRON_SECRET}` && query !== process.env.CRON_SECRET) return fail('Unauthorized', 401);
 
     await connectDB();
     const searches = await SavedSearch.find({ notifyOnNew: true }).lean();
@@ -28,7 +24,6 @@ export async function GET(req: Request) {
         if (s.filters.min) q.rent.$gte = s.filters.min;
         if (s.filters.max) q.rent.$lte = s.filters.max;
       }
-
       const count = await Property.countDocuments(q);
       if (count > 0) {
         await notifyUser(s.user.toString(), {
@@ -42,7 +37,6 @@ export async function GET(req: Request) {
         notified++;
       }
     }
-
     return ok({ notified });
   } catch (e) {
     return handleError(e);

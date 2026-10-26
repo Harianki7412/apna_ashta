@@ -21,7 +21,7 @@ export default function FeaturePropertyButton({
         amount: order.amount,
         currency: "INR",
         name: "Apna Ashta",
-        description: "Feature property for 30 days",
+        description: "Feature for 30 days",
         order_id: order.orderId,
         handler: async (response: any) => {
           try {
@@ -43,11 +43,8 @@ export default function FeaturePropertyButton({
   return (
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-      <button
-        onClick={pay}
-        className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-      >
-        ⭐ Feature ₹99
+      <button onClick={pay} className="btn btn-sm bg-accent-500 text-white">
+        ⭐ ₹99
       </button>
     </>
   );

@@ -1,5 +1,19 @@
 import mongoose from 'mongoose';
 
+// ═══════════════════════════════════════════════════════════
+// Register ALL models before any populate operation
+// This prevents "MissingSchemaError" in production builds
+// ═══════════════════════════════════════════════════════════
+import '@/models/User';
+import '@/models/Property';
+import '@/models/Conversation';
+import '@/models/Notification';
+import '@/models/Favorite';
+import '@/models/SavedSearch';
+import '@/models/Review';
+import '@/models/Verification';
+import '@/models/RentAgreement';
+
 const MONGODB_URI = process.env.MONGODB_URI!;
 if (!MONGODB_URI) throw new Error('MONGODB_URI missing');
 

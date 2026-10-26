@@ -51,23 +51,37 @@ export async function PATCH(req: Request) {
     if (!adminSession) return fail('Forbidden', 403);
 
     const { userId, action, role, reason } = await req.json();
-    if (userId === (adminSession.user as any).id) return fail('Cannot modify yourself');
+
+    if (userId === (adminSession.user as any).id) {
+      return fail('Cannot modify yourself');
+    }
 
     await connectDB();
+
     if (action === 'block') {
-      await User.findByIdAndUpdate(userId, {
-        blocked: true,
-        blockedReason: reason || 'Violation of terms',
-      });
+      await User.findByIdAndUpdate(
+        userId,
+        { blocked: true, blockedReason: reason || 'Violation' },
+        { returnDocument: 'after' }
+      );
     } else if (action === 'unblock') {
-      await User.findByIdAndUpdate(userId, { blocked: false, blockedReason: null });
+      await User.findByIdAndUpdate(
+        userId,
+        { blocked: false, blockedReason: null },
+        { returnDocument: 'after' }
+      );
     } else if (action === 'change-role' && ['owner', 'tenant', 'admin'].includes(role)) {
-      await User.findByIdAndUpdate(userId, { role });
+      await User.findByIdAndUpdate(
+        userId,
+        { role },
+        { returnDocument: 'after' }
+      );
     } else if (action === 'delete') {
       await User.findByIdAndDelete(userId);
     } else {
       return fail('Invalid action');
     }
+
     return ok({ updated: true });
   } catch (e) {
     return handleError(e);
