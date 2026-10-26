@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import FeaturePropertyButton from "@/components/FeaturePropertyButton";
+import DeletePropertyButton from "@/components/DeletePropertyButton";
 import { EmptyState } from "@/components/EmptyState";
 import {
   Plus,
@@ -18,7 +19,6 @@ import {
   ArrowRight,
   BarChart3,
   TrendingUp,
-  FileText,
 } from "lucide-react";
 
 export default async function Dashboard() {
@@ -71,6 +71,7 @@ export default async function Dashboard() {
         </Link>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="card p-4">
           <Home size={20} className="text-brand-600 mb-2" />
@@ -94,6 +95,7 @@ export default async function Dashboard() {
         </div>
       </div>
 
+      {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <Link
           href="/chat"
@@ -141,6 +143,7 @@ export default async function Dashboard() {
         </Link>
       </div>
 
+      {/* Properties list */}
       <div className="card overflow-hidden">
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-lg font-bold">My Properties</h2>
@@ -198,7 +201,9 @@ export default async function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
                   {p.status === "approved" && !p.featured && (
                     <FeaturePropertyButton propertyId={p._id.toString()} />
                   )}
@@ -209,6 +214,18 @@ export default async function Dashboard() {
                     <Edit3 size={14} />
                     <span className="hidden md:inline">Edit</span>
                   </Link>
+                  <Link
+                    href={`/properties/${p._id}`}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Eye size={14} />
+                    <span className="hidden md:inline">View</span>
+                  </Link>
+                  <DeletePropertyButton
+                    propertyId={p._id.toString()}
+                    propertyTitle={p.title}
+                    variant="icon"
+                  />
                 </div>
               </div>
             ))}

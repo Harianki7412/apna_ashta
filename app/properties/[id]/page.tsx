@@ -13,6 +13,7 @@ import RentAgreementModal from "@/components/RentAgreementModal";
 import StartChatButton from "./StartChatButton";
 import { getTranslations } from "next-intl/server";
 import { getBhkLabel } from "@/lib/property-types";
+import DeletePropertyButton from "@/components/DeletePropertyButton";
 import {
   MapPin,
   Home,
@@ -307,9 +308,6 @@ export default async function PropertyDetail({
                   propertyId={id}
                   rent={property.rent}
                   deposit={property.deposit}
-                  propertyAddress={property.address}
-                  city={property.city}
-                  bedrooms={parseInt(property.bhk) || 1}
                 />
                 <Link
                   href={`/properties/${id}/edit`}
@@ -317,9 +315,14 @@ export default async function PropertyDetail({
                 >
                   Edit Property
                 </Link>
+                <DeletePropertyButton
+                  propertyId={id}
+                  propertyTitle={property.title}
+                  variant="danger"
+                  redirectTo="/dashboard"
+                />
               </div>
             )}
-
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
               <div className="flex items-center gap-2 text-xs text-gray-600">
                 <Shield size={14} className="text-brand-600" />

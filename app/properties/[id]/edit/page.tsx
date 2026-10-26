@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
 import { CITIES } from "@/lib/cities";
 import { PROPERTY_TYPES, BHK_OPTIONS, needsBhk } from "@/lib/property-types";
+import DeletePropertyButton from "@/components/DeletePropertyButton";
 import {
   ArrowLeft,
   Upload,
@@ -315,17 +316,21 @@ export default function EditPropertyPage({
           )}
         </div>
 
-        <div className="flex gap-3 justify-end">
-          <Link href={`/properties/${id}`} className="btn btn-ghost">
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={saving || uploading}
-            className="btn btn-primary"
-          >
-            <Save size={16} /> {saving ? "Saving..." : "Save"}
-          </button>
+        {/* Danger Zone */}
+        <div className="card p-6 border-danger-200 mt-6">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-danger-600 mb-2">
+            Danger Zone
+          </h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Permanently delete this property and all its data (photos, chats,
+            reviews). This action cannot be undone.
+          </p>
+          <DeletePropertyButton
+            propertyId={id}
+            propertyTitle={form.title}
+            variant="danger"
+            redirectTo="/dashboard"
+          />
         </div>
       </form>
     </div>
