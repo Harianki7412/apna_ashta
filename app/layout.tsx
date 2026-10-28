@@ -35,13 +35,12 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Flatova — Rentals in Ashta",
-  description:
-    "Find verified rooms, flats, and homes for rent in Ashta, Madhya Pradesh",
+  title: "Apna Ashta — Rentals in Ashta",
+  description: "Find verified rooms, flats, and homes for rent in Ashta",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Flatova",
+    title: "Apna Ashta",
   },
   icons: { icon: "/icons/icon-192.png", apple: "/apple-touch-icon.png" },
 };
@@ -63,7 +62,6 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
 
-  // ═══ Read theme from cookie server-side (prevents flash) ═══
   const cookieStore = await cookies();
   const theme = cookieStore.get("theme")?.value || "light";
   const isDark = theme === "dark";
@@ -75,16 +73,15 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* ═══ Inline script — prevents theme flash on reload ═══ */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
-                  var theme = document.cookie.match(/(?:^|; )theme=([^;]+)/);
-                  var saved = theme ? theme[1] : null;
-                  var prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var isDark = saved === 'dark' || (!saved && prefers);
+                  var m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
+                  var s = m ? m[1] : null;
+                  var p = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var isDark = s === 'dark' || (!s && p);
                   if (isDark) document.documentElement.classList.add('dark');
                   else document.documentElement.classList.remove('dark');
                 } catch (e) {}
@@ -93,7 +90,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors">
+      <body className="min-h-screen flex flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Navbar />
@@ -111,7 +108,6 @@ export default async function RootLayout({
                   background: "var(--toast-bg, #ffffff)",
                   color: "var(--toast-color, #111827)",
                   borderRadius: "12px",
-                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
                   border: "1px solid var(--toast-border, #f3f4f6)",
                 },
               }}

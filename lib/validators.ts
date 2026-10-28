@@ -78,7 +78,7 @@ export const propertySchema = z.object({
     .default(["Family"]),
   amenities: z.array(z.string().max(50)).max(30).default([]),
   availableFrom: z.string().optional(),
-  city: z.enum(["Ashta", "Kothri", "Sehore"]),
+  city: z.string().min(2).max(80),
   rent: z.coerce.number().positive().max(1000000),
   deposit: z.coerce.number().nonnegative().max(10000000).default(0),
   maintenanceCharge: z.coerce.number().nonnegative().max(100000).default(0),

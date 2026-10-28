@@ -1,12 +1,10 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { CITIES } from "@/lib/cities";
 import {
   PROPERTY_TYPES,
   BHK_OPTIONS,
@@ -20,82 +18,104 @@ import {
   Home,
   MapPin,
   IndianRupee,
-  Camera,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Upload,
   X,
+  CheckCircle2,
   Save,
-  Eye,
   Loader2,
   Info,
-  ArrowLeft,
+  Plus,
+  Building2,
+  Globe,
+  Navigation,
+  AlertCircle,
+  CircleCheck,
 } from "lucide-react";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
   loading: () => (
-    <div className="h-[300px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
+    <div className="h-[320px] bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center text-gray-500">
+      <Loader2 className="animate-spin mr-2" size={20} />
       Loading map...
     </div>
   ),
 });
 
-type Step = "basic" | "location" | "pricing" | "photos" | "review";
+interface Area {
+  _id?: string;
+  name: string;
+  slug: string;
+  type?: string;
+  active?: boolean;
+}
 
-const STEPS: { key: Step; label: string; icon: any }[] = [
-  { key: "basic", label: "Basic", icon: Home },
-  { key: "location", label: "Location", icon: MapPin },
-  { key: "pricing", label: "Pricing", icon: IndianRupee },
-  { key: "photos", label: "Photos", icon: Camera },
-  { key: "review", label: "Review", icon: CheckCircle2 },
-];
+interface City {
+  _id: string;
+  name: string;
+  slug: string;
+  state: string;
+  stateName: string;
+  lat: number;
+  lng: number;
+  areas: Area[];
+}
 
-const DRAFT_KEY = "apna_ashta_property_draft";
+interface StateOption {
+  _id: string;
+  name: string;
+  slug: string;
+  code?: string;
+  lat?: number;
+  lng?: number;
+}
 
-const INITIAL_FORM = {
-  title: "",
-  description: "",
-  propertyType: "Flat",
-  bhk: "2BHK",
-  furnishing: "Unfurnished",
-  bathrooms: 1,
-  parking: "None",
-  preferredTenants: ["Family"] as string[],
-  amenities: [] as string[],
-  availableFrom: new Date().toISOString().split("T")[0],
-  city: "Ashta",
-  rent: "",
-  deposit: "",
-  maintenanceCharge: "",
-  area: "",
-  address: "",
-  lat: "23.0167",
-  lng: "76.7167",
-};
+// ═══ Validation constants ═══
+const MIN_TITLE = 5;
+const MIN_DESCRIPTION = 15;
 
 export default function NewPropertyPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  const [step, setStep] = useState<Step>("basic");
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [showMap, setShowMap] = useState(false);
-  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  const stepIndex = STEPS.findIndex((s) => s.key === step);
-  const cityData = useMemo(
-    () => CITIES.find((c) => c.name === form.city),
-    [form.city],
-  );
-  const showBhk = needsBhk(form.propertyType);
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    propertyType: "Flat",
+    bhk: "2BHK",
+    furnishing: "Unfurnished",
+    bathrooms: 1,
+    parking: "None",
+    preferredTenants: ["Family"] as string[],
+    amenities: [] as string[],
+    availableFrom: new Date().toISOString().split("T")[0],
+    stateId: "",
+    city: "",
+    rent: "",
+    deposit: "",
+    maintenanceCharge: "",
+    area: "",
+    address: "",
+    lat: "",
+    lng: "",
+  });
 
-  /* ─── Auth guard ─── */
+  // Inline add modals
+  const [addCityOpen, setAddCityOpen] = useState(false);
+  const [addAreaOpen, setAddAreaOpen] = useState(false);
+  const [newCityName, setNewCityName] = useState("");
+  const [newAreaName, setNewAreaName] = useState("");
+  const [newAreaType, setNewAreaType] = useState("area");
+  const [adding, setAdding] = useState(false);
+
+  /* ═══ Auth guard ═══ */
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login?callbackUrl=/properties/new");
@@ -110,41 +130,150 @@ export default function NewPropertyPage() {
     }
   }, [status, session, router]);
 
-  /* ─── Load draft ─── */
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  /* ═══ Load states + cities in parallel ═══ */
+  async function loadData() {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const draft = JSON.parse(raw);
-        if (draft.form) setForm({ ...INITIAL_FORM, ...draft.form });
-        if (draft.images) setImages(draft.images);
-      }
-    } catch {}
-    setDraftLoaded(true);
+      const [statesData, citiesData] = await Promise.all([
+        api.get<StateOption[]>("/api/states").catch(() => []),
+        api.get<City[]>("/api/cities").catch(() => []),
+      ]);
+      setStates(statesData || []);
+      setCities(citiesData || []);
+    } catch (e) {
+      toast.error("Could not load location data");
+    } finally {
+      setDataLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  /* ─── Auto-save draft ─── */
-  useEffect(() => {
-    if (!draftLoaded) return;
-    const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, images }));
-      } catch {}
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [form, images, draftLoaded]);
+  /* ═══ Derived state ═══ */
+  const selectedState = useMemo(
+    () => states.find((s) => s._id === form.stateId),
+    [form.stateId, states],
+  );
 
-  /* ─── Upload images ─── */
+  const cityData = useMemo(
+    () => cities.find((c) => c.name === form.city && c.state === form.stateId),
+    [form.city, form.stateId, cities],
+  );
+
+  const filteredCities = useMemo(
+    () => (form.stateId ? cities.filter((c) => c.state === form.stateId) : []),
+    [cities, form.stateId],
+  );
+
+  const showBhk = needsBhk(form.propertyType);
+
+  /* ═══ Validation state ═══ */
+  const titleValid = form.title.trim().length >= MIN_TITLE;
+  const descValid = form.description.trim().length >= MIN_DESCRIPTION;
+
+  const formValid =
+    titleValid &&
+    descValid &&
+    images.length > 0 &&
+    !!form.stateId &&
+    !!form.city &&
+    !!form.area.trim() &&
+    !!form.address.trim() &&
+    !!form.rent &&
+    Number(form.rent) > 0 &&
+    !!form.lat &&
+    !!form.lng;
+
+  /* ═══ Handlers ═══ */
+  function handleStateChange(stateId: string) {
+    const state = states.find((s) => s._id === stateId);
+    setForm({
+      ...form,
+      stateId,
+      city: "",
+      area: "",
+      lat: state?.lat ? String(state.lat) : "23.5",
+      lng: state?.lng ? String(state.lng) : "78.5",
+    });
+  }
+
+  function handleCityChange(cityName: string) {
+    const c = cities.find(
+      (x) => x.name === cityName && x.state === form.stateId,
+    );
+    setForm({
+      ...form,
+      city: cityName,
+      area: "",
+      lat: c?.lat ? String(c.lat) : form.lat,
+      lng: c?.lng ? String(c.lng) : form.lng,
+    });
+  }
+
+  /* ═══ Inline add city ═══ */
+  async function handleAddCity() {
+    if (!newCityName.trim()) return toast.error("City name required");
+    if (!form.stateId) return toast.error("Select a state first");
+
+    setAdding(true);
+    try {
+      const newCity = await api.post<any>("/api/owner/cities", {
+        name: newCityName.trim(),
+        stateId: form.stateId,
+      });
+      toast.success(`City "${newCity.name}" added!`);
+      await loadData();
+      setForm({
+        ...form,
+        city: newCity.name,
+        area: "",
+        lat: newCity.lat ? String(newCity.lat) : form.lat,
+        lng: newCity.lng ? String(newCity.lng) : form.lng,
+      });
+      setAddCityOpen(false);
+      setNewCityName("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  /* ═══ Inline add area ═══ */
+  async function handleAddArea() {
+    if (!newAreaName.trim()) return toast.error("Area name required");
+    if (!cityData) return toast.error("Select a city first");
+
+    setAdding(true);
+    try {
+      await api.post("/api/owner/areas", {
+        cityId: cityData._id,
+        name: newAreaName.trim(),
+        type: newAreaType,
+      });
+      toast.success(`Area "${newAreaName}" added!`);
+      await loadData();
+      setForm({ ...form, area: newAreaName.trim() });
+      setAddAreaOpen(false);
+      setNewAreaName("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  /* ═══ Image upload ═══ */
   async function upload(files: FileList | null) {
     if (!files?.length) return;
-    if (images.length + files.length > 10) {
-      return toast.error("Max 10 photos total");
-    }
-    setUploading(true);
+    if (images.length + files.length > 10) return toast.error("Max 10 photos");
+
     const fd = new FormData();
     Array.from(files).forEach((f) => fd.append("files", f));
-    const t = toast.loading(`Uploading ${files.length} photo(s)...`);
+    const t = toast.loading("Uploading...");
+    setUploading(true);
+
     try {
       const { urls } = await api.post<{ urls: string[] }>("/api/upload", fd);
       setImages((prev) => [...prev, ...urls].slice(0, 10));
@@ -156,425 +285,461 @@ export default function NewPropertyPage() {
     }
   }
 
-  function removeImage(url: string) {
-    setImages((prev) => prev.filter((i) => i !== url));
-  }
+  /* ═══ Submit ═══ */
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
 
-  /* ─── Validate step ─── */
-  function validateStep(): string | null {
-    if (step === "basic") {
-      if (form.title.trim().length < 5)
-        return "Title must be at least 5 characters";
-      if (form.description.trim().length < 20)
-        return "Description must be at least 20 characters";
-      if (showBhk && !form.bhk) return "Select BHK configuration";
+    // ═══ Validation sequence ═══
+    if (!form.title.trim()) return toast.error("Property title is required");
+    if (!titleValid) {
+      return toast.error(
+        `Title too short — ${MIN_TITLE - form.title.trim().length} more chars needed (min ${MIN_TITLE})`,
+      );
     }
-    if (step === "location") {
-      if (form.area.trim().length < 2) return "Enter an area";
-      if (form.address.trim().length < 5) return "Enter full address";
-      if (!form.lat || !form.lng) return "Set location on map";
+    if (!form.description.trim()) return toast.error("Description is required");
+    if (!descValid) {
+      return toast.error(
+        `Description too short — ${MIN_DESCRIPTION - form.description.trim().length} more chars needed (min ${MIN_DESCRIPTION})`,
+      );
     }
-    if (step === "pricing") {
-      if (!form.rent || Number(form.rent) <= 0) return "Enter monthly rent";
-    }
-    if (step === "photos") {
-      if (images.length < 1) return "Upload at least 1 photo";
-    }
-    return null;
-  }
+    if (!images.length) return toast.error("Upload at least 1 photo");
+    if (!form.stateId) return toast.error("Select a state");
+    if (!form.city) return toast.error("Select a city");
+    if (!form.area.trim()) return toast.error("Enter area / colony");
+    if (!form.address.trim()) return toast.error("Enter full address");
+    if (!form.rent || Number(form.rent) <= 0)
+      return toast.error("Enter a valid monthly rent");
+    if (!form.lat || !form.lng)
+      return toast.error("Click on map to pin exact location");
 
-  function next() {
-    const err = validateStep();
-    if (err) return toast.error(err);
-    if (stepIndex < STEPS.length - 1) {
-      setStep(STEPS[stepIndex + 1].key);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }
-
-  function prev() {
-    if (stepIndex > 0) {
-      setStep(STEPS[stepIndex - 1].key);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }
-
-  function jumpTo(target: Step) {
-    // Allow jumping back freely, but forward requires validation
-    const targetIdx = STEPS.findIndex((s) => s.key === target);
-    if (targetIdx <= stepIndex) {
-      setStep(target);
-    } else {
-      // Validate all steps up to target
-      for (let i = stepIndex; i < targetIdx; i++) {
-        const prevStep = step;
-        setStep(STEPS[i].key);
-        // Manual validate (approximate)
-      }
-      setStep(target);
-    }
-  }
-
-  /* ─── Submit ─── */
-  async function submit() {
-    for (const s of STEPS) {
-      if (s.key === "review") continue;
-      setStep(s.key);
-      const err = validateStep();
-      if (err) return toast.error(err);
-    }
-    setStep("review");
-
-    setSubmitting(true);
+    setLoading(true);
     try {
-      const payload: any = { ...form, images };
-      if (!showBhk) delete payload.bhk;
+      const payload: any = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        propertyType: form.propertyType,
+        furnishing: form.furnishing,
+        bathrooms: Number(form.bathrooms),
+        parking: form.parking,
+        preferredTenants: form.preferredTenants,
+        amenities: form.amenities,
+        availableFrom: form.availableFrom,
+        city: form.city,
+        rent: Number(form.rent),
+        deposit: Number(form.deposit) || 0,
+        maintenanceCharge: Number(form.maintenanceCharge) || 0,
+        area: form.area.trim(),
+        address: form.address.trim(),
+        lat: Number(form.lat),
+        lng: Number(form.lng),
+        images,
+      };
+      if (showBhk) payload.bhk = form.bhk;
+
       await api.post("/api/properties", payload);
-      localStorage.removeItem(DRAFT_KEY);
       toast.success("Property submitted for approval! 🎉");
       router.push("/dashboard");
     } catch (e: any) {
       toast.error(e.message);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   }
 
-  function clearDraft() {
-    if (!window.confirm("Clear all entered data?")) return;
-    setForm(INITIAL_FORM);
-    setImages([]);
-    localStorage.removeItem(DRAFT_KEY);
-    setStep("basic");
-    toast.success("Draft cleared");
-  }
-
-  if (status === "loading") {
+  if (status === "loading" || dataLoading) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-4">
+        <div className="skeleton h-12 rounded-xl" />
         <div className="skeleton h-96 rounded-2xl" />
+        <div className="skeleton h-64 rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-brand-600"
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
-        <button
-          onClick={clearDraft}
-          className="text-xs text-gray-500 hover:text-danger-600"
-        >
-          Clear Draft
-        </button>
-      </div>
-
+    <form onSubmit={submit} className="max-w-2xl mx-auto space-y-4">
+      {/* ═══ Header ═══ */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">List Your Property</h1>
-        <p className="text-gray-500 mt-1">
-          Fill in details — draft auto-saves as you type
+        <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900 dark:text-slate-100">
+          <Home className="text-brand-600" size={28} />
+          List Your Property
+        </h1>
+        <p className="text-gray-500 dark:text-slate-400 mt-1">
+          Fill in details — admin will review within 24 hours
         </p>
       </div>
 
-      {/* Progress bar */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
-            const active = i === stepIndex;
-            const done = i < stepIndex;
-            return (
-              <button
-                key={s.key}
-                onClick={() => jumpTo(s.key)}
-                className="flex flex-col items-center flex-1 group"
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    done
-                      ? "bg-success-500 text-white"
-                      : active
-                        ? "bg-brand-600 text-white ring-4 ring-brand-100"
-                        : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
-                  }`}
-                >
-                  {done ? <CheckCircle2 size={18} /> : <Icon size={18} />}
-                </div>
-                <span
-                  className={`text-xs mt-1.5 font-medium ${
-                    active
-                      ? "text-brand-600"
-                      : done
-                        ? "text-success-600"
-                        : "text-gray-400"
-                  }`}
-                >
-                  {s.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-300"
-            style={{ width: `${progress}%` }}
+      {/* ═══ BASIC INFO ═══ */}
+      <div className="card p-6 space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-slate-100">
+          <Home size={18} className="text-brand-600" /> Basic Information
+        </h2>
+
+        {/* Title */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">
+              Title <span className="text-danger-500">*</span>
+            </label>
+            <span
+              className={`text-[10px] font-mono ${
+                form.title.length === 0
+                  ? "text-gray-400"
+                  : !titleValid
+                    ? "text-danger-600"
+                    : "text-success-600"
+              }`}
+            >
+              {form.title.length}/120
+            </span>
+          </div>
+          <input
+            required
+            className={`input ${
+              form.title.length > 0 && !titleValid
+                ? "border-danger-500 focus:border-danger-500"
+                : ""
+            }`}
+            placeholder="e.g. Spacious 2BHK near College Road"
+            maxLength={120}
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════
-          STEP CONTENT
-          ═══════════════════════════════════════════════════ */}
-      <div className="card p-6 md:p-8">
-        {/* ─── STEP 1: BASIC ─── */}
-        {step === "basic" && (
-          <div className="space-y-6 animate-fade-up">
-            <div>
-              <h2 className="text-xl font-bold mb-1">Basic Information</h2>
-              <p className="text-sm text-gray-500">
-                Tell tenants about your property
+          <div className="mt-1 min-h-[18px]">
+            {form.title.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-slate-500">
+                💡 Make it descriptive — include BHK + location
               </p>
-            </div>
-
-            {/* Title */}
-            <div>
-              <label className="label">
-                Property Title <span className="text-danger-500">*</span>
-              </label>
-              <input
-                className="input"
-                placeholder="e.g. Spacious 2BHK near College Road with parking"
-                maxLength={120}
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                {form.title.length}/120
+            ) : !titleValid ? (
+              <p className="text-xs text-danger-600 dark:text-danger-400 font-medium flex items-center gap-1">
+                <AlertCircle size={11} />
+                {MIN_TITLE - form.title.trim().length} more characters needed
               </p>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="label">
-                Description <span className="text-danger-500">*</span>
-              </label>
-              <textarea
-                rows={5}
-                className="input"
-                placeholder="Describe the property, nearby amenities, special features..."
-                maxLength={2000}
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                {form.description.length}/2000 (min 20)
+            ) : (
+              <p className="text-xs text-success-600 dark:text-success-400 font-medium flex items-center gap-1">
+                <CircleCheck size={11} /> Title looks good
               </p>
-            </div>
-
-            {/* Property Type */}
-            <div>
-              <label className="label">
-                Property Type <span className="text-danger-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {PROPERTY_TYPES.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        propertyType: p.value,
-                        bhk: needsBhk(p.value) ? form.bhk || "2BHK" : "",
-                      })
-                    }
-                    className={`p-3 rounded-xl text-left border-2 transition-all ${
-                      form.propertyType === p.value
-                        ? "bg-brand-50 border-brand-600"
-                        : "bg-white border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{p.icon}</div>
-                    <p className="text-xs font-semibold leading-tight">
-                      {p.label}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* BHK */}
-            {showBhk && (
-              <div>
-                <label className="label">BHK Configuration</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {BHK_OPTIONS.map((b) => (
-                    <button
-                      key={b.value}
-                      type="button"
-                      onClick={() => setForm({ ...form, bhk: b.value })}
-                      className={`p-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
-                        form.bhk === b.value
-                          ? "bg-brand-50 border-brand-600 text-brand-700"
-                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      {b.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
             )}
+          </div>
+        </div>
 
-            {/* Furnishing */}
-            <div>
-              <label className="label">Furnishing</label>
-              <div className="grid grid-cols-3 gap-2">
-                {FURNISHING_OPTIONS.map((f) => (
-                  <button
-                    key={f.value}
-                    type="button"
-                    onClick={() => setForm({ ...form, furnishing: f.value })}
-                    className={`p-3 rounded-xl text-center border-2 transition-all ${
-                      form.furnishing === f.value
-                        ? "bg-brand-50 border-brand-600"
-                        : "bg-white border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{f.icon}</div>
-                    <p className="text-xs font-semibold">{f.label}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Description */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">
+              Description <span className="text-danger-500">*</span>
+            </label>
+            <span
+              className={`text-[10px] font-mono ${
+                form.description.length === 0
+                  ? "text-gray-400"
+                  : !descValid
+                    ? "text-danger-600"
+                    : "text-success-600"
+              }`}
+            >
+              {form.description.length}/2000
+            </span>
+          </div>
+          <textarea
+            required
+            rows={4}
+            className={`input ${
+              form.description.length > 0 && !descValid
+                ? "border-danger-500 focus:border-danger-500"
+                : ""
+            }`}
+            placeholder="Describe the property, nearby amenities, special features... (minimum 15 characters)"
+            maxLength={2000}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <div className="mt-1 min-h-[18px]">
+            {form.description.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-slate-500">
+                💡 Mention BHK, floor, parking, nearby landmarks
+              </p>
+            ) : !descValid ? (
+              <p className="text-xs text-danger-600 dark:text-danger-400 font-medium flex items-center gap-1">
+                <AlertCircle size={11} />
+                {MIN_DESCRIPTION - form.description.trim().length} more
+                characters needed
+              </p>
+            ) : (
+              <p className="text-xs text-success-600 dark:text-success-400 font-medium flex items-center gap-1">
+                <CircleCheck size={11} /> Description looks good
+              </p>
+            )}
+          </div>
+        </div>
 
-            {/* Preferred Tenants */}
-            <div>
-              <label className="label">Preferred Tenants</label>
-              <div className="flex flex-wrap gap-2">
-                {TENANT_PREFERENCES.map((t) => {
-                  const selected = form.preferredTenants.includes(t.value);
-                  return (
-                    <button
-                      key={t.value}
-                      type="button"
-                      onClick={() => {
-                        setForm({
-                          ...form,
-                          preferredTenants: selected
-                            ? form.preferredTenants.filter((x) => x !== t.value)
-                            : [...form.preferredTenants, t.value],
-                        });
-                      }}
-                      className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all flex items-center gap-1.5 ${
-                        selected
-                          ? "bg-brand-600 text-white border-brand-600"
-                          : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <span>{t.icon}</span>
-                      {t.label}
-                    </button>
-                  );
-                })}
-              </div>
+        {/* Property Type */}
+        <div>
+          <label className="label">Property Type *</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {PROPERTY_TYPES.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    propertyType: p.value,
+                    bhk: needsBhk(p.value) ? form.bhk || "2BHK" : "",
+                  })
+                }
+                className={`p-3 rounded-xl text-left border-2 transition-all ${
+                  form.propertyType === p.value
+                    ? "bg-brand-50 dark:bg-brand-900/30 border-brand-600"
+                    : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-gray-300"
+                }`}
+              >
+                <div className="text-2xl mb-1">{p.icon}</div>
+                <p className="text-xs font-semibold leading-tight text-gray-900 dark:text-slate-100">
+                  {p.label}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* BHK */}
+        {showBhk && (
+          <div>
+            <label className="label">BHK</label>
+            <div className="grid grid-cols-3 gap-2">
+              {BHK_OPTIONS.map((b) => (
+                <button
+                  key={b.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, bhk: b.value })}
+                  className={`p-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                    form.bhk === b.value
+                      ? "bg-brand-50 dark:bg-brand-900/30 border-brand-600 text-brand-700 dark:text-brand-300"
+                      : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700"
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {/* ─── STEP 2: LOCATION ─── */}
-        {step === "location" && (
-          <div className="space-y-6 animate-fade-up">
-            <div>
-              <h2 className="text-xl font-bold mb-1">Location</h2>
-              <p className="text-sm text-gray-500">
-                Where is your property located?
-              </p>
-            </div>
+        {/* Furnishing */}
+        <div>
+          <label className="label">Furnishing</label>
+          <div className="grid grid-cols-3 gap-2">
+            {FURNISHING_OPTIONS.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setForm({ ...form, furnishing: f.value })}
+                className={`p-3 rounded-xl text-center border-2 transition-all ${
+                  form.furnishing === f.value
+                    ? "bg-brand-50 dark:bg-brand-900/30 border-brand-600"
+                    : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700"
+                }`}
+              >
+                <div className="text-2xl mb-1">{f.icon}</div>
+                <p className="text-xs font-semibold text-gray-900 dark:text-slate-100">
+                  {f.label}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">
-                  City <span className="text-danger-500">*</span>
-                </label>
-                <select
-                  className="input"
-                  value={form.city}
-                  onChange={(e) => {
-                    const c = CITIES.find((x) => x.name === e.target.value);
+        {/* Preferred Tenants */}
+        <div>
+          <label className="label">Preferred Tenants</label>
+          <div className="flex flex-wrap gap-2">
+            {TENANT_PREFERENCES.map((t) => {
+              const selected = form.preferredTenants.includes(t.value);
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() =>
                     setForm({
                       ...form,
-                      city: e.target.value,
-                      area: "",
-                      lat: String(c?.lat || form.lat),
-                      lng: String(c?.lng || form.lng),
-                    });
-                  }}
+                      preferredTenants: selected
+                        ? form.preferredTenants.filter((x) => x !== t.value)
+                        : [...form.preferredTenants, t.value],
+                    })
+                  }
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-1.5 ${
+                    selected
+                      ? "bg-brand-600 text-white border-brand-600"
+                      : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700"
+                  }`}
                 >
-                  {CITIES.map((c) => (
-                    <option key={c.slug} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">
-                  Area <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  list="area-options"
-                  className="input"
-                  placeholder="e.g. College Road"
-                  value={form.area}
-                  onChange={(e) => setForm({ ...form, area: e.target.value })}
-                />
-                <datalist id="area-options">
-                  {cityData?.areas.map((a) => (
-                    <option key={a.slug} value={a.name} />
-                  ))}
-                </datalist>
-              </div>
-            </div>
-
-            <div>
-              <label className="label">
-                Full Address <span className="text-danger-500">*</span>
-              </label>
-              <textarea
-                rows={2}
-                className="input"
-                placeholder="House no., street, landmark"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="label mb-0">Pin on Map</label>
-                <button
-                  type="button"
-                  onClick={() => setShowMap(!showMap)}
-                  className="text-xs text-brand-600 font-semibold"
-                >
-                  {showMap ? "Hide map" : "Show map"}
+                  <span>{t.icon}</span>
+                  {t.label}
                 </button>
-              </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
-              {showMap && (
+      {/* ═══ LOCATION ═══ */}
+      <div className="card p-6 space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-slate-100">
+          <MapPin size={18} className="text-brand-600" /> Location
+        </h2>
+
+        {/* State */}
+        <div>
+          <label className="label">
+            State <span className="text-danger-500">*</span>
+          </label>
+          <div className="relative">
+            <Globe
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <select
+              required
+              className="input pl-9"
+              value={form.stateId}
+              onChange={(e) => handleStateChange(e.target.value)}
+            >
+              <option value="">Select State</option>
+              {states.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}
+                  {s.code ? ` (${s.code})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          {states.length === 0 && (
+            <p className="text-xs text-warning-600 dark:text-warning-400 mt-1 flex items-center gap-1">
+              <AlertCircle size={11} /> No states available. Contact admin.
+            </p>
+          )}
+        </div>
+
+        {/* City */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">
+              City <span className="text-danger-500">*</span>
+            </label>
+            {form.stateId && (
+              <button
+                type="button"
+                onClick={() => setAddCityOpen(true)}
+                className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
+              >
+                <Plus size={12} /> Add new city
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <Building2
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <select
+              required
+              className="input pl-9"
+              value={form.city}
+              disabled={!form.stateId}
+              onChange={(e) => handleCityChange(e.target.value)}
+            >
+              <option value="">
+                {form.stateId ? "Select City" : "Select state first"}
+              </option>
+              {filteredCities.map((c) => (
+                <option key={c._id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Area / Colony */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">
+              Area / Colony <span className="text-danger-500">*</span>
+            </label>
+            {form.city && (
+              <button
+                type="button"
+                onClick={() => setAddAreaOpen(true)}
+                className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
+              >
+                <Plus size={12} /> Add new area
+              </button>
+            )}
+          </div>
+          <input
+            required
+            list="area-options"
+            className="input"
+            placeholder="e.g. College Road, Gandhi Colony"
+            value={form.area}
+            onChange={(e) => setForm({ ...form, area: e.target.value })}
+          />
+          <datalist id="area-options">
+            {(cityData?.areas || [])
+              .filter((a) => a.active !== false)
+              .map((a) => (
+                <option key={a.slug} value={a.name} />
+              ))}
+          </datalist>
+        </div>
+
+        {/* Full Address */}
+        <div>
+          <label className="label">
+            Full Address <span className="text-danger-500">*</span>
+          </label>
+          <textarea
+            required
+            rows={2}
+            className="input"
+            placeholder="House no., street, landmark"
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+          />
+        </div>
+
+        {/* MAP PICKER */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="label mb-0 flex items-center gap-1.5">
+              <Navigation size={14} className="text-brand-600" />
+              Pin Location on Map <span className="text-danger-500">*</span>
+            </label>
+            {form.lat && form.lng && (
+              <span className="text-[10px] text-success-600 dark:text-success-400 font-mono bg-success-50 dark:bg-success-900/20 px-2 py-0.5 rounded">
+                📍 {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
+              </span>
+            )}
+          </div>
+
+          {!form.stateId ? (
+            <div className="h-[320px] bg-gray-100 dark:bg-slate-700 rounded-xl flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-300 dark:border-slate-600">
+              <MapPin size={32} className="text-gray-400 mb-2" />
+              <p className="text-sm font-medium">
+                Select a state to enable map
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Then click on the map to pin exact location
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-xl overflow-hidden border-2 border-gray-200 dark:border-slate-700">
                 <MapPicker
-                  lat={Number(form.lat)}
-                  lng={Number(form.lng)}
+                  key={`${form.stateId}-${form.city}`}
+                  lat={Number(form.lat) || selectedState?.lat || 23.5}
+                  lng={Number(form.lng) || selectedState?.lng || 78.5}
                   onChange={(lat, lng) =>
                     setForm({
                       ...form,
@@ -583,449 +748,333 @@ export default function NewPropertyPage() {
                     })
                   }
                 />
-              )}
-
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <input
-                  placeholder="Latitude"
-                  className="input"
-                  value={form.lat}
-                  onChange={(e) => setForm({ ...form, lat: e.target.value })}
-                />
-                <input
-                  placeholder="Longitude"
-                  className="input"
-                  value={form.lng}
-                  onChange={(e) => setForm({ ...form, lng: e.target.value })}
-                />
               </div>
-              <p className="text-xs text-gray-500 mt-1 flex items-start gap-1">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 flex items-start gap-1.5">
                 <Info size={12} className="mt-0.5 flex-shrink-0" />
-                Click on the map to auto-fill coordinates, or enter manually
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ─── STEP 3: PRICING ─── */}
-        {step === "pricing" && (
-          <div className="space-y-6 animate-fade-up">
-            <div>
-              <h2 className="text-xl font-bold mb-1">Pricing & Amenities</h2>
-              <p className="text-sm text-gray-500">
-                Set rent and list what's included
-              </p>
-            </div>
-
-            {/* Rent */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div>
-                <label className="label">
-                  Monthly Rent (₹) <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  className="input"
-                  placeholder="8000"
-                  value={form.rent}
-                  onChange={(e) => setForm({ ...form, rent: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="label">Deposit (₹)</label>
-                <input
-                  type="number"
-                  className="input"
-                  placeholder="16000"
-                  value={form.deposit}
-                  onChange={(e) =>
-                    setForm({ ...form, deposit: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="label">Maintenance (₹/mo)</label>
-                <input
-                  type="number"
-                  className="input"
-                  placeholder="0"
-                  value={form.maintenanceCharge}
-                  onChange={(e) =>
-                    setForm({ ...form, maintenanceCharge: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Bathrooms + Parking */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Bathrooms</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  className="input"
-                  value={form.bathrooms}
-                  onChange={(e) =>
-                    setForm({ ...form, bathrooms: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div>
-                <label className="label">Parking</label>
-                <select
-                  className="input"
-                  value={form.parking}
-                  onChange={(e) =>
-                    setForm({ ...form, parking: e.target.value })
-                  }
-                >
-                  {PARKING_OPTIONS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.icon} {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Available From */}
-            <div>
-              <label className="label">Available From</label>
-              <input
-                type="date"
-                className="input"
-                value={form.availableFrom}
-                onChange={(e) =>
-                  setForm({ ...form, availableFrom: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Amenities */}
-            <div>
-              <label className="label">Amenities</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {AMENITY_OPTIONS.map((a) => {
-                  const checked = form.amenities.includes(a.value);
-                  return (
-                    <button
-                      key={a.value}
-                      type="button"
-                      onClick={() => {
-                        setForm({
-                          ...form,
-                          amenities: checked
-                            ? form.amenities.filter((x) => x !== a.value)
-                            : [...form.amenities, a.value],
-                        });
-                      }}
-                      className={`p-2.5 rounded-xl text-sm font-medium border-2 transition-all flex items-center gap-2 ${
-                        checked
-                          ? "bg-success-50 border-success-500 text-success-700"
-                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      <span>{a.icon}</span>
-                      <span className="flex-1 text-left">{a.value}</span>
-                      {checked && <CheckCircle2 size={14} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── STEP 4: PHOTOS ─── */}
-        {step === "photos" && (
-          <div className="space-y-6 animate-fade-up">
-            <div>
-              <h2 className="text-xl font-bold mb-1">Property Photos</h2>
-              <p className="text-sm text-gray-500">
-                Upload up to 10 photos. First photo is the cover.
-              </p>
-            </div>
-
-            {/* Upload area */}
-            {images.length < 10 && (
-              <label
-                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-10 cursor-pointer transition-colors ${
-                  uploading
-                    ? "border-brand-300 bg-brand-50"
-                    : "border-gray-300 hover:border-brand-500 bg-gray-50/50"
-                }`}
-              >
-                {uploading ? (
-                  <Loader2
-                    size={32}
-                    className="text-brand-600 animate-spin mb-2"
-                  />
-                ) : (
-                  <Upload size={32} className="text-gray-400 mb-2" />
-                )}
-                <span className="text-sm font-medium">
-                  {uploading ? "Uploading..." : "Click to upload photos"}
+                <span>
+                  <strong>Click anywhere on the map</strong> to pin the exact
+                  location of your property. Zoom in for better accuracy.
                 </span>
-                <span className="text-xs text-gray-500 mt-1">
-                  JPG, PNG up to 5MB each • {images.length}/10 uploaded
-                </span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => upload(e.target.files)}
-                  disabled={uploading}
-                  className="hidden"
-                />
-              </label>
-            )}
-
-            {/* Preview grid */}
-            {images.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold">
-                    {images.length} photo{images.length > 1 ? "s" : ""}
-                  </p>
-                  {images[0] && (
-                    <p className="text-xs text-gray-500">Cover photo = first</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                  {images.map((url, idx) => (
-                    <div
-                      key={url}
-                      className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group"
-                    >
-                      <Image
-                        src={url}
-                        alt={`Photo ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="150px"
-                      />
-                      {idx === 0 && (
-                        <div className="absolute top-1 left-1 bg-brand-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                          COVER
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeImage(url)}
-                        className="absolute top-1 right-1 bg-black/70 hover:bg-danger-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={12} />
-                      </button>
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newImgs = [
-                              url,
-                              ...images.filter((i) => i !== url),
-                            ];
-                            setImages(newImgs);
-                          }}
-                          className="absolute bottom-1 left-1 right-1 bg-black/70 hover:bg-black/90 text-white text-[10px] font-medium py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          Set as cover
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tips */}
-            <div className="p-3 bg-brand-50 rounded-lg text-xs text-brand-700 flex items-start gap-2">
-              <Info size={14} className="mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Photo tips</p>
-                <ul className="mt-1 space-y-0.5 list-disc ml-4">
-                  <li>Take photos in daylight for best quality</li>
-                  <li>Show all rooms, kitchen, bathroom, balcony</li>
-                  <li>Properties with 5+ photos get 3x more inquiries</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── STEP 5: REVIEW ─── */}
-        {step === "review" && (
-          <div className="space-y-6 animate-fade-up">
-            <div>
-              <h2 className="text-xl font-bold mb-1">Review & Submit</h2>
-              <p className="text-sm text-gray-500">
-                Check everything before submitting for approval
               </p>
-            </div>
-
-            {/* Mini preview card */}
-            <div className="border-2 border-gray-100 rounded-xl overflow-hidden">
-              <div className="relative h-40 bg-gray-100">
-                {images[0] ? (
-                  <Image
-                    src={images[0]}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="400px"
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-300">
-                    <Home size={48} />
-                  </div>
-                )}
-                <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                  {form.bhk && (
-                    <span className="bg-brand-600/95 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      {form.bhk}
-                    </span>
-                  )}
-                  <span className="bg-white/95 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full">
-                    {form.propertyType}
-                  </span>
-                </div>
-              </div>
-              <div className="p-3">
-                <h3 className="font-bold text-sm">
-                  {form.title || "Untitled Property"}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {form.area}, {form.city}
-                </p>
-                <p className="text-lg font-extrabold text-brand-600 mt-1">
-                  ₹{Number(form.rent || 0).toLocaleString("en-IN")}
-                  <span className="text-xs text-gray-500 font-normal">/mo</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="space-y-3">
-              <div className="p-3 bg-gray-50 rounded-lg flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-gray-500">BASIC</p>
-                  <p className="text-sm truncate">{form.title}</p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {form.propertyType}
-                    {form.bhk ? ` · ${form.bhk}` : ""} · {form.furnishing}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setStep("basic")}
-                  className="text-xs text-brand-600 font-semibold whitespace-nowrap"
-                >
-                  Edit
-                </button>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded-lg flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-gray-500">
-                    LOCATION
-                  </p>
-                  <p className="text-sm truncate">
-                    {form.area}, {form.city}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {form.address}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setStep("location")}
-                  className="text-xs text-brand-600 font-semibold whitespace-nowrap"
-                >
-                  Edit
-                </button>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded-lg flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-gray-500">PRICING</p>
-                  <p className="text-sm">
-                    ₹{Number(form.rent || 0).toLocaleString("en-IN")}/mo ·
-                    Deposit ₹{Number(form.deposit || 0).toLocaleString("en-IN")}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {form.bathrooms} bath · {form.parking} parking
-                  </p>
-                </div>
-                <button
-                  onClick={() => setStep("pricing")}
-                  className="text-xs text-brand-600 font-semibold whitespace-nowrap"
-                >
-                  Edit
-                </button>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded-lg flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-gray-500">PHOTOS</p>
-                  <p className="text-sm">{images.length} photo(s) uploaded</p>
-                </div>
-                <button
-                  onClick={() => setStep("photos")}
-                  className="text-xs text-brand-600 font-semibold whitespace-nowrap"
-                >
-                  Edit
-                </button>
-              </div>
-            </div>
-
-            {/* Notice */}
-            <div className="p-3 bg-warning-50 border border-accent-400 rounded-lg text-xs text-warning-700 flex items-start gap-2">
-              <Info size={14} className="mt-0.5 flex-shrink-0" />
-              Your property will be reviewed by our admin team. It goes live
-              within 24 hours after approval.
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════
-          STICKY FOOTER NAVIGATION
-          ═══════════════════════════════════════════════════ */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-auto md:right-6 md:bottom-6 z-30 bg-white/95 backdrop-blur border-t md:border md:rounded-2xl md:shadow-float px-4 py-3 md:p-3">
-        <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto">
-          <button
-            onClick={prev}
-            disabled={stepIndex === 0}
-            className="btn btn-ghost btn-sm disabled:opacity-50"
-          >
-            <ChevronLeft size={16} />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-
-          <div className="text-xs text-gray-500 text-center">
-            Step {stepIndex + 1} of {STEPS.length}
-          </div>
-
-          {step === "review" ? (
-            <button
-              onClick={submit}
-              disabled={submitting}
-              className="btn btn-success btn-sm disabled:opacity-50"
-            >
-              {submitting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={16} />
-              )}
-              {submitting ? "Submitting..." : "Submit"}
-            </button>
-          ) : (
-            <button onClick={next} className="btn btn-primary btn-sm">
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight size={16} />
-            </button>
+            </>
           )}
         </div>
       </div>
-    </div>
+
+      {/* ═══ PRICING ═══ */}
+      <div className="card p-6 space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-slate-100">
+          <IndianRupee size={18} className="text-brand-600" /> Pricing
+        </h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div>
+            <label className="label">
+              Rent (₹) <span className="text-danger-500">*</span>
+            </label>
+            <input
+              required
+              type="number"
+              className="input"
+              placeholder="8000"
+              value={form.rent}
+              onChange={(e) => setForm({ ...form, rent: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="label">Deposit (₹)</label>
+            <input
+              type="number"
+              className="input"
+              placeholder="16000"
+              value={form.deposit}
+              onChange={(e) => setForm({ ...form, deposit: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="label">Maintenance (₹/mo)</label>
+            <input
+              type="number"
+              className="input"
+              placeholder="0"
+              value={form.maintenanceCharge}
+              onChange={(e) =>
+                setForm({ ...form, maintenanceCharge: e.target.value })
+              }
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Bathrooms</label>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              className="input"
+              value={form.bathrooms}
+              onChange={(e) =>
+                setForm({ ...form, bathrooms: Number(e.target.value) })
+              }
+            />
+          </div>
+          <div>
+            <label className="label">Parking</label>
+            <select
+              className="input"
+              value={form.parking}
+              onChange={(e) => setForm({ ...form, parking: e.target.value })}
+            >
+              {PARKING_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.icon} {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Available From</label>
+          <input
+            type="date"
+            className="input"
+            value={form.availableFrom}
+            onChange={(e) =>
+              setForm({ ...form, availableFrom: e.target.value })
+            }
+          />
+        </div>
+
+        <div>
+          <label className="label">Amenities</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {AMENITY_OPTIONS.map((a) => {
+              const checked = form.amenities.includes(a.value);
+              return (
+                <button
+                  key={a.value}
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      amenities: checked
+                        ? form.amenities.filter((x) => x !== a.value)
+                        : [...form.amenities, a.value],
+                    })
+                  }
+                  className={`p-2.5 rounded-xl text-xs font-medium border-2 flex items-center gap-2 ${
+                    checked
+                      ? "bg-success-50 dark:bg-success-900/20 border-success-500 text-success-700 dark:text-success-300"
+                      : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300"
+                  }`}
+                >
+                  <span>{a.icon}</span>
+                  <span className="flex-1 text-left">{a.value}</span>
+                  {checked && <CheckCircle2 size={12} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ PHOTOS ═══ */}
+      <div className="card p-6 space-y-4">
+        <h2 className="text-lg font-bold flex items-center justify-between text-gray-900 dark:text-slate-100">
+          <span>Photos</span>
+          <span className="text-xs text-gray-500">{images.length}/10</span>
+        </h2>
+
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+            {images.map((url, idx) => (
+              <div
+                key={url}
+                className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-700"
+              >
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                {idx === 0 && (
+                  <div className="absolute top-1 left-1 bg-brand-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                    COVER
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImages((prev) => prev.filter((i) => i !== url))
+                  }
+                  className="absolute top-1 right-1 bg-black/70 hover:bg-danger-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {images.length < 10 && (
+          <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 cursor-pointer border-gray-300 dark:border-slate-700 hover:border-brand-500">
+            {uploading ? (
+              <Loader2 size={32} className="text-brand-600 animate-spin mb-2" />
+            ) : (
+              <Upload size={32} className="text-gray-400 mb-2" />
+            )}
+            <span className="text-sm font-medium">
+              {uploading ? "Uploading..." : "Click to upload photos"}
+            </span>
+            <span className="text-xs text-gray-500 mt-1">
+              JPG, PNG up to 5MB each
+            </span>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => upload(e.target.files)}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+        )}
+      </div>
+
+      {/* ═══ SUBMIT ═══ */}
+      <div className="flex gap-3 justify-end sticky bottom-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur p-4 rounded-xl border border-gray-100 dark:border-slate-700">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          disabled={loading}
+          className="btn btn-ghost"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading || uploading || !formValid}
+          className="btn btn-primary disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> Submitting...
+            </>
+          ) : (
+            <>
+              <Save size={16} /> Submit
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* ═══ ADD CITY MODAL ═══ */}
+      {addCityOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+                Add New City
+              </h2>
+              <button
+                onClick={() => setAddCityOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">
+              Under <strong>{selectedState?.name}</strong>
+            </p>
+            <input
+              className="input mb-3"
+              placeholder="City name (e.g. Bhopal)"
+              value={newCityName}
+              onChange={(e) => setNewCityName(e.target.value)}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAddCityOpen(false)}
+                disabled={adding}
+                className="flex-1 btn btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddCity}
+                disabled={adding || !newCityName.trim()}
+                className="flex-1 btn btn-primary disabled:opacity-50"
+              >
+                {adding ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Plus size={14} />
+                )}{" "}
+                Add City
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ ADD AREA MODAL ═══ */}
+      {addAreaOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+                Add New Area
+              </h2>
+              <button
+                onClick={() => setAddAreaOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">
+              In <strong>{form.city}</strong>
+            </p>
+            <input
+              className="input mb-3"
+              placeholder="Area name (e.g. Gandhi Colony)"
+              value={newAreaName}
+              onChange={(e) => setNewAreaName(e.target.value)}
+              autoFocus
+            />
+            <select
+              className="input mb-3"
+              value={newAreaType}
+              onChange={(e) => setNewAreaType(e.target.value)}
+            >
+              <option value="area">Area</option>
+              <option value="colony">Colony</option>
+              <option value="locality">Locality</option>
+              <option value="landmark">Landmark</option>
+            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAddAreaOpen(false)}
+                disabled={adding}
+                className="flex-1 btn btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddArea}
+                disabled={adding || !newAreaName.trim()}
+                className="flex-1 btn btn-primary disabled:opacity-50"
+              >
+                {adding ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Plus size={14} />
+                )}{" "}
+                Add Area
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </form>
   );
 }

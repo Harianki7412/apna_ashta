@@ -7,6 +7,9 @@ import { useSession } from "next-auth/react";
 export default function MobileNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
+
+  if (pathname.startsWith("/admin")) return null;
+
   const items = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/properties", icon: Search, label: "Search" },

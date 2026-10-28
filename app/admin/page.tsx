@@ -20,6 +20,13 @@ import {
   Settings,
   TrendingUp,
   Eye,
+  MessageSquare,
+  Activity,
+  Mail,
+  AlertTriangle,
+  Globe,
+  MapPinned,
+  Shield,
 } from "lucide-react";
 
 const TABS = [
@@ -42,6 +49,11 @@ export default function AdminDashboard() {
     approved: 0,
     rejected: 0,
     rented: 0,
+  });
+  const [badges, setBadges] = useState<any>({
+    pendingProperties: 0,
+    pendingKyc: 0,
+    newMessages: 0,
   });
 
   useEffect(() => {
@@ -82,12 +94,20 @@ export default function AdminDashboard() {
     }
   }
 
+  async function loadBadges() {
+    try {
+      const d = await api.get<any>("/api/admin/stats");
+      setBadges(d);
+    } catch {}
+  }
+
   useEffect(() => {
     if (
       status === "authenticated" &&
       (session?.user as any)?.role === "admin"
     ) {
       load(stat);
+      loadBadges();
     }
   }, [stat, status, session]);
 
@@ -95,6 +115,19 @@ export default function AdminDashboard() {
     try {
       await api.patch("/api/admin/properties", { id, status: newStatus });
       toast.success(`Marked ${newStatus}`);
+      load();
+      loadBadges();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  }
+
+  async function verifyProperty(id: string, currentlyVerified: boolean) {
+    try {
+      await api.post(`/api/admin/properties/${id}/verify`, {
+        action: currentlyVerified ? "unverify" : "verify",
+      });
+      toast.success(currentlyVerified ? "Unverified" : "Property verified!");
       load();
     } catch (e: any) {
       toast.error(e.message);
@@ -122,7 +155,6 @@ export default function AdminDashboard() {
   const totalListings =
     stats.pending + stats.approved + stats.rejected + stats.rented;
 
-  // Quick access cards config
   const quickLinks = [
     {
       href: "/admin",
@@ -131,6 +163,14 @@ export default function AdminDashboard() {
       icon: Building2,
       color: "brand",
       isNew: false,
+    },
+    {
+      href: "/admin/analytics",
+      label: "Analytics",
+      desc: "Charts & KPIs",
+      icon: TrendingUp,
+      color: "accent",
+      isNew: true,
     },
     {
       href: "/admin/users",
@@ -143,9 +183,59 @@ export default function AdminDashboard() {
     {
       href: "/admin/kyc",
       label: "KYC",
-      desc: "Verify users",
+      desc:
+        badges.pendingKyc > 0 ? `${badges.pendingKyc} pending` : "Verify users",
       icon: ShieldCheck,
       color: "success",
+      isNew: false,
+    },
+    {
+      href: "/admin/states",
+      label: "States",
+      desc: "Geography",
+      icon: Globe,
+      color: "brand",
+      isNew: true,
+    },
+    {
+      href: "/admin/cities",
+      label: "Cities",
+      desc: "Manage cities",
+      icon: Building2,
+      color: "brand",
+      isNew: true,
+    },
+    {
+      href: "/admin/locations",
+      label: "Locations",
+      desc: "Owner submissions",
+      icon: MapPinned,
+      color: "success",
+      isNew: false,
+    },
+    {
+      href: "/admin/reports",
+      label: "Reports",
+      desc: "User reports queue",
+      icon: AlertTriangle,
+      color: "danger",
+      isNew: false,
+    },
+    {
+      href: "/admin/messages",
+      label: "Messages",
+      desc:
+        badges.newMessages > 0 ? `${badges.newMessages} new` : "Contact inbox",
+      icon: MessageSquare,
+      color: "success",
+      isNew: false,
+    },
+    {
+      href: "/admin/activity",
+      label: "Activity",
+      desc: "Audit trail",
+      icon: Activity,
+      color: "gray",
       isNew: false,
     },
     {
@@ -154,7 +244,7 @@ export default function AdminDashboard() {
       desc: "Pricing & leads",
       icon: Package,
       color: "accent",
-      isNew: true,
+      isNew: false,
     },
     {
       href: "/admin/settings",
@@ -162,16 +252,7 @@ export default function AdminDashboard() {
       desc: "Global config",
       icon: Settings,
       color: "gray",
-      isNew: true,
-    },
-    {
-      href: "/admin/analytics",
-      label: "Analytics",
-      desc: "Coming soon",
-      icon: TrendingUp,
-      color: "gray",
       isNew: false,
-      disabled: true,
     },
   ];
 
@@ -195,7 +276,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Access Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
         {quickLinks.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -211,35 +292,24 @@ export default function AdminDashboard() {
             accent:
               "bg-accent-400/20 dark:bg-accent-400/10 text-accent-600 dark:text-accent-400",
             gray: "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300",
+            danger:
+              "bg-danger-50 dark:bg-danger-900/20 text-danger-600 dark:text-danger-400",
           };
 
           return (
             <Link
               key={item.href}
-              href={item.disabled ? "#" : item.href}
-              className={`card p-4 transition-all relative ${
-                item.disabled
-                  ? "opacity-60 cursor-not-allowed"
-                  : "hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-lg"
-              } ${
-                isActive && !item.disabled
-                  ? "ring-2 ring-brand-500 dark:ring-brand-400"
-                  : ""
+              href={item.href}
+              className={`card p-4 transition-all relative hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-lg ${
+                isActive ? "ring-2 ring-brand-500 dark:ring-brand-400" : ""
               }`}
-              title={item.disabled ? "Coming soon" : item.desc}
             >
               <div
                 className={`w-9 h-9 rounded-lg ${colorClasses[item.color]} flex items-center justify-center mb-2`}
               >
                 <Icon size={18} />
               </div>
-              <p
-                className={`text-sm font-semibold ${
-                  item.disabled
-                    ? "text-gray-500 dark:text-slate-400"
-                    : "text-gray-900 dark:text-slate-100"
-                }`}
-              >
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
                 {item.label}
               </p>
               <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
@@ -316,7 +386,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="flex gap-1 overflow-x-auto scrollbar-hide">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -416,6 +485,11 @@ export default function AdminDashboard() {
                             {p.area} · {p.propertyType}
                             {p.bhk && ` · ${p.bhk}`}
                           </p>
+                          {p.verified && (
+                            <span className="text-[10px] text-success-600 dark:text-success-400 flex items-center gap-1 mt-0.5">
+                              <Shield size={10} /> Verified
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -433,7 +507,7 @@ export default function AdminDashboard() {
                       </p>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 flex-wrap">
                         <Link
                           href={`/properties/${p._id}`}
                           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
@@ -441,6 +515,28 @@ export default function AdminDashboard() {
                         >
                           <Eye size={16} />
                         </Link>
+
+                        {p.status === "approved" && (
+                          <button
+                            onClick={() => verifyProperty(p._id, p.verified)}
+                            className={`btn btn-sm ${
+                              p.verified
+                                ? "btn-ghost text-success-600"
+                                : "btn-secondary"
+                            }`}
+                            title={
+                              p.verified
+                                ? "Unverify"
+                                : "Mark as physically verified"
+                            }
+                          >
+                            <Shield size={14} />
+                            <span className="hidden md:inline">
+                              {p.verified ? "Verified" : "Verify"}
+                            </span>
+                          </button>
+                        )}
+
                         {stat !== "approved" && (
                           <button
                             onClick={() => update(p._id, "approved")}
@@ -472,12 +568,12 @@ export default function AdminDashboard() {
       {/* Quick Actions Bottom */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
         <Link
-          href="/admin/plans"
+          href="/admin/analytics"
           className="card p-5 hover:border-accent-300 dark:hover:border-accent-600 transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <div className="w-10 h-10 rounded-lg bg-accent-400/20 text-accent-600 dark:text-accent-400 flex items-center justify-center">
-              <Package size={20} />
+              <TrendingUp size={20} />
             </div>
             <ChevronRight
               size={18}
@@ -485,21 +581,20 @@ export default function AdminDashboard() {
             />
           </div>
           <p className="font-semibold text-gray-900 dark:text-slate-100">
-            Manage Pricing Plans
+            View Analytics
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-            Add, edit, or remove subscription plans, lead packs, and featured
-            tiers
+            Revenue, users, and listings trend
           </p>
         </Link>
 
         <Link
-          href="/admin/settings"
+          href="/admin/states"
           className="card p-5 hover:border-brand-300 dark:hover:border-brand-600 transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <div className="w-10 h-10 rounded-lg bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center">
-              <Settings size={20} />
+              <Globe size={20} />
             </div>
             <ChevronRight
               size={18}
@@ -507,20 +602,20 @@ export default function AdminDashboard() {
             />
           </div>
           <p className="font-semibold text-gray-900 dark:text-slate-100">
-            Global Settings
+            Manage States
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-            Site name, prices, feature toggles, and more
+            Top-level geography and cities
           </p>
         </Link>
 
         <Link
-          href="/admin/kyc"
+          href="/admin/cities"
           className="card p-5 hover:border-success-300 dark:hover:border-success-600 transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <div className="w-10 h-10 rounded-lg bg-success-50 dark:bg-success-900/20 text-success-600 dark:text-success-400 flex items-center justify-center">
-              <ShieldCheck size={20} />
+              <Building2 size={20} />
             </div>
             <ChevronRight
               size={18}
@@ -528,10 +623,10 @@ export default function AdminDashboard() {
             />
           </div>
           <p className="font-semibold text-gray-900 dark:text-slate-100">
-            KYC Verification
+            Manage Cities
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-            Review and verify identity documents
+            Add cities under any state
           </p>
         </Link>
       </div>

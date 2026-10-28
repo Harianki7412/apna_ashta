@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Home,
   Mail,
@@ -55,11 +57,15 @@ function InstagramIcon({ size = 16 }: { size?: number }) {
 }
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // 🚫 Hide on /admin routes
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <footer className="bg-gray-900 text-gray-300 mt-16">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
-          {/* Brand */}
           <div className="space-y-4">
             <Link
               href="/"
@@ -68,11 +74,11 @@ export default function Footer() {
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
                 <Home size={18} className="text-white" />
               </div>
-              Flatova
+              Apna Ashta
             </Link>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 leading-relaxed">
               Ashta's own rental platform. Verified rooms, flats, and homes —
-              direct from owners.
+              direct from owners. Made with ❤️ in Ashta, MP.
             </p>
             <div className="flex gap-2">
               <a
@@ -105,50 +111,63 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase">
+            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
               Quick Links
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/properties" className="hover:text-white">
+                <Link
+                  href="/properties"
+                  className="hover:text-white transition-colors"
+                >
                   Browse Properties
                 </Link>
               </li>
               <li>
-                <Link href="/properties/new" className="hover:text-white">
-                  List Property
+                <Link
+                  href="/properties/new"
+                  className="hover:text-white transition-colors"
+                >
+                  List Your Property
                 </Link>
               </li>
               <li>
-                <Link href="/favorites" className="hover:text-white">
-                  Saved
+                <Link
+                  href="/favorites"
+                  className="hover:text-white transition-colors"
+                >
+                  Saved Properties
                 </Link>
               </li>
               <li>
-                <Link href="/saved-searches" className="hover:text-white">
+                <Link
+                  href="/saved-searches"
+                  className="hover:text-white transition-colors"
+                >
                   Saved Searches
                 </Link>
               </li>
               <li>
-                <Link href="/chat" className="hover:text-white">
+                <Link
+                  href="/chat"
+                  className="hover:text-white transition-colors"
+                >
                   Messages
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Company */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase">
+            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
               Company
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   href="/about"
-                  className="hover:text-white flex items-center gap-1.5"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <Info size={12} /> About Us
                 </Link>
@@ -156,15 +175,23 @@ export default function Footer() {
               <li>
                 <Link
                   href="/how-it-works"
-                  className="hover:text-white flex items-center gap-1.5"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <BookOpen size={12} /> How It Works
                 </Link>
               </li>
               <li>
                 <Link
+                  href="/pricing"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
+                >
+                  <Users size={12} /> Pricing
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/contact"
-                  className="hover:text-white flex items-center gap-1.5"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <MessageCircle size={12} /> Contact
                 </Link>
@@ -172,7 +199,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/faq"
-                  className="hover:text-white flex items-center gap-1.5"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <HelpCircle size={12} /> FAQ
                 </Link>
@@ -180,22 +207,16 @@ export default function Footer() {
               <li>
                 <Link
                   href="/safety-tips"
-                  className="hover:text-white flex items-center gap-1.5"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <Shield size={12} /> Safety Tips
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="hover:text-white">
-                  Pricing
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Popular Areas */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase">
+            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
               Popular Areas
             </h3>
             <ul className="space-y-2 text-sm">
@@ -203,7 +224,7 @@ export default function Footer() {
                 <li key={area}>
                   <Link
                     href={`/rent-in/ashta/${area}`}
-                    className="hover:text-white capitalize"
+                    className="hover:text-white transition-colors capitalize"
                   >
                     Rent in {slugToArea(area)}
                   </Link>
@@ -212,10 +233,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase">
-              Contact
+            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
+              Contact Us
             </h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
@@ -224,23 +244,26 @@ export default function Footer() {
                   className="text-brand-400 flex-shrink-0 mt-0.5"
                 />
                 <span>
-                  Ashta, Sehore,
+                  Ashta, District Sehore,
                   <br />
-                  MP — 466116
+                  Madhya Pradesh — 466116
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-brand-400 flex-shrink-0" />
                 <a
                   href="mailto:hello@apnaashta.in"
-                  className="hover:text-white"
+                  className="hover:text-white transition-colors"
                 >
                   hello@apnaashta.in
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone size={16} className="text-brand-400 flex-shrink-0" />
-                <a href="tel:+919999999999" className="hover:text-white">
+                <a
+                  href="tel:+919999999999"
+                  className="hover:text-white transition-colors"
+                >
                   +91 99999 99999
                 </a>
               </li>
@@ -248,41 +271,45 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Legal Bar */}
         <div className="pt-6 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400 mb-4">
-            <p>© {new Date().getFullYear()} Flatova. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Apna Ashta. All rights reserved.</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
               <Link
                 href="/privacy"
-                className="hover:text-white flex items-center gap-1"
+                className="hover:text-white transition-colors flex items-center gap-1"
               >
                 <Shield size={12} /> Privacy
               </Link>
               <Link
                 href="/terms"
-                className="hover:text-white flex items-center gap-1"
+                className="hover:text-white transition-colors flex items-center gap-1"
               >
                 <FileText size={12} /> Terms
               </Link>
               <Link
                 href="/refund-policy"
-                className="hover:text-white flex items-center gap-1"
+                className="hover:text-white transition-colors flex items-center gap-1"
               >
-                <Users size={12} /> Refund
+                <Users size={12} /> Refund Policy
               </Link>
               <Link
                 href="/disclaimer"
-                className="hover:text-white flex items-center gap-1"
+                className="hover:text-white transition-colors flex items-center gap-1"
               >
                 <AlertCircle size={12} /> Disclaimer
               </Link>
-              <Link href="/sitemap.xml" className="hover:text-white">
+              <Link
+                href="/sitemap.xml"
+                className="hover:text-white transition-colors"
+              >
                 Sitemap
               </Link>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-500">🇮🇳 Made in India</p>
+          <p className="text-center text-xs text-gray-500">
+            🇮🇳 Made in India · Compliant with DPDP Act 2023
+          </p>
         </div>
       </div>
     </footer>

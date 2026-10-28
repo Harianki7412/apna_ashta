@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
 
 export default function InstallPrompt() {
+  const pathname = usePathname();
   const [prompt, setPrompt] = useState<any>(null);
   const [show, setShow] = useState(false);
   const [step, setStep] = useState<"idle" | "installing" | "installed">("idle");
@@ -38,6 +40,7 @@ export default function InstallPrompt() {
   }
 
   if (!show) return null;
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white dark:bg-slate-800 border-2 border-brand-600 dark:border-brand-500 rounded-2xl shadow-xl dark:shadow-2xl z-50 p-4 animate-fade-up">
@@ -53,7 +56,7 @@ export default function InstallPrompt() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-sm text-gray-900 dark:text-slate-100">
-            {step === "installed" ? "Installed! 🎉" : "Install Flatova"}
+            {step === "installed" ? "Installed! 🎉" : "Install Apna Ashta"}
           </h3>
           <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">
             {step === "installed"

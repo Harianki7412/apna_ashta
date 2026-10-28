@@ -30,6 +30,18 @@ const OWNER_ONLY = [
 
 const ADMIN_ONLY = [/^\/admin(?:\/.*)?$/];
 
+// User-only pages that admin should NOT access
+const ADMIN_BLOCKED = [
+  /^\/dashboard(?:\/.*)?$/,
+  /^\/favorites(?:\/.*)?$/,
+  /^\/chat(?:\/.*)?$/,
+  /^\/agreements(?:\/.*)?$/,
+  /^\/saved-searches(?:\/.*)?$/,
+  /^\/properties\/new(?:\/.*)?$/,
+  /^\/properties\/[a-f\d]{24}\/edit$/,
+  /^\/verify(?:\/.*)?$/,
+];
+
 /* ═══════════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════════ */
@@ -79,12 +91,21 @@ export default async function proxy(request: NextRequest) {
 
     const role = (token as any).role as string;
 
+    // 🔒 Admin redirect: keep admin out of user-only pages
+    if (role === "admin" && matches(ADMIN_BLOCKED, pathname)) {
+      const res = NextResponse.redirect(new URL("/admin", request.url));
+      setLocaleCookie(res, request);
+      return res;
+    }
+
+    // 🔒 Admin-only routes: non-admin users blocked
     if (matches(ADMIN_ONLY, pathname) && role !== "admin") {
       const res = NextResponse.redirect(new URL("/", request.url));
       setLocaleCookie(res, request);
       return res;
     }
 
+    // 🔒 Owner/admin routes: tenants blocked
     if (matches(OWNER_ONLY, pathname) && !["owner", "admin"].includes(role)) {
       const res = NextResponse.redirect(new URL("/", request.url));
       setLocaleCookie(res, request);

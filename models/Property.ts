@@ -59,7 +59,6 @@ const PropertySchema = new Schema({
   maintenanceCharge: { type: Number, default: 0 },
   city: {
     type: String,
-    enum: ["Ashta", "Kothri", "Sehore"],
     required: true,
     default: "Ashta",
     index: true,
@@ -83,14 +82,20 @@ const PropertySchema = new Schema({
     default: "pending",
     index: true,
   },
-  // Lead tracking
-  inquiryCount: { type: Number, default: 0 },
-  freeLeadsUsed: { type: Number, default: 0 },
-  paidLeadsUsed: { type: Number, default: 0 },
-
   featured: { type: Boolean, default: false },
   featuredUntil: Date,
   views: { type: Number, default: 0 },
+
+  // ═══ NEW: Verification ═══
+  verified: { type: Boolean, default: false, index: true },
+  verifiedAt: Date,
+  verifiedBy: { type: Schema.Types.ObjectId, ref: "User" },
+  verificationNotes: String,
+
+  // ═══ NEW: Reports ═══
+  reportCount: { type: Number, default: 0, index: true },
+  flagged: { type: Boolean, default: false, index: true },
+
   previousRent: { type: Number, default: null },
   createdAt: { type: Date, default: Date.now },
 });
@@ -100,6 +105,7 @@ PropertySchema.index({ title: "text", description: "text", area: "text" });
 PropertySchema.index({ status: 1, featured: -1, createdAt: -1 });
 PropertySchema.index({ city: 1, status: 1, createdAt: -1 });
 PropertySchema.index({ propertyType: 1, bhk: 1, status: 1 });
+PropertySchema.index({ verified: 1, status: 1 });
 
 export const Property =
   models.Property || mongoose.model("Property", PropertySchema);

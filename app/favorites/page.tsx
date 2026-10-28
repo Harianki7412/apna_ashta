@@ -8,7 +8,7 @@ import { api } from "@/lib/api-client";
 import { Heart } from "lucide-react";
 
 export default function FavoritesPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,8 +54,8 @@ export default function FavoritesPage() {
         <EmptyState
           icon={Heart}
           title="No favorites yet"
-          description="Tap the heart on any property."
-          actionLabel="Browse"
+          description="Tap the heart on any property to save it here."
+          actionLabel="Browse Properties"
           actionHref="/properties"
         />
       )}
