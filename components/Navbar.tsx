@@ -121,7 +121,7 @@ export default function Navbar() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all">
               <Home size={18} className="text-white" />
             </div>
-            <span className="hidden sm:inline tracking-tight">Apna Ashta</span>
+            <span className="hidden sm:inline tracking-tight">Flatova</span>
             {isAdmin && (
               <span className="hidden sm:inline text-[10px] bg-danger-100 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300 px-2 py-0.5 rounded font-bold uppercase">
                 Admin

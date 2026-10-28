@@ -21,14 +21,14 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Apna Ashta",
-  description: "Terms and conditions for using the Apna Ashta rental platform.",
+  title: "Terms of Service — Flatova",
+  description: "Terms and conditions for using the Flatova rental platform.",
 };
 
 const LAST_UPDATED = "October 28, 2026";
 
 const SECTIONS = [
-  { id: "what", title: "What Apna Ashta Is" },
+  { id: "what", title: "What Flatova Is" },
   { id: "eligibility", title: "Eligibility" },
   { id: "account", title: "Account Responsibilities" },
   { id: "owners", title: "For Property Owners" },
@@ -69,8 +69,8 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="text-brand-100 max-w-2xl mb-4 text-lg leading-relaxed">
-            These terms govern your use of Apna Ashta. By accessing our
-            platform, you agree to be bound by these terms.
+            These terms govern your use of Flatova. By accessing our platform,
+            you agree to be bound by these terms.
           </p>
           <div className="flex items-center gap-4 text-sm text-brand-200 flex-wrap">
             <div className="flex items-center gap-1.5">
@@ -111,16 +111,16 @@ export default function TermsPage() {
 
         {/* Content */}
         <div className="lg:col-span-3 space-y-6">
-          {/* 1: What Apna Ashta Is */}
+          {/* 1: What Flatova Is */}
           <section id="what" className="card p-6 md:p-8 scroll-mt-24">
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-sm">
                 1
               </span>
-              What Apna Ashta Is
+              What Flatova Is
             </h2>
             <p className="text-gray-700 dark:text-slate-300 leading-relaxed mb-4">
-              Apna Ashta is an{" "}
+              Flatova is an{" "}
               <strong className="text-gray-900 dark:text-slate-100">
                 online marketplace
               </strong>{" "}
@@ -394,7 +394,7 @@ export default function TermsPage() {
               Dispute Resolution
             </h2>
             <p className="text-gray-700 dark:text-slate-300 leading-relaxed mb-3">
-              Apna Ashta is{" "}
+              Flatova is{" "}
               <strong className="text-gray-900 dark:text-slate-100">
                 not responsible
               </strong>{" "}
@@ -487,9 +487,9 @@ export default function TermsPage() {
               ))}
             </ul>
             <p className="text-gray-700 dark:text-slate-300 leading-relaxed mt-3">
-              To the maximum extent permitted by law, Apna Ashta is not liable
-              for any direct, indirect, incidental, or consequential damages
-              arising from use of the Platform.
+              To the maximum extent permitted by law, Flatova is not liable for
+              any direct, indirect, incidental, or consequential damages arising
+              from use of the Platform.
             </p>
           </section>
 
@@ -502,7 +502,7 @@ export default function TermsPage() {
               Indemnification
             </h2>
             <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
-              You agree to indemnify and hold harmless Apna Ashta, its team, and
+              You agree to indemnify and hold harmless Flatova, its team, and
               partners from any claims, damages, or expenses arising from your
               use of the Platform or violation of these Terms.
             </p>
@@ -559,19 +559,19 @@ export default function TermsPage() {
               <p className="text-sm text-gray-700 dark:text-slate-300 flex items-center gap-2 mb-1">
                 <Mail size={14} /> <strong>Legal:</strong>{" "}
                 <a
-                  href="mailto:legal@apnaashta.in"
+                  href="mailto:legal@Flatova.in"
                   className="text-brand-600 dark:text-brand-400 underline"
                 >
-                  legal@apnaashta.in
+                  legal@Flatova.in
                 </a>
               </p>
               <p className="text-sm text-gray-700 dark:text-slate-300 flex items-center gap-2">
                 <Mail size={14} /> <strong>Support:</strong>{" "}
                 <a
-                  href="mailto:support@apnaashta.in"
+                  href="mailto:support@Flatova.in"
                   className="text-brand-600 dark:text-brand-400 underline"
                 >
-                  support@apnaashta.in
+                  support@Flatova.in
                 </a>
               </p>
             </div>

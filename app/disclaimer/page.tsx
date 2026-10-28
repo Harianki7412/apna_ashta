@@ -119,7 +119,7 @@ export default function DisclaimerPage() {
 
       <h2>10. Contact</h2>
       <p>
-        Legal queries: <strong>legal@apnaashta.in</strong>
+        Legal queries: <strong>legal@Flatova.in</strong>
       </p>
     </article>
   );

@@ -21,9 +21,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Apna Ashta",
+  title: "Privacy Policy — Flatova",
   description:
-    "How Apna Ashta collects, uses, and protects your personal information.",
+    "How Flatova collects, uses, and protects your personal information.",
 };
 
 const LAST_UPDATED = "October 28, 2026";
@@ -117,9 +117,9 @@ export default function PrivacyPage() {
               Overview
             </h2>
             <p className="text-gray-700 dark:text-slate-300 leading-relaxed mb-3">
-              Apna Ashta ("we", "our", "us") operates the website{" "}
+              Flatova ("we", "our", "us") operates the website{" "}
               <strong className="text-gray-900 dark:text-slate-100">
-                apnaashta.in
+                Flatova.in
               </strong>{" "}
               (the "Platform"), a hyperlocal rental listing service for Ashta,
               Kothri, Sehore, and nearby areas in Madhya Pradesh, India.
@@ -456,7 +456,7 @@ export default function PrivacyPage() {
             <div className="mt-4 p-4 rounded-xl bg-brand-50 dark:bg-brand-900/20 border-l-4 border-brand-500">
               <p className="text-sm text-brand-700 dark:text-brand-300">
                 <strong>How to exercise:</strong> Email{" "}
-                <strong>privacy@apnaashta.in</strong>. We respond within 30 days
+                <strong>privacy@Flatova.in</strong>. We respond within 30 days
                 as required by DPDP Act.
               </p>
             </div>
@@ -512,7 +512,7 @@ export default function PrivacyPage() {
               Our Platform is not intended for users under 18 years of age. We
               do not knowingly collect data from minors. If you believe a minor
               has created an account, please contact us at{" "}
-              <strong>privacy@apnaashta.in</strong>
+              <strong>privacy@Flatova.in</strong>
               and we will delete the account immediately.
             </p>
           </section>
@@ -536,10 +536,10 @@ export default function PrivacyPage() {
                 <Mail size={14} />
                 <strong>Email:</strong>{" "}
                 <a
-                  href="mailto:grievance@apnaashta.in"
+                  href="mailto:grievance@Flatova.in"
                   className="text-brand-600 dark:text-brand-400 underline"
                 >
-                  grievance@apnaashta.in
+                  grievance@Flatova.in
                 </a>
               </p>
               <p className="text-sm text-gray-700 dark:text-slate-300 flex items-start gap-1">
@@ -586,10 +586,10 @@ export default function PrivacyPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <a
-                href="mailto:privacy@apnaashta.in"
+                href="mailto:privacy@Flatova.in"
                 className="btn btn-primary btn-sm"
               >
-                <Mail size={14} /> privacy@apnaashta.in
+                <Mail size={14} /> privacy@Flatova.in
               </a>
               <Link href="/contact" className="btn btn-secondary btn-sm">
                 <ChevronRight size={14} /> Contact Form

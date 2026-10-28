@@ -72,7 +72,7 @@ export default function SubscriptionPage() {
         key: order.keyId,
         amount: order.amount,
         currency: "INR",
-        name: "Apna Ashta",
+        name: "Flatova",
         description: `${order.planName} Plan (${order.billingCycle})`,
         order_id: order.orderId,
         handler: async (response: any) => {

@@ -60,7 +60,7 @@ export default function PricingPage() {
         key: order.keyId,
         amount: order.amount,
         currency: "INR",
-        name: "Apna Ashta",
+        name: "Flatova",
         description: `${order.planName} Plan (${order.billingCycle})`,
         order_id: order.orderId,
         handler: async (response: any) => {
@@ -95,7 +95,7 @@ export default function PricingPage() {
         key: order.keyId,
         amount: order.amount,
         currency: "INR",
-        name: "Apna Ashta",
+        name: "Flatova",
         description: "Lead Pack",
         order_id: order.orderId,
         handler: async (response: any) => {
@@ -159,7 +159,7 @@ export default function PricingPage() {
             <h1 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
               Grow your rentals with
               <br />
-              <span className="text-gradient-gold">Apna Ashta Pro</span>
+              <span className="text-gradient-gold">Flatova Pro</span>
             </h1>
             <p className="text-brand-100 max-w-2xl mx-auto text-base md:text-lg mb-8">
               Reach more tenants, get priority placement, and unlock powerful

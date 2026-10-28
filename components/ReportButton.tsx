@@ -74,7 +74,7 @@ export default function ReportButton({ propertyId }: { propertyId: string }) {
                     Report Listing
                   </h2>
                   <p className="text-xs text-gray-500 dark:text-slate-400">
-                    Help us keep Apna Ashta safe
+                    Help us keep Flatova safe
                   </p>
                 </div>
               </div>

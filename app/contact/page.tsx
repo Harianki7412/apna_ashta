@@ -82,7 +82,7 @@ export default function ContactPage() {
         </a>
 
         <a
-          href="mailto:hello@apnaashta.in"
+          href="mailto:hello@Flatova.in"
           className="card p-5 hover:border-brand-300 hover:shadow-card-hover transition-all group text-center"
         >
           <div className="w-12 h-12 rounded-xl bg-accent-400/20 text-accent-600 flex items-center justify-center mx-auto mb-3 group-hover:bg-accent-500 group-hover:text-white transition-colors">
@@ -91,7 +91,7 @@ export default function ContactPage() {
           <p className="font-bold mb-1">Email</p>
           <p className="text-xs text-gray-500">Response in 24 hrs</p>
           <p className="text-sm text-brand-600 font-semibold mt-2 break-all">
-            hello@apnaashta.in
+            hello@Flatova.in
           </p>
         </a>
       </div>

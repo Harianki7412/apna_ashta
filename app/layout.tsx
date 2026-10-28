@@ -35,12 +35,12 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Apna Ashta — Rentals in Ashta",
+  title: "Flatova — Rentals in Ashta",
   description: "Find verified rooms, flats, and homes for rent in Ashta",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Apna Ashta",
+    title: "Flatova",
   },
   icons: { icon: "/icons/icon-192.png", apple: "/apple-touch-icon.png" },
 };

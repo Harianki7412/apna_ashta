@@ -14,8 +14,8 @@ export default function RefundPolicyPage() {
 
       <p>
         This Refund &amp; Cancellation Policy applies to all paid services
-        offered on <strong>apnaashta.in</strong>, operated by Flatova. By making
-        a payment, you agree to this policy.
+        offered on <strong>Flatova.in</strong>, operated by Flatova. By making a
+        payment, you agree to this policy.
       </p>
 
       <h2>1. Free Services</h2>
@@ -85,7 +85,7 @@ export default function RefundPolicyPage() {
 
       <h2>5. How to Request a Refund</h2>
       <p>
-        Email us at <strong>refunds@apnaashta.in</strong> with:
+        Email us at <strong>refunds@Flatova.in</strong> with:
       </p>
       <ul>
         <li>Payment ID / Transaction ID (from Razorpay receipt)</li>
@@ -99,19 +99,18 @@ export default function RefundPolicyPage() {
 
       <h2>6. Cancellation of Subscription</h2>
       <p>
-        To cancel: Profile → Subscription → Cancel. Or email
-        support@apnaashta.in
+        To cancel: Profile → Subscription → Cancel. Or email support@Flatova.in
       </p>
 
       <h2>7. Disputes</h2>
       <p>
-        Escalate to <strong>grievance@apnaashta.in</strong>. Response within 15
+        Escalate to <strong>grievance@Flatova.in</strong>. Response within 15
         days as per Consumer Protection Act, 2019.
       </p>
 
       <h2>8. Contact</h2>
       <p>
-        <strong>Refund queries:</strong> refunds@apnaashta.in
+        <strong>Refund queries:</strong> refunds@Flatova.in
         <br />
         <strong>Address:</strong> Flatova, College Road, Ashta, Sehore, MP —
         466116

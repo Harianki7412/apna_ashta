@@ -645,7 +645,7 @@ function ProfileContent() {
               const base =
                 process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
               const url = `${base}/register?ref=${profile.referralCode}`;
-              const text = `Join Apna Ashta — Ashta, Kothri & Sehore's rental platform!\n\nSign up with code *${profile.referralCode}* and get ₹100 credit.\n\n${url}`;
+              const text = `Join Flatova — Ashta, Kothri & Sehore's rental platform!\n\nSign up with code *${profile.referralCode}* and get ₹100 credit.\n\n${url}`;
               window.open(
                 `https://wa.me/?text=${encodeURIComponent(text)}`,
                 "_blank",

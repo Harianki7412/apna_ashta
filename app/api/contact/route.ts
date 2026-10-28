@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     // Notify admin
     const adminEmail =
-      process.env.EMAIL_FROM?.match(/<(.+)>/)?.[1] || "hello@apnaashta.in";
+      process.env.EMAIL_FROM?.match(/<(.+)>/)?.[1] || "hello@Flatova.in";
 
     await sendGenericEmail(
       adminEmail,

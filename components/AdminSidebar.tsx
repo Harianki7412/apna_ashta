@@ -141,7 +141,7 @@ export default function AdminSidebar() {
                 Admin Panel
               </p>
               <p className="text-[10px] text-gray-500 dark:text-slate-400">
-                Apna Ashta
+                Flatova
               </p>
             </div>
           )}

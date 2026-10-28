@@ -61,11 +61,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const property: any = await getProperty(id);
-  if (!property) return { title: "Not found — Apna Ashta" };
+  if (!property) return { title: "Not found — Flatova" };
 
   const bhkPart = property.bhk ? `${property.bhk} ` : "";
   return {
-    title: `${bhkPart}${property.title} — ₹${property.rent}/month | Apna Ashta`,
+    title: `${bhkPart}${property.title} — ₹${property.rent}/month | Flatova`,
     description: `${bhkPart}${property.propertyType} for rent in ${property.area}, ${
       property.city || "Ashta"
     }.`,

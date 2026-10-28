@@ -98,7 +98,7 @@ export const DEFAULT_SETTINGS = {
   agreementSplitPrice: 99,
   freeLeadsPerProperty: 10,
   siteName: "Flatova",
-  supportEmail: "hello@apnaashta.in",
+  supportEmail: "hello@Flatova.in",
   supportPhone: "+919999999999",
   enableSubscriptions: true,
   enableLeadPacks: true,

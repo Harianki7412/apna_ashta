@@ -23,9 +23,9 @@ export async function POST(
 
     await sendGenericEmail(
       msg.email,
-      `Re: ${msg.subject || "Your inquiry"} — Apna Ashta`,
+      `Re: ${msg.subject || "Your inquiry"} — Flatova`,
       `<div style="font-family:system-ui,sans-serif;max-width:600px;padding:20px;">
-        <h2 style="color:#2563eb;">Apna Ashta Support</h2>
+        <h2 style="color:#2563eb;">Flatova Support</h2>
         <p>Hi ${msg.name},</p>
         <div style="background:#f9fafb;padding:16px;border-radius:8px;margin:16px 0;">
           ${reply.replace(/\n/g, "<br>")}
