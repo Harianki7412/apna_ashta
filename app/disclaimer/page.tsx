@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Disclaimer — Apna Ashta",
-  description: "Legal disclaimer for use of Apna Ashta rental platform.",
+  title: "Disclaimer — Flatova",
+  description: "Legal disclaimer for use of Flatova rental platform.",
 };
 
 export default function DisclaimerPage() {
@@ -24,14 +24,14 @@ export default function DisclaimerPage() {
           className="text-sm"
           style={{ color: "#92400e", fontWeight: 600, margin: 0 }}
         >
-          ⚠️ Important: Apna Ashta is a marketplace, NOT a real estate broker,
+          ⚠️ Important: Flatova is a marketplace, NOT a real estate broker,
           agent, or party to any rental transaction.
         </p>
       </div>
 
       <h2>1. Nature of Platform</h2>
       <p>
-        Apna Ashta operates an <strong>online marketplace</strong> that connects
+        Flatova operates an <strong>online marketplace</strong> that connects
         property owners with tenants. We are <strong>not</strong>:
       </p>
       <ul>
@@ -81,7 +81,7 @@ export default function DisclaimerPage() {
 
       <h2>6. Limitation of Liability</h2>
       <p>
-        To the maximum extent permitted by Indian law, Apna Ashta is{" "}
+        To the maximum extent permitted by Indian law, Flatova is{" "}
         <strong>not liable</strong> for:
       </p>
       <ul>
@@ -113,7 +113,7 @@ export default function DisclaimerPage() {
 
       <h2>9. Tax Compliance</h2>
       <p>
-        Rent income is taxable. Apna Ashta doesn't provide tax advice. Consult a
+        Rent income is taxable. Flatova doesn't provide tax advice. Consult a
         CA.
       </p>
 

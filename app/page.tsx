@@ -99,7 +99,7 @@ export default async function Home() {
             Apna Ghar,
             <br />
             <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-400 bg-clip-text text-transparent">
-              Apna Ashta
+              Flatova
             </span>
           </h1>
 
@@ -435,7 +435,7 @@ export default async function Home() {
               name: "Anita Patel",
               role: "Student",
               quote:
-                "As a student, budget-friendly rooms were hard to find. Apna Ashta made it easy.",
+                "As a student, budget-friendly rooms were hard to find. Flatova made it easy.",
               rating: 5,
             },
           ].map((testimonial, i) => (
@@ -518,7 +518,7 @@ export default async function Home() {
           </h2>
           <p className="text-brand-100 mb-8 text-base md:text-lg leading-relaxed">
             Reach thousands of verified tenants. Free listing, direct contact,
-            zero brokerage. Apna Ashta pe apna ghar rent pe dein.
+            zero brokerage. Flatova pe apna ghar rent pe dein.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

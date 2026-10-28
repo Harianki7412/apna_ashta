@@ -216,7 +216,7 @@ export default function ContactPage() {
               <MapPin size={18} className="text-brand-600" /> Our Office
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Apna Ashta
+              Flatova
               <br />
               College Road, Ashta
               <br />

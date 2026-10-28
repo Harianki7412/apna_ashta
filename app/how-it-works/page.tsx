@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "How It Works — Apna Ashta",
+  title: "How It Works — Flatova",
   description:
-    "Learn how to find or list rental properties on Apna Ashta in 3 simple steps.",
+    "Learn how to find or list rental properties on Flatova in 3 simple steps.",
 };
 
 function Step({
@@ -55,7 +55,7 @@ export default function HowItWorksPage() {
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-3">How It Works</h1>
         <p className="text-gray-500 max-w-xl mx-auto">
-          Chahe tenant ho ya owner — Apna Ashta pe sab kuch 3 simple steps mein
+          Chahe tenant ho ya owner — Flatova pe sab kuch 3 simple steps mein
         </p>
       </div>
 

@@ -21,7 +21,7 @@ const CATEGORIES = [
 const FAQS: Record<string, { q: string; a: string }[]> = {
   tenant: [
     {
-      q: "Apna Ashta pe account kaise banayein?",
+      q: "Flatova pe account kaise banayein?",
       a: "Register page pe jaayein, apna naam, email ya phone, aur password daalein. Email ya phone — dono mein se ek se OTP verify karein. 1 minute mein account ready.",
     },
     {
@@ -50,7 +50,7 @@ const FAQS: Record<string, { q: string; a: string }[]> = {
     },
     {
       q: "Rent agreement kaise banayein?",
-      a: "Owner se chat karein, terms finalize karein. Owner Apna Ashta se legal rent agreement generate kar sakta hai. Aap confirm karein — PDF download ho jayega.",
+      a: "Owner se chat karein, terms finalize karein. Owner Flatova se legal rent agreement generate kar sakta hai. Aap confirm karein — PDF download ho jayega.",
     },
   ],
   owner: [

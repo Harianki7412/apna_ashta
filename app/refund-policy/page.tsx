@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Refund Policy — Apna Ashta",
+  title: "Refund Policy — Flatova",
   description:
-    "Refund policy for featured listings, subscriptions, and paid services on Apna Ashta.",
+    "Refund policy for featured listings, subscriptions, and paid services on Flatova.",
 };
 
 export default function RefundPolicyPage() {
@@ -14,15 +14,15 @@ export default function RefundPolicyPage() {
 
       <p>
         This Refund &amp; Cancellation Policy applies to all paid services
-        offered on <strong>apnaashta.in</strong>, operated by Apna Ashta. By
-        making a payment, you agree to this policy.
+        offered on <strong>apnaashta.in</strong>, operated by Flatova. By making
+        a payment, you agree to this policy.
       </p>
 
       <h2>1. Free Services</h2>
       <p>
-        Basic use of Apna Ashta — browsing properties, listing up to 2
-        properties, chatting with owners — is <strong>completely free</strong>.
-        No refund applies to free services.
+        Basic use of Flatova — browsing properties, listing up to 2 properties,
+        chatting with owners — is <strong>completely free</strong>. No refund
+        applies to free services.
       </p>
 
       <h2>2. Featured Listings (₹99 per listing)</h2>
@@ -113,7 +113,7 @@ export default function RefundPolicyPage() {
       <p>
         <strong>Refund queries:</strong> refunds@apnaashta.in
         <br />
-        <strong>Address:</strong> Apna Ashta, College Road, Ashta, Sehore, MP —
+        <strong>Address:</strong> Flatova, College Road, Ashta, Sehore, MP —
         466116
       </p>
     </article>

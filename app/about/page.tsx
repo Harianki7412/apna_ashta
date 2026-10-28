@@ -13,9 +13,9 @@ import {
 import { CITIES } from "@/lib/cities";
 
 export const metadata = {
-  title: "About Us — Apna Ashta",
+  title: "About Us — Flatova",
   description:
-    "Apna Ashta is Ashta's own rental platform connecting verified property owners with tenants across Ashta, Kothri, and Sehore.",
+    "Flatova is Ashta's own rental platform connecting verified property owners with tenants across Ashta, Kothri, and Sehore.",
 };
 
 export default function AboutPage() {
@@ -87,7 +87,7 @@ export default function AboutPage() {
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Hamari Kahani</h2>
           <div className="prose max-w-none text-gray-700 space-y-4">
             <p>
-              <strong>Apna Ashta</strong> ek simple problem se shuru hua — Ashta
+              <strong>Flatova</strong> ek simple problem se shuru hua — Ashta
               mein ghar dhundhna ya kirae pe dena bahut mushkil tha. Log
               WhatsApp groups aur local brokers pe depend karte the, aur bahut
               baar fake listings, hidden charges, ya unreliable logon se milna
@@ -100,7 +100,7 @@ export default function AboutPage() {
               <strong>bilkul bina brokerage</strong> ke ghar mil jaye?
             </p>
             <p>
-              Aaj Apna Ashta pe <strong>Ashta, Kothri, aur Sehore</strong> ke 3
+              Aaj Flatova pe <strong>Ashta, Kothri, aur Sehore</strong> ke 3
               shehron mein verified listings hain. Har property admin review ke
               baad hi live hoti hai. Har owner verified ho sakta hai. Har tenant
               ghar visit karne se pehle complete details dekh sakta hai.
@@ -138,7 +138,7 @@ export default function AboutPage() {
       {/* Why Choose */}
       <section className="mb-12">
         <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
-          Kyun Apna Ashta?
+          Kyun Flatova?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[

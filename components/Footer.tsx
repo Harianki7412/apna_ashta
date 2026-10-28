@@ -68,7 +68,7 @@ export default function Footer() {
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
                 <Home size={18} className="text-white" />
               </div>
-              Apna Ashta
+              Flatova
             </Link>
             <p className="text-sm text-gray-400">
               Ashta's own rental platform. Verified rooms, flats, and homes —
@@ -246,7 +246,7 @@ export default function Footer() {
         {/* Legal Bar */}
         <div className="pt-6 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400 mb-4">
-            <p>© {new Date().getFullYear()} Apna Ashta. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Flatova. All rights reserved.</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
               <Link
                 href="/privacy"

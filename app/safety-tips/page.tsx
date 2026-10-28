@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Safety Tips — Apna Ashta",
+  title: "Safety Tips — Flatova",
   description:
     "Learn how to stay safe while renting in Ashta. Tips to avoid scams and frauds.",
 };
@@ -78,7 +78,7 @@ export default function SafetyTipsPage() {
             },
             {
               title: "Sign a written rent agreement",
-              desc: "Apna Ashta se legal 21-clause PDF generate karein. Verbal promises avoid karein.",
+              desc: "Flatova se legal 21-clause PDF generate karein. Verbal promises avoid karein.",
             },
             {
               title: "Get receipts for all payments",
@@ -145,7 +145,7 @@ export default function SafetyTipsPage() {
             },
             {
               title: "Always use a written rent agreement",
-              desc: "Apna Ashta se legal PDF generate karein. Registered agreement best hai.",
+              desc: "Flatova se legal PDF generate karein. Registered agreement best hai.",
             },
             {
               title: "Collect deposit before handover",
@@ -165,7 +165,7 @@ export default function SafetyTipsPage() {
             },
             {
               title: "KYC verification karwayein",
-              desc: 'Apna Ashta se verify hokar "Verified" badge payein. Trust badhta hai.',
+              desc: 'Flatova se verify hokar "Verified" badge payein. Trust badhta hai.',
             },
             {
               title: "Keep rent receipts",
@@ -188,7 +188,7 @@ export default function SafetyTipsPage() {
       <section className="mb-10">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Lock size={22} className="text-brand-600" />
-          Apna Ashta's Safety Features
+          Flatova's Safety Features
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

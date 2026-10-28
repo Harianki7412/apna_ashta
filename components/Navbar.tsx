@@ -94,7 +94,7 @@ export default function Navbar() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all">
               <Home size={18} className="text-white" />
             </div>
-            <span className="hidden sm:inline tracking-tight">Apna Ashta</span>
+            <span className="hidden sm:inline tracking-tight">Flatova</span>
           </Link>
 
           <div className="hidden lg:flex items-center gap-0.5">

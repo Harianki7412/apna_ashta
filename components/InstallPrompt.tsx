@@ -53,7 +53,7 @@ export default function InstallPrompt() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-sm text-gray-900 dark:text-slate-100">
-            {step === "installed" ? "Installed! 🎉" : "Install Apna Ashta"}
+            {step === "installed" ? "Installed! 🎉" : "Install Flatova"}
           </h3>
           <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">
             {step === "installed"
