@@ -21,6 +21,8 @@ import {
   HelpCircle,
   MessageSquare,
   ChevronDown,
+  Package,
+  Settings,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -33,12 +35,15 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const role = (session?.user as any)?.role;
 
   useEffect(() => {
     setOpen(false);
     setInfoOpen(false);
+    setAdminOpen(false);
   }, [pathname]);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -49,9 +54,6 @@ export default function Navbar() {
     { href: "/properties", label: t("browse"), icon: Search },
     ...(role === "owner" || role === "admin"
       ? [{ href: "/properties/new", label: t("addProperty"), icon: PlusCircle }]
-      : []),
-    ...(role === "admin"
-      ? [{ href: "/admin", label: t("admin"), icon: Shield }]
       : []),
     ...(session
       ? [
@@ -66,13 +68,24 @@ export default function Navbar() {
   const infoLinks = [
     { href: "/about", label: "About Us", icon: Info },
     { href: "/how-it-works", label: "How It Works", icon: HelpCircle },
+    { href: "/pricing", label: "Pricing", icon: Package },
     { href: "/faq", label: "FAQ", icon: HelpCircle },
     { href: "/safety-tips", label: "Safety Tips", icon: Shield },
     { href: "/contact", label: "Contact", icon: MessageSquare },
   ];
 
+  const adminLinks = [
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/plans", label: "Plans", icon: Package },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/users", label: "Users", icon: User },
+    { href: "/admin/kyc", label: "KYC", icon: Shield },
+  ];
+
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/"
+      ? pathname === "/"
+      : pathname === href || (href !== "/admin" && pathname.startsWith(href));
 
   return (
     <nav
@@ -82,11 +95,11 @@ export default function Navbar() {
           : "bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800"
       }`}
     >
-      {/* Top gradient accent */}
       <div className="h-1 bg-gradient-to-r from-brand-500 via-brand-600 to-accent-500" />
 
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
+          {/* Logo */}
           <Link
             href="/"
             className="flex items-center gap-2.5 font-extrabold text-lg text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-all group"
@@ -97,6 +110,7 @@ export default function Navbar() {
             <span className="hidden sm:inline tracking-tight">Flatova</span>
           </Link>
 
+          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-0.5">
             {mainLinks.map((link) => {
               const Icon = link.icon;
@@ -105,7 +119,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                     active
                       ? "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300"
                       : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
@@ -120,12 +134,16 @@ export default function Navbar() {
               );
             })}
 
-            <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-2" />
+            <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1.5" />
 
+            {/* Info dropdown */}
             <div className="relative">
               <button
-                onClick={() => setInfoOpen(!infoOpen)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                onClick={() => {
+                  setInfoOpen(!infoOpen);
+                  setAdminOpen(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   infoLinks.some((l) => isActive(l.href))
                     ? "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300"
                     : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
@@ -168,8 +186,62 @@ export default function Navbar() {
                 </>
               )}
             </div>
+
+            {/* Admin dropdown */}
+            {role === "admin" && (
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setAdminOpen(!adminOpen);
+                    setInfoOpen(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                    pathname.startsWith("/admin")
+                      ? "bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300"
+                      : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
+                  }`}
+                >
+                  <Shield size={16} />
+                  Admin
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {adminOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setAdminOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-2xl border border-gray-100 dark:border-slate-700 py-2 z-50 animate-fade-up">
+                      {adminLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => setAdminOpen(false)}
+                            className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                              pathname === link.href
+                                ? "bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300"
+                                : "text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                            }`}
+                          >
+                            <Icon size={16} />
+                            {link.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
+          {/* Right actions */}
           <div className="hidden lg:flex items-center gap-1.5">
             {session && <NotificationBell />}
             <LanguageSwitcher />
@@ -179,7 +251,8 @@ export default function Navbar() {
               <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-200 dark:border-slate-700">
                 <Link
                   href="/profile"
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors group"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                  title="My Profile"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-bold text-sm">
                     {session.user?.name?.[0]?.toUpperCase() || "U"}
@@ -214,6 +287,7 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Mobile menu button */}
           <button
             className="lg:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-200"
             onClick={() => setOpen(!open)}
@@ -224,6 +298,7 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Mobile Menu */}
       {open && (
         <div className="lg:hidden border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 animate-fade-in max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="container mx-auto p-4 space-y-1">
@@ -247,6 +322,34 @@ export default function Navbar() {
               );
             })}
 
+            {/* Admin section (mobile) */}
+            {role === "admin" && (
+              <div className="pt-3 border-t border-gray-100 dark:border-slate-800 mt-2">
+                <p className="text-xs font-bold text-danger-500 uppercase tracking-wider px-3 py-2">
+                  Admin Panel
+                </p>
+                {adminLinks.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
+                        pathname === link.href
+                          ? "bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300"
+                          : "text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <Icon size={18} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Info section */}
             <div className="pt-3 border-t border-gray-100 dark:border-slate-800 mt-2">
               <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider px-3 py-2">
                 Information
@@ -305,7 +408,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/", redirect: true })}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 text-sm font-medium"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 text-sm font-medium transition-colors"
                 >
                   <LogOut size={18} />
                   {t("logout")}

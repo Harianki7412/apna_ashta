@@ -185,6 +185,11 @@ export default function Footer() {
                   <Shield size={12} /> Safety Tips
                 </Link>
               </li>
+              <li>
+                <Link href="/pricing" className="hover:text-white">
+                  Pricing
+                </Link>
+              </li>
             </ul>
           </div>
 
