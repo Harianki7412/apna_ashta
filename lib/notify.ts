@@ -1,15 +1,36 @@
-import { connectDB } from './mongodb';
-import { Notification } from '@/models/Notification';
-import { User } from '@/models/User';
-import { sendGenericEmail } from './email';
+import { connectDB } from "./mongodb";
+import { Notification } from "@/models/Notification";
+import { User } from "@/models/User";
+import {
+  sendNewMessageEmail,
+  sendPropertyApprovedEmail,
+  sendPropertyRejectedEmail,
+  sendKycVerifiedEmail,
+  sendKycRejectedEmail,
+  sendNewListingEmail,
+  sendAgreementSentEmail,
+  sendAgreementConfirmedEmail,
+} from "./email";
 
-type NotifyPayload = {
-  type: 'message' | 'property_approved' | 'property_rejected' | 'new_listing' | 'system' | 'kyc_verified' | 'kyc_rejected';
+export type NotifyType =
+  | "message"
+  | "property_approved"
+  | "property_rejected"
+  | "new_listing"
+  | "system"
+  | "kyc_verified"
+  | "kyc_rejected"
+  | "agreement_sent"
+  | "agreement_confirmed";
+
+interface NotifyPayload {
+  type: NotifyType;
   title: string;
   body?: string;
   link?: string;
   email?: boolean;
-};
+  emailData?: any;
+}
 
 export async function notifyUser(userId: string, payload: NotifyPayload) {
   try {
@@ -23,14 +44,49 @@ export async function notifyUser(userId: string, payload: NotifyPayload) {
     });
 
     if (payload.email) {
-      const u = await User.findById(userId).select('email').lean();
-      if (u?.email) {
-        const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-        const html = `<p>${payload.body || ''}</p>${payload.link ? `<a href="${base}${payload.link}">Open</a>` : ''}`;
-        await sendGenericEmail(u.email, payload.title, html).catch(console.error);
+      const u = await User.findById(userId).select("name email").lean();
+      if (!u?.email) return;
+
+      const name = u.name || "User";
+      const emailArgs = { to: u.email, recipientName: name };
+
+      switch (payload.type) {
+        case "message":
+          await sendNewMessageEmail({ ...emailArgs, ...payload.emailData });
+          break;
+        case "property_approved":
+          await sendPropertyApprovedEmail({
+            ...emailArgs,
+            ...payload.emailData,
+          });
+          break;
+        case "property_rejected":
+          await sendPropertyRejectedEmail({
+            ...emailArgs,
+            ...payload.emailData,
+          });
+          break;
+        case "kyc_verified":
+          await sendKycVerifiedEmail(emailArgs);
+          break;
+        case "kyc_rejected":
+          await sendKycRejectedEmail(emailArgs);
+          break;
+        case "new_listing":
+          await sendNewListingEmail({ ...emailArgs, ...payload.emailData });
+          break;
+        case "agreement_sent":
+          await sendAgreementSentEmail({ ...emailArgs, ...payload.emailData });
+          break;
+        case "agreement_confirmed":
+          await sendAgreementConfirmedEmail({
+            ...emailArgs,
+            ...payload.emailData,
+          });
+          break;
       }
     }
   } catch (e) {
-    console.error('[notifyUser]', e);
+    console.error("[notifyUser]", e);
   }
 }

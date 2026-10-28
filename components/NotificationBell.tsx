@@ -20,11 +20,13 @@ export default function NotificationBell() {
       setUnread(d.unread);
     } catch {}
   }
+
   useEffect(() => {
     load();
     const t = setInterval(load, 15000);
     return () => clearInterval(t);
   }, []);
+
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node))
@@ -44,7 +46,7 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-lg hover:bg-gray-100"
+        className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 transition-colors"
       >
         <Bell size={18} />
         {unread > 0 && (
@@ -53,24 +55,33 @@ export default function NotificationBell() {
           </span>
         )}
       </button>
+
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-float border border-gray-100 z-50 overflow-hidden animate-fade-in">
-          <div className="flex justify-between p-3 border-b">
-            <span className="font-bold text-sm">Notifications</span>
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-2xl border border-gray-100 dark:border-slate-700 z-50 overflow-hidden animate-fade-in">
+          <div className="flex justify-between items-center p-3 border-b border-gray-100 dark:border-slate-700">
+            <span className="font-bold text-sm text-gray-900 dark:text-slate-100">
+              Notifications
+            </span>
             {unread > 0 && (
               <button
                 onClick={markAll}
-                className="flex items-center gap-1 text-xs text-brand-600 font-semibold"
+                className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline"
               >
                 <CheckCheck size={12} /> Mark all
               </button>
             )}
           </div>
+
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 && (
               <div className="p-6 text-center">
-                <Bell size={28} className="text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No notifications</p>
+                <Bell
+                  size={28}
+                  className="text-gray-300 dark:text-slate-600 mx-auto mb-2"
+                />
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  No notifications
+                </p>
               </div>
             )}
             {items.slice(0, 8).map((n) => (
@@ -78,24 +89,26 @@ export default function NotificationBell() {
                 key={n._id}
                 href={n.link || "/notifications"}
                 onClick={() => setOpen(false)}
-                className={`block p-3 border-b border-gray-50 hover:bg-gray-50 ${!n.read ? "bg-brand-50/50" : ""}`}
+                className={`block p-3 border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${
+                  !n.read ? "bg-brand-50/50 dark:bg-brand-900/20" : ""
+                }`}
               >
                 <div className="flex items-start gap-2">
                   {!n.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-600 mt-1.5 flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-600 dark:bg-brand-400 mt-1.5 flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p
-                      className={`text-sm truncate ${!n.read ? "font-bold" : "font-medium text-gray-700"}`}
+                      className={`text-sm truncate ${!n.read ? "font-bold text-gray-900 dark:text-slate-100" : "font-medium text-gray-700 dark:text-slate-300"}`}
                     >
                       {n.title}
                     </p>
                     {n.body && (
-                      <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2 mt-0.5">
                         {n.body}
                       </p>
                     )}
-                    <p className="text-[10px] text-gray-400 mt-1">
+                    <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
                       {formatDistanceToNow(new Date(n.createdAt), {
                         addSuffix: true,
                       })}
@@ -105,10 +118,11 @@ export default function NotificationBell() {
               </Link>
             ))}
           </div>
+
           <Link
             href="/notifications"
             onClick={() => setOpen(false)}
-            className="block p-3 text-center text-sm text-brand-600 font-semibold border-t hover:bg-gray-50"
+            className="block p-3 text-center text-sm text-brand-600 dark:text-brand-400 font-semibold border-t border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             View all →
           </Link>

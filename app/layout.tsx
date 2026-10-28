@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { cookies } from "next/headers";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -46,7 +47,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -58,12 +62,38 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+
+  // ═══ Read theme from cookie server-side (prevents flash) ═══
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value || "light";
+  const isDark = theme === "dark";
+
   return (
     <html
       lang={locale}
-      className={`${inter.variable} ${notoHindi.variable} ${jakarta.variable}`}
+      className={`${inter.variable} ${notoHindi.variable} ${jakarta.variable} ${isDark ? "dark" : ""}`}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen flex flex-col">
+      <head>
+        {/* ═══ Inline script — prevents theme flash on reload ═══ */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = document.cookie.match(/(?:^|; )theme=([^;]+)/);
+                  var saved = theme ? theme[1] : null;
+                  var prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var isDark = saved === 'dark' || (!saved && prefers);
+                  if (isDark) document.documentElement.classList.add('dark');
+                  else document.documentElement.classList.remove('dark');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Navbar />
@@ -78,11 +108,11 @@ export default async function RootLayout({
               position="top-center"
               toastOptions={{
                 style: {
-                  background: "#fff",
-                  color: "#111827",
+                  background: "var(--toast-bg, #ffffff)",
+                  color: "var(--toast-color, #111827)",
                   borderRadius: "12px",
                   boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
-                  border: "1px solid #f3f4f6",
+                  border: "1px solid var(--toast-border, #f3f4f6)",
                 },
               }}
             />

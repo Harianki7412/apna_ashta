@@ -34,7 +34,7 @@ export async function generateMetadata({
   if (!AREAS.includes(area)) return { title: "Not Found" };
   const areaName = slugToArea(area);
   return {
-    title: `Rent in ${areaName}, Ashta — Rooms & Flats | Apna Ashta`,
+    title: `Rent in ${areaName}, Ashta — Rooms & Flats | Flatova`,
     description: `Find verified rooms, flats, and homes for rent in ${areaName}, Ashta.`,
     alternates: {
       canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in-${area}`,

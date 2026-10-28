@@ -1,5 +1,18 @@
 import Link from "next/link";
-import { Home, Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import {
+  Home,
+  Mail,
+  Phone,
+  MapPin,
+  MessageCircle,
+  Info,
+  HelpCircle,
+  Shield,
+  FileText,
+  BookOpen,
+  AlertCircle,
+  Users,
+} from "lucide-react";
 
 const AREAS = [
   "college-road",
@@ -17,7 +30,14 @@ function slugToArea(slug: string) {
     .join(" ");
 }
 
-// Inline SVG icons (lucide-react se brand icons removed hain)
+function WhatsAppIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+    </svg>
+  );
+}
+
 function FacebookIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -34,19 +54,11 @@ function InstagramIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-function WhatsAppIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-    </svg>
-  );
-}
-
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300 mt-16">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
           {/* Brand */}
           <div className="space-y-4">
             <Link
@@ -58,9 +70,9 @@ export default function Footer() {
               </div>
               Apna Ashta
             </Link>
-            <p className="text-sm text-gray-400 leading-relaxed">
+            <p className="text-sm text-gray-400">
               Ashta's own rental platform. Verified rooms, flats, and homes —
-              direct from owners. Made with ❤️ in Ashta, MP.
+              direct from owners.
             </p>
             <div className="flex gap-2">
               <a
@@ -95,48 +107,82 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
+            <h3 className="text-white font-bold mb-4 text-sm uppercase">
               Quick Links
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link
-                  href="/properties"
-                  className="hover:text-white transition-colors"
-                >
+                <Link href="/properties" className="hover:text-white">
                   Browse Properties
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/properties/new"
-                  className="hover:text-white transition-colors"
-                >
-                  List Your Property
+                <Link href="/properties/new" className="hover:text-white">
+                  List Property
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/favorites"
-                  className="hover:text-white transition-colors"
-                >
-                  Saved Properties
+                <Link href="/favorites" className="hover:text-white">
+                  Saved
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/chat"
-                  className="hover:text-white transition-colors"
-                >
+                <Link href="/saved-searches" className="hover:text-white">
+                  Saved Searches
+                </Link>
+              </li>
+              <li>
+                <Link href="/chat" className="hover:text-white">
                   Messages
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h3 className="text-white font-bold mb-4 text-sm uppercase">
+              Company
+            </h3>
+            <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/verify"
-                  className="hover:text-white transition-colors"
+                  href="/about"
+                  className="hover:text-white flex items-center gap-1.5"
                 >
-                  Get Verified
+                  <Info size={12} /> About Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/how-it-works"
+                  className="hover:text-white flex items-center gap-1.5"
+                >
+                  <BookOpen size={12} /> How It Works
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="hover:text-white flex items-center gap-1.5"
+                >
+                  <MessageCircle size={12} /> Contact
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/faq"
+                  className="hover:text-white flex items-center gap-1.5"
+                >
+                  <HelpCircle size={12} /> FAQ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/safety-tips"
+                  className="hover:text-white flex items-center gap-1.5"
+                >
+                  <Shield size={12} /> Safety Tips
                 </Link>
               </li>
             </ul>
@@ -144,15 +190,15 @@ export default function Footer() {
 
           {/* Popular Areas */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
+            <h3 className="text-white font-bold mb-4 text-sm uppercase">
               Popular Areas
             </h3>
             <ul className="space-y-2 text-sm">
-              {AREAS.slice(0, 5).map((area) => (
+              {AREAS.slice(0, 6).map((area) => (
                 <li key={area}>
                   <Link
-                    href={`/rent-in-${area}`}
-                    className="hover:text-white transition-colors capitalize"
+                    href={`/rent-in/ashta/${area}`}
+                    className="hover:text-white capitalize"
                   >
                     Rent in {slugToArea(area)}
                   </Link>
@@ -163,8 +209,8 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
-              Contact Us
+            <h3 className="text-white font-bold mb-4 text-sm uppercase">
+              Contact
             </h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
@@ -173,26 +219,23 @@ export default function Footer() {
                   className="text-brand-400 flex-shrink-0 mt-0.5"
                 />
                 <span>
-                  Ashta, District Sehore,
+                  Ashta, Sehore,
                   <br />
-                  Madhya Pradesh — 466116
+                  MP — 466116
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-brand-400 flex-shrink-0" />
                 <a
                   href="mailto:hello@apnaashta.in"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-white"
                 >
                   hello@apnaashta.in
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone size={16} className="text-brand-400 flex-shrink-0" />
-                <a
-                  href="tel:+919999999999"
-                  className="hover:text-white transition-colors"
-                >
+                <a href="tel:+919999999999" className="hover:text-white">
                   +91 99999 99999
                 </a>
               </li>
@@ -200,31 +243,41 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-gray-800">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+        {/* Legal Bar */}
+        <div className="pt-6 border-t border-gray-800">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400 mb-4">
             <p>© {new Date().getFullYear()} Apna Ashta. All rights reserved.</p>
-            <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
               <Link
                 href="/privacy"
-                className="hover:text-white transition-colors"
+                className="hover:text-white flex items-center gap-1"
               >
-                Privacy Policy
+                <Shield size={12} /> Privacy
               </Link>
               <Link
                 href="/terms"
-                className="hover:text-white transition-colors"
+                className="hover:text-white flex items-center gap-1"
               >
-                Terms of Service
+                <FileText size={12} /> Terms
               </Link>
               <Link
-                href="/sitemap.xml"
-                className="hover:text-white transition-colors"
+                href="/refund-policy"
+                className="hover:text-white flex items-center gap-1"
               >
+                <Users size={12} /> Refund
+              </Link>
+              <Link
+                href="/disclaimer"
+                className="hover:text-white flex items-center gap-1"
+              >
+                <AlertCircle size={12} /> Disclaimer
+              </Link>
+              <Link href="/sitemap.xml" className="hover:text-white">
                 Sitemap
               </Link>
             </div>
           </div>
+          <p className="text-center text-xs text-gray-500">🇮🇳 Made in India</p>
         </div>
       </div>
     </footer>

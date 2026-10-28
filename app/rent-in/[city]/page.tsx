@@ -22,7 +22,7 @@ export async function generateMetadata({
   const city = getCityBySlug(slug);
   if (!city) return { title: "Not Found" };
   return {
-    title: `Rent in ${city.name} — Rooms, Flats & Homes | Apna Ashta`,
+    title: `Rent in ${city.name} — Rooms, Flats & Homes | Flatova`,
     description: `Find verified rooms, flats, and homes for rent in ${city.name}, ${city.state}. Direct from owners.`,
     alternates: {
       canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in/${city.slug}`,

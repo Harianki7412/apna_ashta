@@ -20,7 +20,7 @@ export default function MobileNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-40 pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-gray-100 dark:border-slate-800 z-40 pb-safe">
       <div className="flex justify-around">
         {items.map((item) => {
           const active =
@@ -31,7 +31,11 @@ export default function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 py-2.5 px-3 text-xs ${active ? "text-brand-600 font-semibold" : "text-gray-500"}`}
+              className={`flex flex-col items-center gap-1 py-2.5 px-3 text-xs transition-colors ${
+                active
+                  ? "text-brand-600 dark:text-brand-400 font-semibold"
+                  : "text-gray-500 dark:text-slate-400"
+              }`}
             >
               <Icon size={20} strokeWidth={active ? 2.5 : 2} />
               <span>{item.label}</span>

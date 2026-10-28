@@ -26,7 +26,7 @@ export async function generateMetadata({
   if (!city || !area) return { title: "Not Found" };
 
   return {
-    title: `Rent in ${area.name}, ${city.name} — Rooms & Flats | Apna Ashta`,
+    title: `Rent in ${area.name}, ${city.name} — Rooms & Flats | Flatova`,
     description: `Find verified rentals in ${area.name}, ${city.name}. Direct from owners, no brokers.`,
     alternates: {
       canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in/${city.slug}/${area.slug}`,

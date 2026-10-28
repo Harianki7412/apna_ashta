@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Privacy Policy — Apna Ashta" };
+export const metadata: Metadata = { title: "Privacy Policy — Flatova" };
 
 export default function PrivacyPage() {
   return (
@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       <h1>Privacy Policy</h1>
       <p className="text-sm text-gray-500">Last updated: October 25, 2026</p>
       <p>
-        Apna Ashta operates <strong>apnaashta.in</strong>, a hyperlocal rental
+        Flatova operates <strong>apnaashta.in</strong>, a hyperlocal rental
         listing service for Ashta, MP, India. Compliant with DPDP Act 2023.
       </p>
       <h2>1. Information We Collect</h2>

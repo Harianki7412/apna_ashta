@@ -15,7 +15,7 @@ export default function WhatsAppShare({
   function share() {
     const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const url = `${base}/properties/${propertyId}`;
-    const text = `🏠 *${title}*\n📍 ${area}\n💰 ₹${rent}/month\n🔗 ${url}\n\n_Apna Ashta_`;
+    const text = `🏠 *${title}*\n📍 ${area}\n💰 ₹${rent}/month\n🔗 ${url}\n\n_Flatova_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
   return (

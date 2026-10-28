@@ -61,7 +61,7 @@ function LoginForm() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
               <Home size={16} className="text-white" />
             </div>
-            Apna Ashta
+            Flatova
           </Link>
 
           <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
@@ -171,7 +171,7 @@ function LoginForm() {
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
               <Home size={20} className="text-white" />
             </div>
-            Apna Ashta
+            Flatova
           </Link>
           <h2 className="text-3xl font-bold mb-4 text-white">
             Find your next home

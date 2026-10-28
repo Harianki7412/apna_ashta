@@ -38,11 +38,12 @@ export default function InstallPrompt() {
   }
 
   if (!show) return null;
+
   return (
-    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white border-2 border-brand-600 rounded-2xl shadow-float z-50 p-4 animate-fade-up">
+    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white dark:bg-slate-800 border-2 border-brand-600 dark:border-brand-500 rounded-2xl shadow-xl dark:shadow-2xl z-50 p-4 animate-fade-up">
       <button
         onClick={dismiss}
-        className="absolute top-2 right-2 p-1 text-gray-400"
+        className="absolute top-2 right-2 p-1 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
       >
         <X size={16} />
       </button>
@@ -51,10 +52,10 @@ export default function InstallPrompt() {
           <Download className="text-white" size={22} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-sm">
+          <h3 className="font-bold text-sm text-gray-900 dark:text-slate-100">
             {step === "installed" ? "Installed! 🎉" : "Install Apna Ashta"}
           </h3>
-          <p className="text-xs text-gray-600 mt-1">
+          <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">
             {step === "installed"
               ? "Look on your home screen"
               : "Faster access + offline browsing"}

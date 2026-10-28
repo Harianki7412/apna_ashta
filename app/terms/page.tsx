@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Terms — Apna Ashta" };
+export const metadata: Metadata = { title: "Terms — Flatova" };
 
 export default function TermsPage() {
   return (
@@ -12,8 +12,8 @@ export default function TermsPage() {
       </p>
       <h2>1. What We Are</h2>
       <p>
-        Apna Ashta is an online marketplace connecting owners with tenants. We
-        are not a broker or party to any rental agreement.
+        Flatova is an online marketplace connecting owners with tenants. We are
+        not a broker or party to any rental agreement.
       </p>
       <h2>2. Eligibility</h2>
       <ul>

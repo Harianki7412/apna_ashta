@@ -20,7 +20,7 @@ export default function FeaturePropertyButton({
         key: order.keyId,
         amount: order.amount,
         currency: "INR",
-        name: "Apna Ashta",
+        name: "Flatova",
         description: "Feature for 30 days",
         order_id: order.orderId,
         handler: async (response: any) => {

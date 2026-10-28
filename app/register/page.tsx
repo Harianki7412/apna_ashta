@@ -155,19 +155,17 @@ export default function RegisterPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
               <Home size={16} className="text-white" />
             </div>
-            Apna Ashta
+            Flatova
           </Link>
 
           <h1 className="text-3xl font-bold mb-2">Create account</h1>
-          <p className="text-gray-500 mb-8">
-            Join Apna Ashta in under a minute
-          </p>
+          <p className="text-gray-500 mb-8">Join Flatova in under a minute</p>
 
           {/* ═══ Step 1: Role ═══ */}
           {step === "role" && (
             <div className="space-y-4 animate-fade-up">
               <p className="text-sm font-medium text-gray-700 mb-3">
-                How will you use Apna Ashta?
+                How will you use Flatova?
               </p>
 
               <button
@@ -518,7 +516,7 @@ export default function RegisterPage() {
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
               <Home size={20} className="text-white" />
             </div>
-            Apna Ashta
+            Flatova
           </Link>
 
           <h2 className="text-3xl font-bold mb-4 text-white">

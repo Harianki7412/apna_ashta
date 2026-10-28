@@ -24,20 +24,14 @@ export default function DeletePropertyButton({
   const [confirmText, setConfirmText] = useState("");
 
   async function handleDelete() {
-    if (confirmText !== "DELETE") {
-      return toast.error("Type DELETE to confirm");
-    }
+    if (confirmText !== "DELETE") return toast.error("Type DELETE to confirm");
     setDeleting(true);
     try {
       await api.delete(`/api/properties/${propertyId}`);
       toast.success("Property deleted");
       setOpen(false);
-
-      if (onDeleted) {
-        onDeleted();
-      } else if (redirectTo) {
-        router.push(redirectTo);
-      }
+      if (onDeleted) onDeleted();
+      else if (redirectTo) router.push(redirectTo);
       router.refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -48,45 +42,44 @@ export default function DeletePropertyButton({
 
   return (
     <>
-      {/* Trigger button */}
       {variant === "icon" && (
         <button
           onClick={() => setOpen(true)}
-          className="p-2 rounded-lg text-gray-500 hover:bg-danger-50 hover:text-danger-600 transition-colors"
+          className="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 hover:text-danger-600 dark:hover:text-danger-400 transition-colors"
           title="Delete property"
         >
           <Trash2 size={16} />
         </button>
       )}
-
       {variant === "button" && (
         <button
           onClick={() => setOpen(true)}
-          className="btn btn-ghost btn-sm text-danger-600"
+          className="btn btn-ghost btn-sm text-danger-600 dark:text-danger-400"
         >
           <Trash2 size={14} /> Delete
         </button>
       )}
-
       {variant === "danger" && (
         <button onClick={() => setOpen(true)} className="btn btn-danger w-full">
           <Trash2 size={16} /> Delete Property
         </button>
       )}
 
-      {/* Confirmation modal */}
       {open && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 animate-fade-up">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 animate-fade-up border border-gray-100 dark:border-slate-700">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-danger-50 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle size={24} className="text-danger-600" />
+              <div className="w-12 h-12 rounded-full bg-danger-50 dark:bg-danger-900/30 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle
+                  size={24}
+                  className="text-danger-600 dark:text-danger-400"
+                />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">
                   Delete property?
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
                   This action cannot be undone. All data including photos,
                   chats, reviews, and agreements will be permanently removed.
                 </p>
@@ -94,16 +87,18 @@ export default function DeletePropertyButton({
               <button
                 onClick={() => setOpen(false)}
                 disabled={deleting}
-                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 flex-shrink-0"
+                className="p-1 rounded-lg text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 <X size={18} />
               </button>
             </div>
 
             {propertyTitle && (
-              <div className="p-3 bg-gray-50 rounded-lg text-sm mb-4">
-                <p className="text-gray-500 text-xs">You're deleting:</p>
-                <p className="font-semibold text-gray-900 truncate">
+              <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-sm mb-4">
+                <p className="text-gray-500 dark:text-slate-400 text-xs">
+                  You're deleting:
+                </p>
+                <p className="font-semibold text-gray-900 dark:text-slate-100 truncate">
                   {propertyTitle}
                 </p>
               </div>
@@ -111,8 +106,11 @@ export default function DeletePropertyButton({
 
             <div className="mb-4">
               <label className="label">
-                Type <strong className="text-danger-600">DELETE</strong> to
-                confirm
+                Type{" "}
+                <strong className="text-danger-600 dark:text-danger-400">
+                  DELETE
+                </strong>{" "}
+                to confirm
               </label>
               <input
                 type="text"

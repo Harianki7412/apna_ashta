@@ -43,8 +43,6 @@ export default function Reviews({
       setReviews(d.reviews || []);
       setAvg(d.avgRating || 0);
       setCount(d.count || 0);
-
-      // Detect if current user already reviewed
       if (session?.user && (session.user as any).id) {
         const mine = (d.reviews || []).find(
           (r: any) => (r.author?._id || r.author) === (session.user as any).id,
@@ -58,7 +56,6 @@ export default function Reviews({
     }
   }
 
-  // Check if user has chatted about this property
   useEffect(() => {
     if (status !== "authenticated") {
       setHasChatted(null);
@@ -84,10 +81,8 @@ export default function Reviews({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
-    if (!comment.trim() && !rating) {
+    if (!comment.trim() && !rating)
       return toast.error("Please provide a rating");
-    }
-
     setSubmitting(true);
     try {
       await api.post("/api/reviews", {
@@ -113,20 +108,23 @@ export default function Reviews({
 
   return (
     <div className="mt-8 card p-6">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <h2 className="text-xl font-bold">Reviews</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+          Reviews
+        </h2>
         {count > 0 && (
-          <span className="flex items-center gap-1 text-accent-500 text-sm font-semibold">
+          <span className="flex items-center gap-1 text-accent-500 dark:text-accent-400 text-sm font-semibold">
             <Star size={16} fill="currentColor" />
             {avg.toFixed(1)} · {count} review{count !== 1 ? "s" : ""}
           </span>
         )}
       </div>
 
-      {/* ═══ CASE 1: Show form ═══ */}
       {canReview && (
-        <form onSubmit={submit} className="mb-4 pb-4 border-b border-gray-100">
+        <form
+          onSubmit={submit}
+          className="mb-4 pb-4 border-b border-gray-100 dark:border-slate-700"
+        >
           <div className="flex gap-1 mb-2">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -142,11 +140,10 @@ export default function Reviews({
                 />
               </button>
             ))}
-            <span className="text-sm text-gray-500 self-center ml-2">
+            <span className="text-sm text-gray-500 dark:text-slate-400 self-center ml-2">
               {rating} / 5
             </span>
           </div>
-
           <textarea
             placeholder="Share your experience with this property..."
             value={comment}
@@ -155,9 +152,10 @@ export default function Reviews({
             rows={3}
             maxLength={500}
           />
-
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-gray-400">{comment.length}/500</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500">
+              {comment.length}/500
+            </span>
             <button
               type="submit"
               disabled={submitting}
@@ -170,14 +168,13 @@ export default function Reviews({
         </form>
       )}
 
-      {/* ═══ CASE 2: Not logged in ═══ */}
       {!isLoggedIn && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 flex items-start gap-2">
-          <Lock size={16} className="flex-shrink-0 mt-0.5 text-gray-500" />
+        <div className="mb-4 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-sm text-gray-600 dark:text-slate-400 flex items-start gap-2">
+          <Lock size={16} className="flex-shrink-0 mt-0.5" />
           <div>
             <Link
               href="/login"
-              className="text-brand-600 font-semibold hover:underline"
+              className="text-brand-600 dark:text-brand-400 font-semibold hover:underline"
             >
               Login
             </Link>{" "}
@@ -186,42 +183,40 @@ export default function Reviews({
         </div>
       )}
 
-      {/* ═══ CASE 3: Owner viewing own property ═══ */}
       {isOwner && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 flex items-start gap-2">
-          <Info size={16} className="flex-shrink-0 mt-0.5 text-gray-500" />
+        <div className="mb-4 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-sm text-gray-600 dark:text-slate-400 flex items-start gap-2">
+          <Info size={16} className="flex-shrink-0 mt-0.5" />
           <div>You can't review your own property.</div>
         </div>
       )}
 
-      {/* ═══ CASE 4: Hasn't chatted yet ═══ */}
       {isLoggedIn && !isOwner && hasChatted === false && !myReview && (
-        <div className="mb-4 p-3 bg-warning-50 border border-accent-400 rounded-lg text-sm flex items-start gap-2">
+        <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-900/20 border border-accent-400 dark:border-accent-600 rounded-lg text-sm flex items-start gap-2">
           <MessageCircle
             size={16}
-            className="text-warning-600 flex-shrink-0 mt-0.5"
+            className="text-warning-600 dark:text-warning-400 flex-shrink-0 mt-0.5"
           />
           <div>
-            <p className="font-medium text-warning-700">
+            <p className="font-medium text-warning-700 dark:text-warning-300">
               Chat with owner first
             </p>
-            <p className="text-xs text-warning-600 mt-0.5">
-              After you contact the owner about this property, you can leave a
-              review.
+            <p className="text-xs text-warning-600 dark:text-warning-400 mt-0.5">
+              After you contact the owner, you can leave a review.
             </p>
           </div>
         </div>
       )}
 
-      {/* ═══ CASE 5: Already reviewed ═══ */}
       {myReview && (
-        <div className="mb-4 p-3 bg-success-50 border border-success-500 rounded-lg text-sm flex items-start gap-2">
+        <div className="mb-4 p-3 bg-success-50 dark:bg-success-900/20 border border-success-500 dark:border-success-600 rounded-lg text-sm flex items-start gap-2">
           <CheckCircle2
             size={16}
-            className="text-success-600 flex-shrink-0 mt-0.5"
+            className="text-success-600 dark:text-success-400 flex-shrink-0 mt-0.5"
           />
           <div className="flex-1">
-            <p className="font-medium text-success-700">Your review</p>
+            <p className="font-medium text-success-700 dark:text-success-300">
+              Your review
+            </p>
             <div className="flex items-center gap-1 mt-1">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star
@@ -233,13 +228,14 @@ export default function Reviews({
               ))}
             </div>
             {myReview.comment && (
-              <p className="text-xs text-gray-600 mt-1">{myReview.comment}</p>
+              <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">
+                {myReview.comment}
+              </p>
             )}
           </div>
         </div>
       )}
 
-      {/* ═══ Reviews list ═══ */}
       {loading ? (
         <div className="space-y-2">
           {[1, 2].map((i) => (
@@ -253,14 +249,14 @@ export default function Reviews({
             .map((r) => (
               <div
                 key={r._id}
-                className="border-b border-gray-100 pb-3 last:border-0"
+                className="border-b border-gray-100 dark:border-slate-700 pb-3 last:border-0"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
                     {r.author?.name?.[0]?.toUpperCase() || "?"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-medium text-sm truncate text-gray-900 dark:text-slate-100">
                       {r.author?.name || "Anonymous"}
                     </p>
                     <div className="flex items-center gap-1 flex-wrap">
@@ -272,7 +268,7 @@ export default function Reviews({
                           color="#f59e0b"
                         />
                       ))}
-                      <span className="text-xs text-gray-400 ml-1">
+                      <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">
                         {r.createdAt
                           ? formatDistanceToNow(new Date(r.createdAt), {
                               addSuffix: true,
@@ -283,16 +279,15 @@ export default function Reviews({
                   </div>
                 </div>
                 {r.comment && (
-                  <p className="text-sm text-gray-700 mt-2 leading-relaxed">
+                  <p className="text-sm text-gray-700 dark:text-slate-300 mt-2 leading-relaxed">
                     {r.comment}
                   </p>
                 )}
               </div>
             ))}
-
           {reviews.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-6">
-              No reviews yet. Be the first to share your experience!
+            <p className="text-gray-500 dark:text-slate-400 text-sm text-center py-6">
+              No reviews yet. Be the first!
             </p>
           )}
         </div>

@@ -8,7 +8,7 @@ export default function WhatsAppFAB() {
   if (pathname !== "/") return null;
 
   const phone = "919999999999";
-  const msg = "Namaste! Apna Ashta ke baare mein jaankari chahiye.";
+  const msg = "Namaste! Flatova ke baare mein jaankari chahiye.";
 
   return (
     <a

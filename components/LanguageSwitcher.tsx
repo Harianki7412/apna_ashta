@@ -16,12 +16,12 @@ export default function LanguageSwitcher() {
     <div className="relative">
       <Globe
         size={16}
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 pointer-events-none"
       />
       <select
         value={locale}
         onChange={(e) => change(e.target.value)}
-        className="appearance-none bg-transparent border border-gray-200 rounded-lg pl-8 pr-6 py-1.5 text-sm font-medium cursor-pointer hover:bg-gray-50"
+        className="appearance-none bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg pl-8 pr-6 py-1.5 text-sm font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 transition-colors"
       >
         <option value="en">EN</option>
         <option value="hi">हिं</option>
