@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
@@ -63,6 +64,7 @@ export default async function AreaPage({
   if (!city || !area) notFound();
 
   const properties = await getProperties(city.name, area.name);
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -82,7 +84,10 @@ export default async function AreaPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
 
       <div className="mb-6">

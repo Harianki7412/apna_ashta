@@ -66,6 +66,38 @@ function setLocaleCookie(response: NextResponse, request: NextRequest) {
   }
 }
 
+function createCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === "development";
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' https://checkout.razorpay.com${isDev ? " 'unsafe-eval'" : ""}`,
+    isDev
+      ? "style-src 'self' 'unsafe-inline'"
+      : `style-src 'self' 'nonce-${nonce}'`,
+    "style-src-attr 'unsafe-inline'",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://unpkg.com https://*.tile.openstreetmap.org",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.cloudinary.com https://api.razorpay.com https://checkout.razorpay.com",
+    "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
+    "media-src 'self' data:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
+function secureResponse(
+  response: NextResponse,
+  request: NextRequest,
+  csp: string,
+) {
+  response.headers.set("Content-Security-Policy", csp);
+  setLocaleCookie(response, request);
+  return response;
+}
+
 function matches(patterns: RegExp[], pathname: string): boolean {
   return patterns.some((re) => re.test(pathname));
 }
@@ -76,6 +108,11 @@ function matches(patterns: RegExp[], pathname: string): boolean {
 
 export default async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  const nonce = btoa(crypto.randomUUID());
+  const csp = createCsp(nonce);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
   if (matches(AUTH_REQUIRED, pathname)) {
     const token = await getToken({
@@ -87,37 +124,34 @@ export default async function proxy(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname + search);
       const res = NextResponse.redirect(loginUrl);
-      setLocaleCookie(res, request);
-      return res;
+      return secureResponse(res, request, csp);
     }
 
-    const role = (token as any).role as string;
+    const role = typeof token.role === "string" ? token.role : "";
 
     // 🔒 Admin redirect: keep admin out of user-only pages
     if (role === "admin" && matches(ADMIN_BLOCKED, pathname)) {
       const res = NextResponse.redirect(new URL("/admin", request.url));
-      setLocaleCookie(res, request);
-      return res;
+      return secureResponse(res, request, csp);
     }
 
     // 🔒 Admin-only routes: non-admin users blocked
     if (matches(ADMIN_ONLY, pathname) && role !== "admin") {
       const res = NextResponse.redirect(new URL("/", request.url));
-      setLocaleCookie(res, request);
-      return res;
+      return secureResponse(res, request, csp);
     }
 
     // 🔒 Owner/admin routes: tenants blocked
     if (matches(OWNER_ONLY, pathname) && !["owner", "admin"].includes(role)) {
       const res = NextResponse.redirect(new URL("/", request.url));
-      setLocaleCookie(res, request);
-      return res;
+      return secureResponse(res, request, csp);
     }
   }
 
-  const response = NextResponse.next();
-  setLocaleCookie(response, request);
-  return response;
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  return secureResponse(response, request, csp);
 }
 
 export const config = {
