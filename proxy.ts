@@ -69,7 +69,7 @@ function setLocaleCookie(response: NextResponse, request: NextRequest) {
 function createCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
-    "default-src 'self'",
+    "default-src 'none'",
     `script-src 'self' 'nonce-${nonce}' https://checkout.razorpay.com${isDev ? " 'unsafe-eval'" : ""}`,
     isDev
       ? "style-src 'self' 'unsafe-inline'"
@@ -80,6 +80,7 @@ function createCsp(nonce: string): string {
     "connect-src 'self' https://api.cloudinary.com https://api.razorpay.com https://checkout.razorpay.com",
     "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
     "media-src 'self' data:",
+    "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'none'",

@@ -13,9 +13,20 @@ export function rateLimit(key: string, limit = 60, windowMs = 60_000) {
 }
 
 export function clientIP(req: Request) {
+  return clientIPFromHeaders(req.headers);
+}
+
+export function clientIPFromHeaders(
+  headers: Headers | Record<string, unknown>,
+) {
+  const get = (name: string) => {
+    if (headers instanceof Headers) return headers.get(name);
+    const value = headers[name];
+    return typeof value === 'string' ? value : null;
+  };
   return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
+    get('x-forwarded-for')?.split(',')[0].trim() ||
+    get('x-real-ip') ||
     'unknown'
   );
 }

@@ -1,7 +1,9 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
 import { connectDB } from './mongodb';
+import { clientIPFromHeaders, rateLimit } from './rate-limit';
 import { User } from '@/models/User';
 
 export const authOptions: NextAuthOptions = {
@@ -14,12 +16,28 @@ export const authOptions: NextAuthOptions = {
         identifier: { label: 'Email or Phone', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.identifier || !credentials?.password) return null;
+
+        const id = credentials.identifier.trim();
+        const ip = clientIPFromHeaders(req.headers ?? {});
+        const ipLimit = rateLimit(`login-ip:${ip}`, 10, 15 * 60_000);
+        if (!ipLimit.allowed) throw new Error('Too many login attempts');
+
+        const identifierHash = createHash('sha256')
+          .update(id.toLowerCase())
+          .digest('hex');
+        const identifierLimit = rateLimit(
+          `login-id:${identifierHash}`,
+          5,
+          15 * 60_000,
+        );
+        if (!identifierLimit.allowed) {
+          throw new Error('Too many login attempts');
+        }
 
         await connectDB();
 
-        const id = credentials.identifier.trim();
         const isEmail = id.includes('@');
 
         const user = await User.findOne(
