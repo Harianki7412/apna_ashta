@@ -9,7 +9,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 export async function GET(req: Request) {
   try {
     const s = await getServerSession(authOptions);
-    if ((s?.user as any)?.role !== "admin") return fail("Forbidden", 403);
+    if (s?.user?.role !== "admin") return fail("Forbidden", 403);
 
     const q = new URL(req.url).searchParams.get("q")?.trim();
     if (!q || q.length < 2) return ok({ results: [] });

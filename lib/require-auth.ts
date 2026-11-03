@@ -15,7 +15,7 @@ export async function requireAuth(callbackUrl?: string) {
 
 export async function requireOwner(callbackUrl?: string) {
   const session = await requireAuth(callbackUrl);
-  const role = (session.user as any)?.role;
+  const role = session.user?.role;
   if (!['owner', 'admin'].includes(role)) {
     redirect('/');
   }
@@ -24,7 +24,7 @@ export async function requireOwner(callbackUrl?: string) {
 
 export async function requireAdmin(callbackUrl?: string) {
   const session = await requireAuth(callbackUrl);
-  const role = (session.user as any)?.role;
+  const role = session.user?.role;
   if (role !== 'admin') {
     redirect('/');
   }

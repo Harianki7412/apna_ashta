@@ -15,8 +15,8 @@ export async function GET(
     if (!session) return fail("Unauthorized", 401);
 
     const { id } = await params;
-    const me = (session.user as any).id;
-    const role = (session.user as any).role;
+    const me = session.user.id;
+    const role = session.user.role;
 
     await connectDB();
     const property = await Property.findById(id).lean();

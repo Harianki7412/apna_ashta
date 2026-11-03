@@ -1,32 +1,32 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, Video } from "lucide-react";
 
 export default function ImageLightbox({
   images,
+  videos = [],
   initialIndex = 0,
-  open,
   onClose,
 }: {
   images: string[];
+  videos?: string[];
   initialIndex?: number;
-  open: boolean;
   onClose: () => void;
 }) {
+  const media = [
+    ...images.map((src) => ({ src, type: "image" as const })),
+    ...videos.map((src) => ({ src, type: "video" as const })),
+  ];
   const [index, setIndex] = useState(initialIndex);
 
   useEffect(() => {
-    if (open) setIndex(initialIndex);
-  }, [open, initialIndex]);
-
-  useEffect(() => {
-    if (!open) return;
+    if (media.length === 0) return;
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
       if (e.key === "ArrowRight")
-        setIndex((i) => Math.min(images.length - 1, i + 1));
+        setIndex((i) => Math.min(media.length - 1, i + 1));
     }
     document.addEventListener("keydown", handleKey);
     document.body.style.overflow = "hidden";
@@ -34,12 +34,12 @@ export default function ImageLightbox({
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = "";
     };
-  }, [open, images.length, onClose]);
+  }, [media.length, onClose]);
 
   const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
 
-  if (!open) return null;
+  if (media.length === 0) return null;
+  const currentMedia = media[index];
 
   return (
     <div
@@ -47,17 +47,18 @@ export default function ImageLightbox({
       onClick={onClose}
       onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
       onTouchEnd={(e) => {
-        setTouchEnd(e.changedTouches[0].clientX);
-        if (touchStart - touchEnd > 75)
-          setIndex((i) => Math.min(images.length - 1, i + 1));
-        if (touchEnd - touchStart > 75) setIndex((i) => Math.max(0, i - 1));
+        const distance = e.changedTouches[0].clientX - touchStart;
+        if (distance < -75) setIndex((i) => Math.min(media.length - 1, i + 1));
+        if (distance > 75) setIndex((i) => Math.max(0, i - 1));
       }}
     >
       <div className="flex items-center justify-between p-4 text-white">
         <span className="text-sm font-semibold">
-          {index + 1} / {images.length}
+          {index + 1} / {media.length}
         </span>
         <button
+          type="button"
+          aria-label="Close media viewer"
           onClick={onClose}
           className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
         >
@@ -70,17 +71,31 @@ export default function ImageLightbox({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative w-full h-full">
-          <Image
-            src={images[index]}
-            alt={`Image ${index + 1}`}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            priority
-          />
+          {currentMedia.type === "image" ? (
+            <Image
+              src={currentMedia.src}
+              alt={`Image ${index + 1}`}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          ) : (
+            <video
+              key={currentMedia.src}
+              src={currentMedia.src}
+              controls
+              autoPlay
+              preload="metadata"
+              playsInline
+              className="h-full w-full object-contain"
+            />
+          )}
         </div>
         {index > 0 && (
           <button
+            type="button"
+            aria-label="Previous media"
             onClick={(e) => {
               e.stopPropagation();
               setIndex((i) => i - 1);
@@ -90,8 +105,10 @@ export default function ImageLightbox({
             <ChevronLeft size={24} />
           </button>
         )}
-        {index < images.length - 1 && (
+        {index < media.length - 1 && (
           <button
+            type="button"
+            aria-label="Next media"
             onClick={(e) => {
               e.stopPropagation();
               setIndex((i) => i + 1);
@@ -104,9 +121,11 @@ export default function ImageLightbox({
       </div>
 
       <div className="p-4 flex gap-2 overflow-x-auto scrollbar-hide justify-center">
-        {images.map((url, i) => (
+        {media.map((item, i) => (
           <button
+            type="button"
             key={i}
+            aria-label={`View ${item.type} ${i + 1}`}
             onClick={(e) => {
               e.stopPropagation();
               setIndex(i);
@@ -117,13 +136,20 @@ export default function ImageLightbox({
                 : "opacity-50 hover:opacity-100"
             }`}
           >
-            <Image
-              src={url}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="64px"
-            />
+            {item.type === "image" ? (
+              <Image
+                src={item.src}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+            ) : (
+              <span className="absolute inset-0 flex items-center justify-center bg-slate-800 text-white">
+                <Video size={20} />
+                <Play size={11} className="absolute bottom-1 right-1" />
+              </span>
+            )}
           </button>
         ))}
       </div>

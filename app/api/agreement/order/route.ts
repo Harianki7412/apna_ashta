@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
     const property = await Property.findById(propertyId);
     if (!property) return fail("Property not found", 404);
-    if (property.owner.toString() !== (session.user as any).id) {
+    if (property.owner.toString() !== session.user.id) {
       return fail("Only owner can pay for agreement", 403);
     }
 
@@ -26,14 +26,14 @@ export async function POST(req: Request) {
       currency: "INR",
       receipt: `agr_${propertyId}_${Date.now()}`,
       notes: {
-        userId: (session.user as any).id,
+        userId: session.user.id,
         propertyId,
         type: "rent_agreement",
       },
     });
 
     const agrOrder = await RentAgreementOrder.create({
-      user: (session.user as any).id,
+      user: session.user.id,
       property: propertyId,
       amount: AGREEMENT_PRICE,
       status: "pending",

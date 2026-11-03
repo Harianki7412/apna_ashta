@@ -15,7 +15,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return (s?.user as any)?.role === "admin" ? s : null;
+  return s?.user?.role === "admin" ? s : null;
 }
 
 export async function GET(
@@ -77,7 +77,7 @@ export async function PATCH(
     await connectDB();
     const target = await User.findById(id);
     if (!target) return fail("Not found", 404);
-    if (id === (s.user as any).id) return fail("Cannot modify yourself");
+    if (id === s.user.id) return fail("Cannot modify yourself");
 
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     const ua = req.headers.get("user-agent") || "";
@@ -87,7 +87,7 @@ export async function PATCH(
       target.blockedReason = reason || "Violation of terms";
       await target.save();
       await logActivity({
-        actor: (s.user as any).id,
+        actor: s.user.id,
         action: "block",
         targetType: "user",
         targetId: id,
@@ -103,7 +103,7 @@ export async function PATCH(
       target.blockedReason = undefined;
       await target.save();
       await logActivity({
-        actor: (s.user as any).id,
+        actor: s.user.id,
         action: "unblock",
         targetType: "user",
         targetId: id,
@@ -122,7 +122,7 @@ export async function PATCH(
       target.role = role;
       await target.save();
       await logActivity({
-        actor: (s.user as any).id,
+        actor: s.user.id,
         action: "role_change",
         targetType: "user",
         targetId: id,
@@ -140,7 +140,7 @@ export async function PATCH(
       await target.save();
 
       await logActivity({
-        actor: (s.user as any).id,
+        actor: s.user.id,
         action: "reset_password",
         targetType: "user",
         targetId: id,
@@ -180,7 +180,7 @@ export async function PATCH(
 
     if (action === "delete") {
       await logActivity({
-        actor: (s.user as any).id,
+        actor: s.user.id,
         action: "delete",
         targetType: "user",
         targetId: id,

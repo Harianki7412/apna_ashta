@@ -16,6 +16,7 @@ import {
   MapPin,
   IndianRupee,
   Home,
+  Video,
 } from "lucide-react";
 
 export default function EditPropertyPage({
@@ -29,6 +30,7 @@ export default function EditPropertyPage({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -67,6 +69,7 @@ export default function EditPropertyPage({
           lng: String(data.location?.coordinates?.[0] || ""),
         });
         setImages(data.images || []);
+        setVideos(data.videos || []);
       })
       .catch((e) => {
         toast.error(e.message);
@@ -75,14 +78,22 @@ export default function EditPropertyPage({
       .finally(() => setLoading(false));
   }, [id, router]);
 
-  async function upload(files: FileList | null) {
+  async function upload(files: FileList | null, mediaType: "image" | "video") {
     if (!files?.length) return;
+    if (mediaType === "image" && images.length + files.length > 10)
+      return toast.error("Max 10 photos");
+    if (mediaType === "video" && videos.length + files.length > 3)
+      return toast.error("Max 3 videos");
     setUploading(true);
     const fd = new FormData();
     Array.from(files).forEach((f) => fd.append("files", f));
     try {
-      const { urls } = await api.post<{ urls: string[] }>("/api/upload", fd);
-      setImages((prev) => [...prev, ...urls].slice(0, 10));
+      const { urls, videoUrls } = await api.post<{
+        urls: string[];
+        videoUrls: string[];
+      }>("/api/upload", fd);
+      if (mediaType === "image") setImages((prev) => [...prev, ...urls].slice(0, 10));
+      else setVideos((prev) => [...prev, ...videoUrls].slice(0, 3));
       toast.success("Uploaded");
     } catch (e: any) {
       toast.error(e.message);
@@ -96,7 +107,7 @@ export default function EditPropertyPage({
     if (!images.length) return toast.error("At least 1 image required");
     setSaving(true);
     try {
-      const payload: any = { ...form, images };
+      const payload: any = { ...form, images, videos };
       if (!showBhk) delete payload.bhk;
       await api.patch(`/api/properties/${id}`, payload);
       toast.success("Updated! Pending re-approval.");
@@ -308,12 +319,57 @@ export default function EditPropertyPage({
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={(e) => upload(e.target.files)}
+                onChange={(e) => upload(e.target.files, "image")}
                 disabled={uploading}
                 className="hidden"
               />
             </label>
           )}
+          <div className="border-t border-gray-200 pt-4 space-y-4">
+            <h3 className="text-sm font-semibold">Videos ({videos.length}/3)</h3>
+            {videos.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {videos.map((url) => (
+                  <div key={url} className="relative group">
+                    <video
+                      src={url}
+                      controls
+                      preload="metadata"
+                      playsInline
+                      className="w-full aspect-video rounded-lg bg-black"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Remove video"
+                      onClick={() => setVideos((p) => p.filter((v) => v !== url))}
+                      className="absolute top-2 right-2 bg-black/70 hover:bg-red-500 text-white p-1 rounded-full"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {videos.length < 3 && (
+              <label className="flex flex-col items-center border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-xl p-6 cursor-pointer">
+                <Video size={28} className="text-gray-400 mb-2" />
+                <span className="text-sm font-medium">
+                  {uploading ? "Uploading..." : "Click to upload videos"}
+                </span>
+                <span className="text-xs text-gray-500 mt-1">
+                  MP4, WebM, or MOV up to 50MB each
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={(e) => upload(e.target.files, "video")}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
         </div>
 
         {/* Danger Zone */}

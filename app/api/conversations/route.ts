@@ -10,7 +10,7 @@ export async function GET() {
     if (!session) return fail("Unauthorized", 401);
 
     await connectDB();
-    const me = (session.user as any).id;
+    const me = session.user.id;
 
     const convos = await Conversation.find({ participants: me })
       .populate("participants", "name email")
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     if (!session) return fail("Unauthorized", 401);
 
     const { otherUserId, propertyId } = await req.json();
-    const me = (session.user as any).id;
+    const me = session.user.id;
     if (!otherUserId || otherUserId === me) return fail("Invalid recipient");
 
     await connectDB();

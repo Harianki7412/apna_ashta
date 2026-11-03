@@ -25,7 +25,7 @@ export async function GET() {
     if (!session) return fail('Unauthorized', 401);
 
     await connectDB();
-    const list = await SavedSearch.find({ user: (session.user as any).id })
+    const list = await SavedSearch.find({ user: session.user.id })
       .sort({ createdAt: -1 })
       .lean();
     return ok(list);
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
     // Prevent duplicate (same user + same core filters)
     const existing = await SavedSearch.findOne({
-      user: (session.user as any).id,
+      user: session.user.id,
       'filters.city': cleanedFilters.city || '',
       'filters.area': cleanedFilters.area || '',
       'filters.type': cleanedFilters.type || '',
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     }
 
     const saved = await SavedSearch.create({
-      user: (session.user as any).id,
+      user: session.user.id,
       name: (name || 'My search').toString().slice(0, 80),
       filters: cleanedFilters,
       notifyOnNew: true,
@@ -85,7 +85,7 @@ export async function DELETE(req: Request) {
     await connectDB();
     await SavedSearch.deleteOne({
       _id: id,
-      user: (session.user as any).id,
+      user: session.user.id,
     });
     return ok({ deleted: true });
   } catch (e) {

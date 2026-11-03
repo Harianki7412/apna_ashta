@@ -13,7 +13,7 @@ export async function GET(_: Request, ctx: Ctx) {
     if (!session) return fail('Unauthorized', 401);
 
     const { id } = await ctx.params;
-    const me = (session.user as any).id;
+    const me = session.user.id;
 
     await connectDB();
     const agreement: any = await RentAgreement.findById(id)
@@ -26,7 +26,7 @@ export async function GET(_: Request, ctx: Ctx) {
 
     const isOwner = agreement.owner._id.toString() === me;
     const isTenant = agreement.tenant._id.toString() === me;
-    const role = (session.user as any).role;
+    const role = session.user.role;
 
     if (!isOwner && !isTenant && role !== 'admin') {
       return fail('Forbidden', 403);
@@ -44,7 +44,7 @@ export async function DELETE(_: Request, ctx: Ctx) {
     if (!session) return fail('Unauthorized', 401);
 
     const { id } = await ctx.params;
-    const me = (session.user as any).id;
+    const me = session.user.id;
 
     await connectDB();
     const agreement: any = await RentAgreement.findById(id);

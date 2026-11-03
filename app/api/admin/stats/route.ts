@@ -9,7 +9,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if ((session?.user as any)?.role !== "admin") return fail("Forbidden", 403);
+    if (session?.user?.role !== "admin") return fail("Forbidden", 403);
 
     await connectDB();
     const [pendingProps, pendingKyc, newMessages] = await Promise.all([

@@ -10,7 +10,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return (s?.user as any)?.role === "admin" ? s : null;
+  return s?.user?.role === "admin" ? s : null;
 }
 
 function slugify(s: string) {
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       lng: lng || state.lng || 78.5,
       description: description?.trim() || undefined,
       active: true,
-      createdBy: (session.user as any).id,
+      createdBy: session.user.id,
       isOwnerAdded: false,
       areas: [],
     });
@@ -118,7 +118,7 @@ export async function POST(req: Request) {
     clearCityCache();
 
     await logActivity({
-      actor: (session.user as any).id,
+      actor: session.user.id,
       action: "plan_create",
       targetType: "setting",
       targetId: city._id.toString(),

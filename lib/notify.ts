@@ -23,14 +23,54 @@ export type NotifyType =
   | "agreement_sent"
   | "agreement_confirmed";
 
-interface NotifyPayload {
-  type: NotifyType;
+type EmailExtras<T extends { to: string; recipientName: string }> = Omit<
+  T,
+  "to" | "recipientName"
+>;
+
+type NotifyEmailData = {
+  message: EmailExtras<Parameters<typeof sendNewMessageEmail>[0]>;
+  property_approved: EmailExtras<
+    Parameters<typeof sendPropertyApprovedEmail>[0]
+  >;
+  property_rejected: EmailExtras<
+    Parameters<typeof sendPropertyRejectedEmail>[0]
+  >;
+  new_listing: EmailExtras<Parameters<typeof sendNewListingEmail>[0]>;
+  system: never;
+  kyc_verified: never;
+  kyc_rejected: never;
+  agreement_sent: EmailExtras<Parameters<typeof sendAgreementSentEmail>[0]>;
+  agreement_confirmed: EmailExtras<
+    Parameters<typeof sendAgreementConfirmedEmail>[0]
+  >;
+};
+
+type NotifyBase = {
   title: string;
   body?: string;
   link?: string;
-  email?: boolean;
-  emailData?: any;
-}
+};
+
+type NotifyPayloadWithoutEmail = {
+  [Type in NotifyType]: {
+    type: Type;
+    email?: false;
+    emailData?: NotifyEmailData[Type];
+  } & NotifyBase;
+}[NotifyType];
+
+type NotifyPayloadWithEmail = {
+  [Type in NotifyType]: {
+    type: Type;
+    email: true;
+  } & (NotifyEmailData[Type] extends never
+    ? { emailData?: never }
+    : { emailData: NotifyEmailData[Type] }) &
+    NotifyBase;
+}[NotifyType];
+
+type NotifyPayload = NotifyPayloadWithoutEmail | NotifyPayloadWithEmail;
 
 export async function notifyUser(userId: string, payload: NotifyPayload) {
   try {

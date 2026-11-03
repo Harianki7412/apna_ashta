@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     const sub = await Subscription.findById(subscriptionId);
     if (!sub) return fail("Subscription not found", 404);
-    if (sub.user.toString() !== (session.user as any).id) {
+    if (sub.user.toString() !== session.user.id) {
       return fail("Forbidden", 403);
     }
     if (sub.status === "active")

@@ -201,7 +201,6 @@ function drawNumberedClause(ctx: PDFContext, number: number, text: string): void
   const maxWidth = originalMaxW - 20;
   const words = text.split(' ');
   let line = '';
-  let firstLine = true;
 
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;
@@ -217,7 +216,6 @@ function drawNumberedClause(ctx: PDFContext, number: number, text: string): void
       });
       ctx.y -= size + 4;
       line = word;
-      firstLine = false;
     } else {
       line = test;
     }

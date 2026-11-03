@@ -13,7 +13,7 @@ export async function POST(req: Request, ctx: Ctx) {
     if (!session) return fail('Unauthorized', 401);
 
     const { id } = await ctx.params;
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const { reason } = await req.json();
 
     await connectDB();

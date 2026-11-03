@@ -16,7 +16,7 @@ function escapeCSV(v: any): string {
 export async function GET(req: Request) {
   try {
     const s = await getServerSession(authOptions);
-    if ((s?.user as any)?.role !== "admin") {
+    if (s?.user?.role !== "admin") {
       return new Response("Forbidden", { status: 403 });
     }
 

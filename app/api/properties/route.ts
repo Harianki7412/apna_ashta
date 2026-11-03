@@ -102,7 +102,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
-    if (!["owner", "admin"].includes((session.user as any).role))
+    if (!["owner", "admin"].includes(session.user.role))
       return fail("Only owners can create listings", 403);
 
     const data = propertySchema.parse(await req.json());
@@ -129,7 +129,8 @@ export async function POST(req: Request) {
       address: data.address,
       location: { type: "Point", coordinates: [data.lng, data.lat] },
       images: data.images,
-      owner: (session.user as any).id,
+      videos: data.videos,
+      owner: session.user.id,
       status: "pending",
     });
 

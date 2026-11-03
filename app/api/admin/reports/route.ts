@@ -7,7 +7,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== "admin") {
+    if (!session || session.user?.role !== "admin") {
       return fail("Forbidden", 403);
     }
 

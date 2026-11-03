@@ -29,18 +29,26 @@ export interface PlanData {
   displayOrder: number;
 }
 
+type LeanPlanData = Omit<PlanData, "_id"> & {
+  _id: { toString(): string };
+};
+
 /* ═══ Fetch all plans by type (public) ═══ */
 export async function getPlansByType(
   type: "subscription" | "lead_pack" | "featured",
   options: { includeHidden?: boolean } = {},
 ): Promise<PlanData[]> {
   await connectDB();
-  const query: any = { type, active: true };
+  const query: { type: PlanData["type"]; active: true; hidden?: boolean } = {
+    type,
+    active: true,
+  };
   if (!options.includeHidden) query.hidden = false;
 
-  return (await Plan.find(query)
+  const plans = await Plan.find(query)
     .sort({ displayOrder: 1, price: 1 })
-    .lean()) as PlanData[];
+    .lean<LeanPlanData[]>();
+  return plans.map((plan) => ({ ...plan, _id: plan._id.toString() }));
 }
 
 /* ═══ Get single plan by planId ═══ */
@@ -48,14 +56,15 @@ export async function getPlanByPlanId(
   planId: string,
 ): Promise<PlanData | null> {
   await connectDB();
-  return (await Plan.findOne({
+  const plan = await Plan.findOne({
     planId,
     active: true,
-  }).lean()) as PlanData | null;
+  }).lean<LeanPlanData>();
+  return plan ? { ...plan, _id: plan._id.toString() } : null;
 }
 
 /* ═══ Get global setting ═══ */
-export async function getSetting<T = any>(
+export async function getSetting<T = unknown>(
   key: string,
   fallback: T,
 ): Promise<T> {
@@ -71,7 +80,7 @@ export async function getSetting<T = any>(
 /* ═══ Set global setting ═══ */
 export async function setSetting(
   key: string,
-  value: any,
+  value: unknown,
   description?: string,
 ) {
   await connectDB();
@@ -83,13 +92,11 @@ export async function setSetting(
 }
 
 /* ═══ Get all settings ═══ */
-export async function getAllSettings() {
+export async function getAllSettings(): Promise<Record<string, unknown>> {
   await connectDB();
-  const settings = await AppSetting.find({}).lean();
-  return settings.reduce((acc: any, s: any) => {
-    acc[s.key] = s.value;
-    return acc;
-  }, {});
+  const settings = await AppSetting.find({})
+    .lean<{ key: string; value: unknown }[]>();
+  return Object.fromEntries(settings.map(({ key, value }) => [key, value]));
 }
 
 /* ═══ Default settings (used when DB empty) ═══ */

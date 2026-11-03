@@ -8,10 +8,29 @@ import { LeadPack } from "@/models/LeadPack";
 import { RentAgreementOrder } from "@/models/RentAgreementOrder";
 import { ok, fail, handleError } from "@/lib/api-helpers";
 
+type PropertyStatus = "pending" | "approved" | "rejected" | "rented";
+
+interface AnalyticsProperty {
+  status: PropertyStatus;
+  createdAt: Date;
+  city?: string;
+  rent?: number;
+}
+
+interface AnalyticsUser {
+  role: string;
+  createdAt: Date;
+}
+
+interface AnalyticsPayment {
+  amount: number;
+  createdAt: Date;
+}
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if ((session?.user as any)?.role !== "admin") return fail("Forbidden", 403);
+    if (session?.user?.role !== "admin") return fail("Forbidden", 403);
 
     const days = Math.min(
       90,
@@ -24,19 +43,19 @@ export async function GET(req: Request) {
     const [properties, users, subs, packs, agreements] = await Promise.all([
       Property.find({ createdAt: { $gte: since } })
         .select("status createdAt city rent")
-        .lean(),
+        .lean<AnalyticsProperty[]>(),
       User.find({ createdAt: { $gte: since } })
         .select("role createdAt")
-        .lean(),
+        .lean<AnalyticsUser[]>(),
       Subscription.find({ status: "active", createdAt: { $gte: since } })
         .select("amount createdAt")
-        .lean(),
+        .lean<AnalyticsPayment[]>(),
       LeadPack.find({ status: "active", createdAt: { $gte: since } })
         .select("amount createdAt")
-        .lean(),
+        .lean<AnalyticsPayment[]>(),
       RentAgreementOrder.find({ status: "paid", createdAt: { $gte: since } })
         .select("amount createdAt")
-        .lean(),
+        .lean<AnalyticsPayment[]>(),
     ]);
 
     // Revenue by day
@@ -60,17 +79,17 @@ export async function GET(req: Request) {
       return revenueMap[d];
     };
 
-    subs.forEach((s: any) => {
+    subs.forEach((s) => {
       const d = new Date(s.createdAt).toISOString().slice(0, 10);
       initDay(d).subscription += s.amount;
       initDay(d).total += s.amount;
     });
-    packs.forEach((p: any) => {
+    packs.forEach((p) => {
       const d = new Date(p.createdAt).toISOString().slice(0, 10);
       initDay(d).leadPack += p.amount;
       initDay(d).total += p.amount;
     });
-    agreements.forEach((a: any) => {
+    agreements.forEach((a) => {
       const d = new Date(a.createdAt).toISOString().slice(0, 10);
       initDay(d).agreement += a.amount;
       initDay(d).total += a.amount;
@@ -82,7 +101,7 @@ export async function GET(req: Request) {
 
     // Users by day
     const usersMap: Record<string, { owners: number; tenants: number }> = {};
-    users.forEach((u: any) => {
+    users.forEach((u) => {
       const d = new Date(u.createdAt).toISOString().slice(0, 10);
       if (!usersMap[d]) usersMap[d] = { owners: 0, tenants: 0 };
       if (u.role === "owner") usersMap[d].owners++;
@@ -97,11 +116,13 @@ export async function GET(req: Request) {
       string,
       { pending: number; approved: number; rejected: number }
     > = {};
-    properties.forEach((p: any) => {
+    properties.forEach((p) => {
       const d = new Date(p.createdAt).toISOString().slice(0, 10);
       if (!listingsMap[d])
         listingsMap[d] = { pending: 0, approved: 0, rejected: 0 };
-      (listingsMap[d] as any)[p.status]++;
+      if (p.status === "pending") listingsMap[d].pending++;
+      if (p.status === "approved") listingsMap[d].approved++;
+      if (p.status === "rejected") listingsMap[d].rejected++;
     });
     const listingsChart = Object.entries(listingsMap)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -112,7 +133,7 @@ export async function GET(req: Request) {
       string,
       { count: number; avgRent: number; totalRent: number }
     > = {};
-    properties.forEach((p: any) => {
+    properties.forEach((p) => {
       const city = p.city || "Ashta";
       if (!cityMap[city])
         cityMap[city] = { count: 0, avgRent: 0, totalRent: 0 };

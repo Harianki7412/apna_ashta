@@ -1,28 +1,48 @@
-type ApiRes<T> = { data: T } | { error: string };
+function getErrorMessage(response: unknown, status: number): string {
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "error" in response &&
+    typeof response.error === "string"
+  ) {
+    return response.error;
+  }
+  return `HTTP ${status}`;
+}
 
 async function request<T>(url: string, opts?: RequestInit): Promise<T> {
   const isFormData = opts?.body instanceof FormData;
+  const headers = new Headers(opts?.headers);
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const res = await fetch(url, {
     ...opts,
-    headers: {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...opts?.headers,
-    },
+    headers,
   });
-  const json: ApiRes<T> = await res.json();
-  if (!res.ok) throw new Error((json as any).error || `HTTP ${res.status}`);
-  return 'data' in json && json.data !== undefined ? json.data : (json as unknown as T);
+  const json: unknown = await res.json();
+  if (!res.ok) throw new Error(getErrorMessage(json, res.status));
+  if (
+    typeof json === "object" &&
+    json !== null &&
+    "data" in json &&
+    json.data !== undefined
+  ) {
+    return json.data as T;
+  }
+  return json as T;
 }
 
 export const api = {
   get: <T,>(url: string) => request<T>(url),
-  post: <T,>(url: string, body?: any) =>
+  post: <T,>(url: string, body?: unknown) =>
     request<T>(url, {
       method: 'POST',
       body: body instanceof FormData ? body : JSON.stringify(body),
     }),
-  patch: <T,>(url: string, body?: any) =>
+  patch: <T,>(url: string, body?: unknown) =>
     request<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: <T,>(url: string, body?: any) =>
+  delete: <T,>(url: string, body?: unknown) =>
     request<T>(url, { method: 'DELETE', body: JSON.stringify(body) }),
 };

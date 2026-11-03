@@ -22,7 +22,7 @@ export async function logActivity({
     | "setting";
   targetId?: string;
   targetLabel?: string;
-  metadata?: any;
+  metadata?: unknown;
   ip?: string;
   userAgent?: string;
 }) {

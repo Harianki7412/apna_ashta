@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       .lean();
     if (!convo) return fail("Not found", 404);
 
-    const me = (session.user as any).id;
+    const me = session.user.id;
     if (!convo.participants.some((p: any) => p.toString() === me))
       return fail("Forbidden", 403);
 
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
 
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const rl = rateLimit(`msg:${me}`, 30, 60_000);
     if (!rl.allowed)
       return fail("Slow down — too many messages. Try again in a minute.", 429);

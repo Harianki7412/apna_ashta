@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
     await connectDB();
-    const favs = await Favorite.find({ user: (session.user as any).id })
+    const favs = await Favorite.find({ user: session.user.id })
       .populate({ path: 'property', populate: { path: 'owner', select: 'name' } })
       .sort({ createdAt: -1 })
       .lean();
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const { propertyId } = await req.json();
     if (!propertyId) return fail('propertyId required');
     await connectDB();
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const existing = await Favorite.findOne({ user: me, property: propertyId });
     if (existing) {
       await existing.deleteOne();

@@ -21,114 +21,114 @@ const CATEGORIES = [
 const FAQS: Record<string, { q: string; a: string }[]> = {
   tenant: [
     {
-      q: "Flatova pe account kaise banayein?",
-      a: "Register page pe jaayein, apna naam, email ya phone, aur password daalein. Email ya phone — dono mein se ek se OTP verify karein. 1 minute mein account ready.",
+      q: "How do I create a Flatova account?",
+      a: "Go to the registration page and enter your name, email or phone number, and password. Verify your email or phone number with an OTP. Your account will be ready in about a minute.",
     },
     {
-      q: "Property dekhne ke liye paisa lagta hai kya?",
-      a: "Bilkul free. Browsing, searching, aur owner se chat karne ke liye koi charge nahi. Brokers ki tarah commission nahi hai.",
+      q: "Does it cost anything to browse properties?",
+      a: "No, it is completely free. There is no charge to browse or search listings or chat with an owner. Unlike brokers, we do not charge a commission.",
     },
     {
-      q: "Owner se kaise contact karein?",
-      a: 'Property page pe "Chat with Owner" button click karein — direct chat khul jayegi. Ya WhatsApp pe contact karne ka option bhi hai.',
+      q: "How do I contact an owner?",
+      a: 'Click the "Chat with Owner" button on the property page to start a direct conversation. You can also contact the owner on WhatsApp.',
     },
     {
-      q: "Kya main ghar visit karne se pehle photos dekh sakta hoon?",
-      a: "Haan, har property mein 5-10 photos hoti hain. Kuch properties mein 360° virtual tours bhi available hain.",
+      q: "Can I see photos before visiting a property?",
+      a: "Yes. Each property has 5–10 photos, and some properties also offer 360° virtual tours.",
     },
     {
-      q: "Property fake ho toh kya karein?",
-      a: 'Kisi bhi property page pe "Report" button hai. Report karein — humari team 24 hours mein verify karke action leti hai.',
+      q: "What should I do if a property listing is fake?",
+      a: 'Use the "Report" button on the property page. Our team will review the report and take action within 24 hours.',
     },
     {
-      q: "Favorites kaise save karein?",
-      a: "Har property card pe ❤️ heart icon hai. Click karein — property favorites mein add ho jayegi.",
+      q: "How do I save a property to my favorites?",
+      a: "Click the ❤️ heart icon on any property card to add that property to your favorites.",
     },
     {
-      q: "Saved searches kya hain?",
-      a: "Aap apne filters save kar sakte hain. Jab bhi new matching property aaye, aapko email aur in-app notification milega.",
+      q: "What are saved searches?",
+      a: "You can save your search filters. When a new matching property is listed, you will receive an email and an in-app notification.",
     },
     {
-      q: "Rent agreement kaise banayein?",
-      a: "Owner se chat karein, terms finalize karein. Owner Flatova se legal rent agreement generate kar sakta hai. Aap confirm karein — PDF download ho jayega.",
+      q: "How do I create a rental agreement?",
+      a: "Chat with the owner and finalize the terms. The owner can generate a rental agreement through Flatova. Once you confirm it, you can download the agreement as a PDF.",
     },
   ],
   owner: [
     {
-      q: "Property list karna free hai?",
-      a: 'Haan, bilkul free. Basic listing 100% free hai. Sirf "Featured Listing" (₹99 for 30 days) optional paid hai.',
+      q: "Is it free to list a property?",
+      a: 'Yes. Basic listings are completely free. The optional "Featured Listing" costs ₹99 for 30 days.',
     },
     {
-      q: "Property list karne mein kitna time lagta hai?",
-      a: "5-step form fill karein — 5 minutes. Photos upload karein. Submit karein. Admin approval 24 hours mein.",
+      q: "How long does it take to list a property?",
+      a: "Complete the five-step form and upload photos. It takes about five minutes, and admin approval usually takes up to 24 hours.",
     },
     {
-      q: "Listing approve hone mein kitna time?",
-      a: "Usually 4-24 hours. Fast approval ke liye clear photos aur accurate details dein.",
+      q: "How long does listing approval take?",
+      a: "Approval usually takes 4–24 hours. Provide clear photos and accurate details to help speed up the process.",
     },
     {
-      q: "Kitni properties list kar sakta hoon?",
-      a: "Free plan mein 2 active listings. Pro (₹499/month) mein 10 listings. Business (₹1,499/month) mein unlimited.",
+      q: "How many properties can I list?",
+      a: "The free plan includes 2 active listings. Pro (₹499/month) includes 10 listings, and Business (₹1,499/month) includes unlimited listings.",
     },
     {
-      q: "Featured listing kya hai?",
-      a: "₹99 mein aapki property 30 din ke liye search results mein sabse upar dikhti hai. Views 3x badh jaate hain.",
+      q: "What is a Featured Listing?",
+      a: "For ₹99, your property appears at the top of search results for 30 days. Featured listings can receive up to 3x more views.",
     },
     {
-      q: "Property edit kaise karein?",
-      a: 'Dashboard → "My Properties" → Edit button. Changes karein → Save. Edited property re-approval ke liye jaati hai.',
+      q: "How do I edit a property?",
+      a: 'Go to Dashboard → "My Properties" → Edit. Make your changes and save them. Edited properties are sent for approval again.',
     },
     {
-      q: "Property delete kar sakte hain?",
-      a: 'Haan. Dashboard, property detail, ya edit page se "Delete" button. Confirmation ke liye "DELETE" type karna hoga.',
+      q: "Can I delete a property?",
+      a: 'Yes. Use the "Delete" button on the dashboard, property details, or edit page. You will need to type "DELETE" to confirm.',
     },
     {
-      q: "KYC verification kaise karein?",
-      a: 'Profile → "Get Verified" → Phone OTP verify → Aadhaar/PAN document upload. 24-48 hours mein admin verify karta hai.',
+      q: "How do I complete KYC verification?",
+      a: 'Go to Profile → "Get Verified," verify your phone with an OTP, and upload an Aadhaar or PAN document. An admin will review it within 24–48 hours.',
     },
   ],
   payment: [
     {
-      q: "Payment kaise karein?",
-      a: "Razorpay se — UPI, debit card, credit card, net banking. Secure 256-bit SSL. Har payment ka receipt email pe milega.",
+      q: "How can I make a payment?",
+      a: "Payments are processed through Razorpay. You can pay by UPI, debit card, credit card, or net banking. Payments are secured with 256-bit SSL, and you will receive a receipt by email.",
     },
     {
-      q: "Featured listing ka refund milega?",
-      a: "Nahi, featured listing fees non-refundable hai. Lekin technical issue ki wajah se listing display nahi hui, toh full refund milega.",
+      q: "Can I get a refund for a Featured Listing?",
+      a: "Featured Listing fees are non-refundable. However, if a technical issue prevents your listing from being displayed, you will receive a full refund.",
     },
     {
-      q: "Subscription cancel kaise karein?",
-      a: 'Profile → Subscription → "Cancel". Aap next billing cycle tak use kar sakte hain. Recurring charge automatically band ho jayegi.',
+      q: "How do I cancel my subscription?",
+      a: 'Go to Profile → Subscription → "Cancel." You can continue using your subscription until the end of the current billing cycle. Recurring charges will stop automatically.',
     },
     {
-      q: "GST invoice chahiye?",
-      a: 'Haan, business users ke liye. Payment ke baad "Request GST Invoice" button. 24 hours mein email pe invoice.',
+      q: "Can I get a GST invoice?",
+      a: 'Yes, business users can click "Request GST Invoice" after making a payment. The invoice will be emailed within 24 hours.',
     },
     {
-      q: "Refund policy kya hai?",
-      a: "Detailed policy /refund-policy page pe. Summary: Featured listings non-refundable (unless technical issue).",
+      q: "What is the refund policy?",
+      a: "See the /refund-policy page for details. In brief, Featured Listing fees are non-refundable unless there is a technical issue.",
     },
   ],
   safety: [
     {
-      q: "Fake properties se kaise bachein?",
-      a: '✓ Sirf "Verified Owner" badge wali properties dekhein. ✓ Rent bahut kam ho toh suspicious. ✓ Visit se pehle advance mat dein. ✓ "Report" button use karein.',
+      q: "How can I avoid fake property listings?",
+      a: '✓ Look for properties with the "Verified Owner" badge. ✓ Be cautious if the rent seems unusually low. ✓ Do not pay an advance before visiting. ✓ Use the "Report" button to flag suspicious listings.',
     },
     {
-      q: "Owner ne advance maanga hai — safe hai?",
-      a: "Visit karne se pehle koi advance mat dein. Property physically dekh lein, agreement padh lein, phir token amount dein.",
+      q: "The owner asked for an advance payment. Is that safe?",
+      a: "Do not pay an advance before visiting. See the property in person and read the agreement before paying a token amount.",
     },
     {
-      q: "Data safe kaise hai?",
-      a: "Passwords bcrypt se encrypted. Personal data masked hai. DPDP Act 2023 compliant. Koi third party ko data sell nahi karte.",
+      q: "How is my data protected?",
+      a: "Passwords are hashed using bcrypt, and personal data is masked. We comply with the DPDP Act 2023 and do not sell your data to third parties.",
     },
     {
-      q: "Owner misbehave kare toh kya karein?",
-      a: "Report karein (property ya profile se). Screenshots ke saath. Humari team 24 hours mein investigate karti hai.",
+      q: "What should I do if an owner behaves inappropriately?",
+      a: "Report the owner from the property or profile page, and include screenshots. Our team will investigate within 24 hours.",
     },
     {
-      q: "KYC verified ka matlab kya?",
-      a: "Verified owner ne apna Aadhaar/PAN upload kiya hai jo admin ne check kiya hai. 100% safety guarantee nahi, but much more reliable.",
+      q: "What does KYC verified mean?",
+      a: "A verified owner has uploaded an Aadhaar or PAN document that has been reviewed by an admin. This does not guarantee complete safety, but it does provide an additional layer of trust.",
     },
   ],
 };
@@ -156,7 +156,7 @@ export default function FAQPage() {
           <HelpCircle size={32} className="text-brand-600" />
         </div>
         <h1 className="text-4xl font-bold mb-3">Frequently Asked Questions</h1>
-        <p className="text-gray-500">Aapke sawaalon ke jawab</p>
+        <p className="text-gray-500">Answers to your questions</p>
       </div>
 
       <div className="relative mb-6">
@@ -243,9 +243,9 @@ export default function FAQPage() {
       </div>
 
       <div className="mt-10 card p-8 text-center bg-brand-50 border-brand-200">
-        <h2 className="text-xl font-bold mb-2">Aur koi sawal hai?</h2>
+        <h2 className="text-xl font-bold mb-2">Have another question?</h2>
         <p className="text-gray-600 mb-4">
-          Humse direct baat karein — hum jaldi reply karte hain.
+          Contact us directly — we will get back to you as soon as possible.
         </p>
         <div className="flex gap-2 justify-center flex-wrap">
           <Link href="/contact" className="btn btn-primary">

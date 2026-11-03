@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Please login first', 401);
 
-    const me = (session.user as any).id;
+    const me = session.user.id;
     if (!me) {
       return fail('Session has no user id — please logout and login again', 401);
     }

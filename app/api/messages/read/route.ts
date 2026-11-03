@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     if (!conversationId) return fail("conversationId required");
 
     await connectDB();
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const convo = await Conversation.findById(conversationId);
     if (!convo) return fail("Not found", 404);
     if (!convo.participants.some((p: any) => p.toString() === me))

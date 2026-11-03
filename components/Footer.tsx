@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -58,6 +59,7 @@ function InstagramIcon({ size = 16 }: { size?: number }) {
 
 export default function Footer() {
   const pathname = usePathname();
+  const t = useTranslations("footer");
 
   // 🚫 Hide on /admin routes
   if (pathname.startsWith("/admin")) return null;
@@ -77,8 +79,7 @@ export default function Footer() {
               Flatova
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Ashta's own rental platform. Verified rooms, flats, and homes —
-              direct from owners. Made with ❤️ in Ashta, MP.
+              {t("brandDescription")}
             </p>
             <div className="flex gap-2">
               <a
@@ -113,7 +114,7 @@ export default function Footer() {
 
           <div>
             <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
-              Quick Links
+              {t("quickLinks")}
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -121,7 +122,7 @@ export default function Footer() {
                   href="/properties"
                   className="hover:text-white transition-colors"
                 >
-                  Browse Properties
+                  {t("browseProperties")}
                 </Link>
               </li>
               <li>
@@ -129,7 +130,7 @@ export default function Footer() {
                   href="/properties/new"
                   className="hover:text-white transition-colors"
                 >
-                  List Your Property
+                  {t("listYourProperty")}
                 </Link>
               </li>
               <li>
@@ -137,7 +138,7 @@ export default function Footer() {
                   href="/favorites"
                   className="hover:text-white transition-colors"
                 >
-                  Saved Properties
+                  {t("savedProperties")}
                 </Link>
               </li>
               <li>
@@ -145,7 +146,7 @@ export default function Footer() {
                   href="/saved-searches"
                   className="hover:text-white transition-colors"
                 >
-                  Saved Searches
+                  {t("savedSearches")}
                 </Link>
               </li>
               <li>
@@ -153,7 +154,7 @@ export default function Footer() {
                   href="/chat"
                   className="hover:text-white transition-colors"
                 >
-                  Messages
+                  {t("messages")}
                 </Link>
               </li>
             </ul>
@@ -161,7 +162,7 @@ export default function Footer() {
 
           <div>
             <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
-              Company
+              {t("company")}
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -169,7 +170,7 @@ export default function Footer() {
                   href="/about"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
-                  <Info size={12} /> About Us
+                  <Info size={12} /> {t("aboutUs")}
                 </Link>
               </li>
               <li>
@@ -177,7 +178,7 @@ export default function Footer() {
                   href="/how-it-works"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
-                  <BookOpen size={12} /> How It Works
+                  <BookOpen size={12} /> {t("howItWorks")}
                 </Link>
               </li>
               <li>
@@ -185,7 +186,7 @@ export default function Footer() {
                   href="/pricing"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
-                  <Users size={12} /> Pricing
+                  <Users size={12} /> {t("pricing")}
                 </Link>
               </li>
               <li>
@@ -193,7 +194,7 @@ export default function Footer() {
                   href="/contact"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
-                  <MessageCircle size={12} /> Contact
+                  <MessageCircle size={12} /> {t("contact")}
                 </Link>
               </li>
               <li>
@@ -201,7 +202,7 @@ export default function Footer() {
                   href="/faq"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
-                  <HelpCircle size={12} /> FAQ
+                  <HelpCircle size={12} /> {t("faq")}
                 </Link>
               </li>
               <li>
@@ -209,7 +210,7 @@ export default function Footer() {
                   href="/safety-tips"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
-                  <Shield size={12} /> Safety Tips
+                  <Shield size={12} /> {t("safetyTips")}
                 </Link>
               </li>
             </ul>
@@ -217,7 +218,7 @@ export default function Footer() {
 
           <div>
             <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
-              Popular Areas
+              {t("popularAreas")}
             </h3>
             <ul className="space-y-2 text-sm">
               {AREAS.slice(0, 6).map((area) => (
@@ -226,7 +227,7 @@ export default function Footer() {
                     href={`/rent-in/ashta/${area}`}
                     className="hover:text-white transition-colors capitalize"
                   >
-                    Rent in {slugToArea(area)}
+                    {t("rentIn", { area: slugToArea(area) })}
                   </Link>
                 </li>
               ))}
@@ -235,7 +236,7 @@ export default function Footer() {
 
           <div>
             <h3 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">
-              Contact Us
+              {t("contactUs")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
@@ -273,43 +274,43 @@ export default function Footer() {
 
         <div className="pt-6 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400 mb-4">
-            <p>© {new Date().getFullYear()} Flatova. All rights reserved.</p>
+            <p>
+              © {new Date().getFullYear()} Flatova. {t("allRightsReserved")}
+            </p>
             <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
               <Link
                 href="/privacy"
                 className="hover:text-white transition-colors flex items-center gap-1"
               >
-                <Shield size={12} /> Privacy
+                <Shield size={12} /> {t("privacy")}
               </Link>
               <Link
                 href="/terms"
                 className="hover:text-white transition-colors flex items-center gap-1"
               >
-                <FileText size={12} /> Terms
+                <FileText size={12} /> {t("terms")}
               </Link>
               <Link
                 href="/refund-policy"
                 className="hover:text-white transition-colors flex items-center gap-1"
               >
-                <Users size={12} /> Refund Policy
+                <Users size={12} /> {t("refundPolicy")}
               </Link>
               <Link
                 href="/disclaimer"
                 className="hover:text-white transition-colors flex items-center gap-1"
               >
-                <AlertCircle size={12} /> Disclaimer
+                <AlertCircle size={12} /> {t("disclaimer")}
               </Link>
               <Link
                 href="/sitemap.xml"
                 className="hover:text-white transition-colors"
               >
-                Sitemap
+                {t("sitemap")}
               </Link>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-500">
-            🇮🇳 Made in India · Compliant with DPDP Act 2023
-          </p>
+          <p className="text-center text-xs text-gray-500">{t("madeInIndia")}</p>
         </div>
       </div>
     </footer>

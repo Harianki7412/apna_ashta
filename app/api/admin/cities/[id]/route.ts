@@ -9,7 +9,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return (s?.user as any)?.role === "admin" ? s : null;
+  return s?.user?.role === "admin" ? s : null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -79,7 +79,7 @@ export async function DELETE(
     clearCityCache();
 
     await logActivity({
-      actor: (session.user as any).id,
+      actor: session.user.id,
       action: "plan_delete",
       targetType: "setting",
       targetId: id,

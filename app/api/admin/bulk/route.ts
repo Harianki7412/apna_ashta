@@ -9,7 +9,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== "admin") {
+    if (!session || session.user?.role !== "admin") {
       return fail("Forbidden", 403);
     }
 
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    const admin = (session.user as any).id;
+    const admin = session.user.id;
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     const ua = req.headers.get("user-agent") || "";
 

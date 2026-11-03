@@ -47,9 +47,9 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.phoneVerified = (user as any).phoneVerified;
+        token.id = user.id;
+        token.role = user.role;
+        token.phoneVerified = user.phoneVerified;
       }
       if (trigger === 'update' && token.id) {
         await connectDB();
@@ -64,9 +64,9 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).phoneVerified = token.phoneVerified;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.phoneVerified = token.phoneVerified;
       }
       return session;
     },

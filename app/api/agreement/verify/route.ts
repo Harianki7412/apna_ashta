@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     await connectDB();
     const order = await RentAgreementOrder.findById(agreementOrderId);
     if (!order) return fail("Order not found", 404);
-    if (order.user.toString() !== (session.user as any).id)
+    if (order.user.toString() !== session.user.id)
       return fail("Forbidden", 403);
 
     order.status = "paid";

@@ -25,21 +25,49 @@
   --color-accent-400: #fbbf24;
   --color-accent-500: #f59e0b;
   --color-accent-600: #d97706;
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-700: #b45309;
+  --color-accent-800: #92400e;
+  --color-accent-900: #78350f;
 
   /* Success */
   --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
   --color-success-500: #10b981;
   --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
 
   /* Warning */
   --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
   --color-warning-500: #f59e0b;
   --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
 
   /* Danger */
   --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
   --color-danger-500: #ef4444;
   --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
 
   /* Radius */
   --radius-sm: 0.375rem;
@@ -488,6 +516,31 @@
   border-radius: 0.75rem;
 }
 
+html.dark .leaflet-container {
+  background-color: #0f172a;
+}
+html.dark .leaflet-tile {
+  filter: brightness(0.78) invert(1) hue-rotate(180deg) saturate(0.65);
+}
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+html.dark .leaflet-popup-content a {
+  color: #93c5fd;
+}
+html.dark .leaflet-bar a,
+html.dark .leaflet-control-attribution {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+html.dark .leaflet-bar a:hover {
+  background-color: #334155;
+  color: #f1f5f9;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    🌙 DARK MODE OVERRIDES
    All elements jo explicit dark: classes ke bina dark need karte hain
@@ -495,6 +548,19 @@
 @layer base {
   html.dark {
     color-scheme: dark;
+    --chart-grid: #334155;
+    --chart-axis: #94a3b8;
+    --chart-tooltip-bg: #1e293b;
+    --chart-tooltip-text: #f1f5f9;
+    --chart-tooltip-border: #475569;
+  }
+
+  html:not(.dark) {
+    --chart-grid: #f3f4f6;
+    --chart-axis: #9ca3af;
+    --chart-tooltip-bg: #ffffff;
+    --chart-tooltip-text: #111827;
+    --chart-tooltip-border: #e5e7eb;
   }
 
   /* Body */
@@ -512,107 +578,86 @@
   }
 
   /* Text colors */
-  html.dark .text-gray-900 { color: #f1f5f9 !important; }
-  html.dark .text-gray-800 { color: #e2e8f0 !important; }
-  html.dark .text-gray-700 { color: #cbd5e1 !important; }
-  html.dark .text-gray-600 { color: #94a3b8 !important; }
-  html.dark .text-gray-500 { color: #64748b !important; }
+  html.dark .text-gray-900:not([class*="dark:text-"]) { color: #f1f5f9 !important; }
+  html.dark .text-gray-800:not([class*="dark:text-"]) { color: #e2e8f0 !important; }
+  html.dark .text-gray-700:not([class*="dark:text-"]) { color: #cbd5e1 !important; }
+  html.dark .text-gray-600:not([class*="dark:text-"]) { color: #cbd5e1 !important; }
+  html.dark .text-gray-500:not([class*="dark:text-"]) { color: #94a3b8 !important; }
+  html.dark .text-gray-400:not([class*="dark:text-"]) { color: #94a3b8 !important; }
+  html.dark .text-black:not([class*="dark:text-"]) { color: #f1f5f9 !important; }
+  html.dark .text-brand-600:not([class*="dark:text-"]) { color: #60a5fa !important; }
+  html.dark .text-brand-700:not([class*="dark:text-"]) { color: #93c5fd !important; }
+  html.dark .text-success-600:not([class*="dark:text-"]),
+  html.dark .text-success-700:not([class*="dark:text-"]),
+  html.dark .text-green-600:not([class*="dark:text-"]),
+  html.dark .text-green-700:not([class*="dark:text-"]) { color: #6ee7b7 !important; }
+  html.dark .text-danger-600:not([class*="dark:text-"]),
+  html.dark .text-danger-700:not([class*="dark:text-"]),
+  html.dark .text-red-600:not([class*="dark:text-"]),
+  html.dark .text-red-700:not([class*="dark:text-"]) { color: #fca5a5 !important; }
+  html.dark .text-warning-600:not([class*="dark:text-"]),
+  html.dark .text-warning-700:not([class*="dark:text-"]),
+  html.dark .text-accent-600:not([class*="dark:text-"]),
+  html.dark .text-accent-700:not([class*="dark:text-"]),
+  html.dark .text-yellow-600:not([class*="dark:text-"]),
+  html.dark .text-yellow-700:not([class*="dark:text-"]) { color: #fcd34d !important; }
 
   /* Backgrounds */
-  html.dark .bg-white { background-color: #1e293b !important; }
-  html.dark .bg-gray-50 { background-color: #0f172a !important; }
-  html.dark .bg-gray-100 { background-color: #1e293b !important; }
+  html.dark .bg-white:not([class*="dark:bg-"]) { background-color: #1e293b !important; }
+  html.dark .bg-white\/90:not([class*="dark:bg-"]),
+  html.dark .bg-white\/95:not([class*="dark:bg-"]) { background-color: rgb(15 23 42 / 0.95) !important; }
+  html.dark .bg-gray-50:not([class*="dark:bg-"]) { background-color: #0f172a !important; }
+  html.dark .bg-gray-100:not([class*="dark:bg-"]) { background-color: #1e293b !important; }
+  html.dark .bg-gray-200:not([class*="dark:bg-"]) { background-color: #334155 !important; }
+  html.dark .bg-brand-50\/30:not([class*="dark:bg-"]) { background-color: rgb(30 58 95 / 0.3) !important; }
+  html.dark .bg-slate-100:not([class*="dark:bg-"]) { background-color: #1e293b !important; }
+  html.dark .bg-brand-50:not([class*="dark:bg-"]),
+  html.dark .bg-brand-100:not([class*="dark:bg-"]),
+  html.dark .bg-blue-50:not([class*="dark:bg-"]),
+  html.dark .bg-blue-100:not([class*="dark:bg-"]) { background-color: #172554 !important; }
+  html.dark .bg-success-50:not([class*="dark:bg-"]),
+  html.dark .bg-success-100:not([class*="dark:bg-"]),
+  html.dark .bg-green-50:not([class*="dark:bg-"]),
+  html.dark .bg-green-100:not([class*="dark:bg-"]) { background-color: #052e2b !important; }
+  html.dark .bg-danger-50:not([class*="dark:bg-"]),
+  html.dark .bg-danger-100:not([class*="dark:bg-"]),
+  html.dark .bg-red-50:not([class*="dark:bg-"]),
+  html.dark .bg-red-100:not([class*="dark:bg-"]) { background-color: #3b1720 !important; }
+  html.dark .bg-warning-50:not([class*="dark:bg-"]),
+  html.dark .bg-warning-100:not([class*="dark:bg-"]),
+  html.dark .bg-accent-50:not([class*="dark:bg-"]),
+  html.dark .bg-accent-100:not([class*="dark:bg-"]),
+  html.dark .bg-yellow-50:not([class*="dark:bg-"]),
+  html.dark .bg-yellow-100:not([class*="dark:bg-"]) { background-color: #382b12 !important; }
 
   /* Borders */
-  html.dark .border-gray-100 { border-color: #334155 !important; }
-  html.dark .border-gray-200 { border-color: #334155 !important; }
-  html.dark .border-gray-300 { border-color: #475569 !important; }
-
-  /* Cards */
-  html.dark .card,
-  html.dark .card-premium,
-  html.dark .skeleton-card {
-    background-color: #1e293b;
-    border-color: #334155;
-  }
-
-  /* Inputs */
-  html.dark .input {
-    background-color: #1e293b;
-    border-color: #334155;
-    color: #f1f5f9;
-  }
-  html.dark .input::placeholder {
-    color: #64748b;
-  }
-  html.dark .input:focus {
-    border-color: #3b82f6;
-  }
-  html.dark .input:disabled {
-    background-color: #0f172a;
-    color: #64748b;
-  }
-
-  /* Labels */
-  html.dark .label {
-    color: #cbd5e1;
-  }
-
-  /* Skeleton */
-  html.dark .skeleton {
-    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-    background-size: 200% 100%;
-  }
-
-  /* Badges */
-  html.dark .badge-brand {
-    background-color: rgba(59, 130, 246, 0.2);
-    color: #93c5fd;
-  }
-  html.dark .badge-success {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: #6ee7b7;
-  }
-  html.dark .badge-warning {
-    background-color: rgba(245, 158, 11, 0.2);
-    color: #fcd34d;
-  }
-  html.dark .badge-danger {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-  }
+  html.dark .border-gray-100:not([class*="dark:border-"]) { border-color: #334155 !important; }
+  html.dark .border-gray-200:not([class*="dark:border-"]) { border-color: #334155 !important; }
+  html.dark .border-gray-300:not([class*="dark:border-"]) { border-color: #475569 !important; }
+  html.dark .border-brand-200:not([class*="dark:border-"]),
+  html.dark .border-blue-200:not([class*="dark:border-"]) { border-color: #1e40af !important; }
+  html.dark .border-success-200:not([class*="dark:border-"]),
+  html.dark .border-green-200:not([class*="dark:border-"]) { border-color: #047857 !important; }
+  html.dark .border-danger-200:not([class*="dark:border-"]),
+  html.dark .border-red-200:not([class*="dark:border-"]) { border-color: #991b1b !important; }
+  html.dark .border-warning-200:not([class*="dark:border-"]),
+  html.dark .border-accent-200:not([class*="dark:border-"]),
+  html.dark .border-yellow-200:not([class*="dark:border-"]) { border-color: #92400e !important; }
 
   /* Navbar */
   html.dark nav {
     background-color: #0f172a;
     border-color: #1e293b;
   }
-  html.dark nav.bg-white,
-  html.dark nav.bg-white\/90,
-  html.dark nav.bg-white\/95 {
+  html.dark nav.bg-white:not([class*="dark:bg-"]),
+  html.dark nav.bg-white\/90:not([class*="dark:bg-"]),
+  html.dark nav.bg-white\/95:not([class*="dark:bg-"]) {
     background-color: #0f172a !important;
   }
 
   /* Footer */
   html.dark footer {
     background-color: #020617;
-  }
-
-  /* Button variants */
-  html.dark .btn-ghost {
-    color: #cbd5e1;
-  }
-  html.dark .btn-ghost:hover:not(:disabled) {
-    background-color: #1e293b;
-  }
-
-  html.dark .btn-secondary {
-    background-color: #1e293b;
-    color: #93c5fd;
-    border-color: #3b82f6;
-  }
-  html.dark .btn-secondary:hover:not(:disabled) {
-    background-color: #334155;
   }
 
   /* Scrollbar */
@@ -625,29 +670,6 @@
   }
   html.dark ::-webkit-scrollbar-thumb:hover {
     background: #475569;
-  }
-
-  /* Prose dark */
-  html.dark .prose {
-    color: #cbd5e1;
-  }
-  html.dark .prose h1,
-  html.dark .prose h2,
-  html.dark .prose h3 {
-    color: #f1f5f9;
-  }
-  html.dark .prose a {
-    color: #93c5fd;
-  }
-  html.dark .prose strong {
-    color: #f1f5f9;
-  }
-  html.dark .prose hr {
-    border-color: #334155;
-  }
-  html.dark .prose blockquote {
-    border-color: #3b82f6;
-    color: #94a3b8;
   }
 
   /* Toast variables */
@@ -678,23 +700,137 @@
   html.dark tr:hover {
     background-color: #1e293b;
   }
+}
+
+@layer components {
+  html.dark .card,
+  html.dark .card-premium,
+  html.dark .skeleton-card {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+
+  html.dark .input {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+  html.dark .input::placeholder {
+    color: #94a3b8;
+  }
+  html.dark .input:focus {
+    border-color: #3b82f6;
+  }
+  html.dark .input:disabled {
+    background-color: #0f172a;
+    color: #94a3b8;
+  }
+
+  html.dark .label {
+    color: #cbd5e1;
+  }
+
+  html.dark .skeleton {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+  }
+
+  html.dark .badge-brand {
+    background-color: rgb(59 130 246 / 0.2);
+    color: #93c5fd;
+  }
+  html.dark .badge-success {
+    background-color: rgb(16 185 129 / 0.2);
+    color: #6ee7b7;
+  }
+  html.dark .badge-warning {
+    background-color: rgb(245 158 11 / 0.2);
+    color: #fcd34d;
+  }
+  html.dark .badge-danger {
+    background-color: rgb(239 68 68 / 0.2);
+    color: #fca5a5;
+  }
+
+  html.dark .btn-ghost {
+    color: #cbd5e1;
+  }
+  html.dark .btn-ghost:hover:not(:disabled) {
+    background-color: #1e293b;
+  }
+
+  html.dark .btn-secondary {
+    background-color: #1e293b;
+    color: #93c5fd;
+    border-color: #3b82f6;
+  }
+  html.dark .btn-secondary:hover:not(:disabled) {
+    background-color: #334155;
+  }
+
+  html.dark .prose {
+    color: #cbd5e1;
+  }
+  html.dark .prose h1,
+  html.dark .prose h2,
+  html.dark .prose h3 {
+    color: #f1f5f9;
+  }
+  html.dark .prose a {
+    color: #93c5fd;
+  }
+  html.dark .prose strong {
+    color: #f1f5f9;
+  }
+  html.dark .prose hr {
+    border-color: #334155;
+  }
+  html.dark .prose blockquote {
+    border-color: #3b82f6;
+    color: #94a3b8;
+  }
   html.dark td,
   html.dark th {
     border-color: #334155;
   }
 
+  html.dark .recharts-cartesian-axis-tick text {
+    fill: #94a3b8;
+  }
+  html.dark .recharts-legend-item-text {
+    color: #cbd5e1 !important;
+  }
+  html.dark .recharts-tooltip-label,
+  html.dark .recharts-tooltip-item {
+    color: #f1f5f9 !important;
+  }
+
   /* Modal/Overlay */
-  html.dark .bg-white\/95 {
+  html.dark .bg-white\/95:not([class*="dark:bg-"]) {
     background-color: rgba(15, 23, 42, 0.95) !important;
   }
 
   /* Hover backgrounds */
-  html.dark .hover\:bg-gray-50:hover {
+  html.dark .hover\:bg-gray-50:not([class*="dark:hover:bg-"]):hover {
     background-color: #1e293b !important;
   }
-  html.dark .hover\:bg-gray-100:hover {
+  html.dark .hover\:bg-gray-100:not([class*="dark:hover:bg-"]):hover {
     background-color: #334155 !important;
   }
+  html.dark .hover\:bg-brand-50:not([class*="dark:hover:bg-"]):hover,
+  html.dark .hover\:bg-blue-50:not([class*="dark:hover:bg-"]):hover { background-color: #1e3a5f !important; }
+  html.dark .hover\:bg-success-50:not([class*="dark:hover:bg-"]):hover,
+  html.dark .hover\:bg-green-50:not([class*="dark:hover:bg-"]):hover { background-color: #064e3b !important; }
+  html.dark .hover\:bg-danger-50:not([class*="dark:hover:bg-"]):hover,
+  html.dark .hover\:bg-red-50:not([class*="dark:hover:bg-"]):hover { background-color: #7f1d1d !important; }
+  html.dark .hover\:bg-warning-50:not([class*="dark:hover:bg-"]):hover,
+  html.dark .hover\:bg-accent-50:not([class*="dark:hover:bg-"]):hover,
+  html.dark .hover\:bg-yellow-50:not([class*="dark:hover:bg-"]):hover { background-color: #78350f !important; }
+  html.dark .hover\:text-brand-600:not([class*="dark:hover:text-"]):hover { color: #93c5fd !important; }
+  html.dark .hover\:text-brand-700:not([class*="dark:hover:text-"]):hover { color: #bfdbfe !important; }
+  html.dark .hover\:border-brand-300:not([class*="dark:hover:border-"]):hover { border-color: #3b82f6 !important; }
+  html.dark .hover\:border-success-300:not([class*="dark:hover:border-"]):hover { border-color: #10b981 !important; }
+  html.dark .hover\:border-gray-300:not([class*="dark:hover:border-"]):hover { border-color: #64748b !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

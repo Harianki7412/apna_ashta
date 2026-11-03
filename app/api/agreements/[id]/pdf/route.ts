@@ -13,7 +13,7 @@ export async function GET(_: Request, ctx: Ctx) {
     if (!session) return fail('Unauthorized', 401);
 
     const { id } = await ctx.params;
-    const me = (session.user as any).id;
+    const me = session.user.id;
 
     await connectDB();
     const agreement: any = await RentAgreement.findById(id).lean();
@@ -21,7 +21,7 @@ export async function GET(_: Request, ctx: Ctx) {
 
     const isOwner = agreement.owner.toString() === me;
     const isTenant = agreement.tenant.toString() === me;
-    const role = (session.user as any).role;
+    const role = session.user.role;
 
     if (!isOwner && !isTenant && role !== 'admin') {
       return fail('Forbidden', 403);
@@ -30,8 +30,29 @@ export async function GET(_: Request, ctx: Ctx) {
       return fail('PDF not available yet. Agreement must be confirmed.', 400);
     }
 
-    // Redirect to Cloudinary URL
-    return NextResponse.redirect(agreement.pdfUrl);
+    const pdfUrl = new URL(agreement.pdfUrl);
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (
+      pdfUrl.protocol !== 'https:' ||
+      pdfUrl.hostname !== 'res.cloudinary.com' ||
+      !cloudName ||
+      !pdfUrl.pathname.startsWith(`/${cloudName}/`)
+    ) {
+      return fail('Stored PDF URL is invalid.', 502);
+    }
+
+    const pdfResponse = await fetch(pdfUrl, { redirect: 'error' });
+    if (!pdfResponse.ok || !pdfResponse.body) {
+      return fail('Unable to retrieve the agreement PDF.', 502);
+    }
+
+    return new NextResponse(pdfResponse.body, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="rent-agreement.pdf"',
+        'Cache-Control': 'private, no-store',
+      },
+    });
   } catch (e) {
     return handleError(e);
   }

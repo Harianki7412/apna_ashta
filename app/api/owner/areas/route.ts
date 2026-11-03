@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
 
-    const role = (session.user as any).role;
+    const role = session.user.role;
     if (!["owner", "admin"].includes(role)) {
       return fail("Only owners can add areas", 403);
     }
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       type,
       description: description?.trim() || undefined,
       active: true,
-      createdBy: (session.user as any).id,
+      createdBy: session.user.id,
       isOwnerAdded: true,
     };
 

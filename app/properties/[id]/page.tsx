@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
@@ -14,6 +13,7 @@ import RentAgreementModal from "@/components/RentAgreementModal";
 import DeletePropertyButton from "@/components/DeletePropertyButton";
 import ReportButton from "@/components/ReportButton";
 import StartChatButton from "./StartChatButton";
+import PropertyGallery from "@/components/PropertyGallery";
 import { getTranslations } from "next-intl/server";
 import { getBhkLabel } from "@/lib/property-types";
 import { analyzePropertyForScams } from "@/lib/anti-scam";
@@ -223,64 +223,13 @@ export default async function PropertyDetail({
         </div>
       )}
 
-      {/* ═══ GALLERY ═══ */}
-      <div className="grid grid-cols-4 grid-rows-2 gap-2 mb-6 rounded-2xl overflow-hidden">
-        <div className="col-span-4 md:col-span-3 row-span-2 relative h-[300px] md:h-[450px] bg-gray-100 dark:bg-slate-700">
-          {property.images?.[0] ? (
-            <Image
-              src={property.images[0]}
-              alt={property.title}
-              fill
-              className="object-cover"
-              priority
-              sizes="(max-width: 768px) 100vw, 75vw"
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-300 dark:text-slate-500">
-              <Home size={64} />
-            </div>
-          )}
-
-          {/* Badges overlay */}
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
-            {property.verified && (
-              <div className="bg-success-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                <Shield size={12} /> Physically Verified
-              </div>
-            )}
-            {property.featured && (
-              <div className="badge badge-featured">⭐ Featured</div>
-            )}
-          </div>
-
-          {/* Photo count */}
-          {property.images?.length > 1 && (
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur text-white text-sm font-medium px-3 py-1.5 rounded-full">
-              📷 {property.images.length} photos
-            </div>
-          )}
-        </div>
-
-        {property.images?.slice(1, 3).map((url: string, i: number) => (
-          <div
-            key={i}
-            className="hidden md:block relative bg-gray-100 dark:bg-slate-700"
-          >
-            <Image
-              src={url}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="25vw"
-            />
-            {i === 1 && property.images.length > 3 && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-lg font-bold">
-                +{property.images.length - 3} more
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      <PropertyGallery
+        images={property.images || []}
+        videos={property.videos || []}
+        title={property.title}
+        featured={property.featured}
+        verified={property.verified}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ═══════════════════════════════════════════════════

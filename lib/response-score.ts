@@ -1,6 +1,15 @@
 import { connectDB } from "./mongodb";
 import { Conversation } from "@/models/Conversation";
 
+interface ConversationMessage {
+  sender: { toString(): string };
+  createdAt: Date;
+}
+
+interface LeanConversation {
+  messages?: ConversationMessage[];
+}
+
 export interface ResponseScore {
   avgHours: number | null;
   totalReplies: number;
@@ -32,7 +41,7 @@ export async function getOwnerResponseScore(
       participants: ownerId,
     })
       .select("messages participants")
-      .lean();
+      .lean<LeanConversation[]>();
 
     if (!convos.length) {
       return {
@@ -51,10 +60,10 @@ export async function getOwnerResponseScore(
     let inquiryCount = 0;
 
     for (const convo of convos) {
-      const messages = convo.messages || [];
+      const messages = convo.messages ?? [];
 
       for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i] as any;
+        const msg = messages[i];
 
         // Is this message from someone OTHER than the owner?
         // (i.e., a tenant inquiry)
@@ -63,7 +72,7 @@ export async function getOwnerResponseScore(
 
           // Find the next message from the owner (their reply)
           for (let j = i + 1; j < messages.length; j++) {
-            const nextMsg = messages[j] as any;
+            const nextMsg = messages[j];
 
             if (nextMsg.sender.toString() === ownerId) {
               const inquiryTime = new Date(msg.createdAt).getTime();

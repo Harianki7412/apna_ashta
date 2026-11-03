@@ -12,7 +12,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
     await connectDB();
-    const user = await User.findById((session.user as any).id)
+    const user = await User.findById(session.user.id)
       .select('-password -resetToken -resetTokenExpiry -kycDocument')
       .lean();
     if (!user) return fail('Not found', 404);
@@ -34,7 +34,7 @@ export async function PATCH(req: Request) {
     if (name) update.name = name;
     if (phone !== undefined) update.phone = phone || undefined;
     const user = await User.findByIdAndUpdate(
-  (session.user as any).id,
+  session.user.id,
   update,
   { returnDocument: 'after', select: '-password -resetToken -resetTokenExpiry' }
 );
@@ -48,7 +48,7 @@ export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
-    const me = (session.user as any).id;
+    const me = session.user.id;
     await connectDB();
     await Promise.all([
       Property.deleteMany({ owner: me }),

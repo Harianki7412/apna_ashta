@@ -15,7 +15,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
 
-    const me = (session.user as any).id;
+    const me = session.user.id;
     await connectDB();
 
     const [asOwner, asTenant] = await Promise.all([
@@ -46,8 +46,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { tenantId, ...agreementData } = body;
 
-    const me = (session.user as any).id;
-    const role = (session.user as any).role;
+    const me = session.user.id;
+    const role = session.user.role;
 
     if (!tenantId) return fail("Tenant is required");
 

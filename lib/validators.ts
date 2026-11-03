@@ -87,6 +87,7 @@ export const propertySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
   images: z.array(z.string().url()).min(1).max(10),
+  videos: z.array(z.string().url()).max(3).default([]),
 });
 
 export const messageSchema = z.object({

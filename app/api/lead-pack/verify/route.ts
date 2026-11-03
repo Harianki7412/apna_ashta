@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     const pack = await LeadPack.findById(leadPackId);
     if (!pack) return fail("Lead pack not found", 404);
-    if (pack.user.toString() !== (session.user as any).id)
+    if (pack.user.toString() !== session.user.id)
       return fail("Forbidden", 403);
     if (pack.status === "active")
       return ok({ activated: true, alreadyActive: true });

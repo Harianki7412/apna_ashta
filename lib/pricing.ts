@@ -146,15 +146,27 @@ export function getPlan(id: string): Plan | undefined {
   return SUBSCRIPTION_PLANS.find((p) => p.id === id);
 }
 
-export function isPlanActive(user: any): boolean {
+interface UserWithSubscription {
+  subscription?: {
+    planId?: string | null;
+    expiresAt?: Date | string | null;
+  } | null;
+}
+
+export function isPlanActive(
+  user: UserWithSubscription | null | undefined,
+): boolean {
   if (!user?.subscription?.planId || user.subscription.planId === "free")
     return false;
   if (!user.subscription.expiresAt) return false;
   return new Date(user.subscription.expiresAt) > new Date();
 }
 
-export function getCurrentPlan(user: any): Plan {
-  if (!isPlanActive(user)) return SUBSCRIPTION_PLANS[0]; // free
+export function getCurrentPlan(
+  user: UserWithSubscription | null | undefined,
+): Plan {
+  if (!isPlanActive(user) || !user?.subscription?.planId)
+    return SUBSCRIPTION_PLANS[0]; // free
   return getPlan(user.subscription.planId) || SUBSCRIPTION_PLANS[0];
 }
 

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
-    if ((session.user as any).role !== "owner")
+    if (session.user.role !== "owner")
       return fail("Only owners can buy leads", 403);
 
     const { packId } = await req.json();
@@ -24,14 +24,14 @@ export async function POST(req: Request) {
       currency: "INR",
       receipt: `lead_${packId}_${Date.now()}`,
       notes: {
-        userId: (session.user as any).id,
+        userId: session.user.id,
         packId,
         type: "lead_pack",
       },
     });
 
     const leadPack = await LeadPack.create({
-      user: (session.user as any).id,
+      user: session.user.id,
       packId,
       totalLeads: pack.leads,
       amount: pack.price,
@@ -56,7 +56,7 @@ export async function GET() {
     if (!session) return fail("Unauthorized", 401);
 
     await connectDB();
-    const packs = await LeadPack.find({ user: (session.user as any).id })
+    const packs = await LeadPack.find({ user: session.user.id })
       .sort({ createdAt: -1 })
       .lean();
 

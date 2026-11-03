@@ -81,6 +81,7 @@ export default function NewPropertyPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [states, setStates] = useState<StateOption[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -265,9 +266,12 @@ export default function NewPropertyPage() {
   }
 
   /* ═══ Image upload ═══ */
-  async function upload(files: FileList | null) {
+  async function upload(files: FileList | null, mediaType: "image" | "video") {
     if (!files?.length) return;
-    if (images.length + files.length > 10) return toast.error("Max 10 photos");
+    if (mediaType === "image" && images.length + files.length > 10)
+      return toast.error("Max 10 photos");
+    if (mediaType === "video" && videos.length + files.length > 3)
+      return toast.error("Max 3 videos");
 
     const fd = new FormData();
     Array.from(files).forEach((f) => fd.append("files", f));
@@ -275,8 +279,12 @@ export default function NewPropertyPage() {
     setUploading(true);
 
     try {
-      const { urls } = await api.post<{ urls: string[] }>("/api/upload", fd);
-      setImages((prev) => [...prev, ...urls].slice(0, 10));
+      const { urls, videoUrls } = await api.post<{
+        urls: string[];
+        videoUrls: string[];
+      }>("/api/upload", fd);
+      if (mediaType === "image") setImages((prev) => [...prev, ...urls].slice(0, 10));
+      else setVideos((prev) => [...prev, ...videoUrls].slice(0, 3));
       toast.success("Uploaded", { id: t });
     } catch (e: any) {
       toast.error(e.message, { id: t });
@@ -333,6 +341,7 @@ export default function NewPropertyPage() {
         lat: Number(form.lat),
         lng: Number(form.lng),
         images,
+        videos,
       };
       if (showBhk) payload.bhk = form.bhk;
 
@@ -880,7 +889,7 @@ export default function NewPropertyPage() {
         </div>
       </div>
 
-      {/* ═══ PHOTOS ═══ */}
+      {/* ═══ PHOTOS AND VIDEOS ═══ */}
       <div className="card p-6 space-y-4">
         <h2 className="text-lg font-bold flex items-center justify-between text-gray-900 dark:text-slate-100">
           <span>Photos</span>
@@ -931,12 +940,60 @@ export default function NewPropertyPage() {
               type="file"
               multiple
               accept="image/*"
-              onChange={(e) => upload(e.target.files)}
+              onChange={(e) => upload(e.target.files, "image")}
               disabled={uploading}
               className="hidden"
             />
           </label>
         )}
+
+        <div className="border-t border-gray-200 dark:border-slate-700 pt-4 space-y-4">
+          <h3 className="font-semibold text-gray-900 dark:text-slate-100">
+            Property videos ({videos.length}/3)
+          </h3>
+          {videos.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {videos.map((url) => (
+                <div key={url} className="relative group">
+                  <video
+                    src={url}
+                    controls
+                    preload="metadata"
+                    playsInline
+                    className="w-full aspect-video rounded-lg bg-black"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove video"
+                    onClick={() => setVideos((prev) => prev.filter((v) => v !== url))}
+                    className="absolute top-2 right-2 bg-black/70 hover:bg-danger-500 text-white p-1 rounded-full"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {videos.length < 3 && (
+            <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer border-gray-300 dark:border-slate-700 hover:border-brand-500">
+              <Upload size={28} className="text-gray-400 mb-2" />
+              <span className="text-sm font-medium">
+                {uploading ? "Uploading..." : "Click to upload videos"}
+              </span>
+              <span className="text-xs text-gray-500 mt-1">
+                MP4, WebM, or MOV up to 50MB each
+              </span>
+              <input
+                type="file"
+                multiple
+                accept="video/mp4,video/webm,video/quicktime"
+                onChange={(e) => upload(e.target.files, "video")}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
       </div>
 
       {/* ═══ SUBMIT ═══ */}

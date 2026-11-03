@@ -39,6 +39,38 @@ export interface CityData {
   isOwnerAdded?: boolean;
 }
 
+interface LeanState {
+  _id: { toString(): string };
+  name: string;
+  slug: string;
+  code?: string;
+  lat?: number;
+  lng?: number;
+}
+
+interface LeanArea {
+  _id?: { toString(): string };
+  name: string;
+  slug: string;
+  type?: string;
+  active?: boolean;
+  isOwnerAdded?: boolean;
+}
+
+interface LeanCity {
+  _id: { toString(): string };
+  name: string;
+  slug: string;
+  state?: string | { toString(): string } | null;
+  stateName?: string;
+  lat?: number;
+  lng?: number;
+  description?: string;
+  areas?: LeanArea[];
+  active: boolean;
+  isOwnerAdded?: boolean;
+}
+
 /* ═══════════════════════════════════════════════════════════
    CACHE
    ═══════════════════════════════════════════════════════════ */
@@ -79,9 +111,9 @@ export async function getAllStates(forceRefresh = false): Promise<StateData[]> {
 
     const states = await State.find({ active: true })
       .sort({ displayOrder: 1, name: 1 })
-      .lean();
+      .lean<LeanState[]>();
 
-    const stateData: StateData[] = states.map((s: any) => ({
+    const stateData: StateData[] = states.map((s) => ({
       _id: s._id.toString(),
       name: s.name,
       slug: s.slug,
@@ -115,13 +147,17 @@ export async function getAllCities(forceRefresh = false): Promise<CityData[]> {
 
     // Fetch states + cities in parallel
     const [states, cities] = await Promise.all([
-      State.find({ active: true }).sort({ displayOrder: 1 }).lean(),
-      City.find({ active: true }).sort({ displayOrder: 1, name: 1 }).lean(),
+      State.find({ active: true })
+        .sort({ displayOrder: 1 })
+        .lean<LeanState[]>(),
+      City.find({ active: true })
+        .sort({ displayOrder: 1, name: 1 })
+        .lean<LeanCity[]>(),
     ]);
 
     // Build state lookup map
     const stateMap: Record<string, StateData> = {};
-    const stateData: StateData[] = states.map((s: any) => {
+    const stateData: StateData[] = states.map((s) => {
       const data: StateData = {
         _id: s._id.toString(),
         name: s.name,
@@ -135,7 +171,7 @@ export async function getAllCities(forceRefresh = false): Promise<CityData[]> {
     });
 
     // Enrich cities with state info
-    const cityData: CityData[] = cities.map((c: any) => {
+    const cityData: CityData[] = cities.map((c) => {
       const stateIdStr = c.state?.toString() || "";
       const stateInfo = stateMap[stateIdStr];
 
@@ -149,7 +185,7 @@ export async function getAllCities(forceRefresh = false): Promise<CityData[]> {
         lat: c.lat || stateInfo?.lat || 23.5,
         lng: c.lng || stateInfo?.lng || 78.5,
         description: c.description,
-        areas: (c.areas || []).map((a: any) => ({
+        areas: (c.areas || []).map((a) => ({
           _id: a._id?.toString(),
           name: a.name,
           slug: a.slug,

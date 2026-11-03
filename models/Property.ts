@@ -70,6 +70,7 @@ const PropertySchema = new Schema({
     coordinates: { type: [Number], required: true },
   },
   images: [{ type: String }],
+  videos: [{ type: String }],
   owner: {
     type: Schema.Types.ObjectId,
     ref: "User",

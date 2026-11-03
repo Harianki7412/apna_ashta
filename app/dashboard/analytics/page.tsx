@@ -112,11 +112,16 @@ export default function AnalyticsPage() {
         <h2 className="text-lg font-bold mb-4">Last 6 Months</h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={monthlyTrend}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
-            <YAxis stroke="#9ca3af" fontSize={12} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+            <XAxis dataKey="month" stroke="var(--chart-axis)" fontSize={12} />
+            <YAxis stroke="var(--chart-axis)" fontSize={12} />
             <Tooltip
-              contentStyle={{ borderRadius: 12, border: "1px solid #f3f4f6" }}
+              contentStyle={{
+                borderRadius: 12,
+                border: "1px solid var(--chart-tooltip-border)",
+                backgroundColor: "var(--chart-tooltip-bg)",
+                color: "var(--chart-tooltip-text)",
+              }}
             />
             <Legend />
             <Line
@@ -146,17 +151,22 @@ export default function AnalyticsPage() {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={propertyBreakdown} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis type="number" stroke="#9ca3af" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+              <XAxis type="number" stroke="var(--chart-axis)" fontSize={12} />
               <YAxis
                 type="category"
                 dataKey="name"
-                stroke="#9ca3af"
+                stroke="var(--chart-axis)"
                 fontSize={12}
                 width={120}
               />
               <Tooltip
-                contentStyle={{ borderRadius: 12, border: "1px solid #f3f4f6" }}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid var(--chart-tooltip-border)",
+                  backgroundColor: "var(--chart-tooltip-bg)",
+                  color: "var(--chart-tooltip-text)",
+                }}
               />
               <Bar dataKey="views" fill="#2563eb" radius={[0, 6, 6, 0]} />
             </BarChart>

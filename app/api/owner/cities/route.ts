@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
 
-    const role = (session.user as any).role;
+    const role = session.user.role;
     if (!["owner", "admin"].includes(role)) {
       return fail("Only owners can add cities", 403);
     }
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       lat: lat || state.lat || 23.5,
       lng: lng || state.lng || 78.5,
       active: true,
-      createdBy: (session.user as any).id,
+      createdBy: session.user.id,
       isOwnerAdded: true,
       areas: [],
     });

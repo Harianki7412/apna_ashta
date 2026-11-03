@@ -23,7 +23,7 @@ const SubscriptionSchema = new Schema({
   razorpayOrderId: { type: String, index: true },
   razorpayPaymentId: String,
   startDate: Date,
-  expiresAt: { type: Date, index: true },
+  expiresAt: Date,
   autoRenew: { type: Boolean, default: false },
   cancelledAt: Date,
   cancelReason: String,

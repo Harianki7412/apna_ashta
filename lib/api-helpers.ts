@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-export function ok(data: any, status = 200) {
+export function ok(data: unknown, status = 200) {
   return NextResponse.json({ data }, { status });
 }
 
-export function fail(message: string, status = 400, details?: any) {
+export function fail(message: string, status = 400, details?: unknown) {
   return NextResponse.json({ error: message, details }, { status });
 }
 

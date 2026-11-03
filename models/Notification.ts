@@ -4,7 +4,17 @@ const NotificationSchema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   type: {
     type: String,
-    enum: ['message', 'property_approved', 'property_rejected', 'new_listing', 'system', 'kyc_verified', 'kyc_rejected'],
+    enum: [
+      'message',
+      'property_approved',
+      'property_rejected',
+      'new_listing',
+      'system',
+      'kyc_verified',
+      'kyc_rejected',
+      'agreement_sent',
+      'agreement_confirmed',
+    ],
     required: true,
   },
   title: { type: String, required: true },

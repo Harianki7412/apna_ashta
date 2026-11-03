@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         method === 'phone'
           ? { phone: identifier, phoneVerified: true }
           : { email: identifier.toLowerCase(), emailVerified: true };
-      await User.findByIdAndUpdate((session.user as any).id, update);
+      await User.findByIdAndUpdate(session.user.id, update);
     }
 
     return ok({ verified: true, method });

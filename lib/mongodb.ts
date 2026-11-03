@@ -17,7 +17,18 @@ import '@/models/RentAgreement';
 const MONGODB_URI = process.env.MONGODB_URI!;
 if (!MONGODB_URI) throw new Error('MONGODB_URI missing');
 
-let cached = (global as any).mongoose || { conn: null, promise: null };
+type MongooseCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
+
+type MongooseGlobal = typeof globalThis & { mongoose?: MongooseCache };
+
+const globalWithMongoose = globalThis as MongooseGlobal;
+const cached: MongooseCache = globalWithMongoose.mongoose ?? {
+  conn: null,
+  promise: null,
+};
 
 export async function connectDB() {
   if (cached.conn) return cached.conn;
@@ -28,6 +39,6 @@ export async function connectDB() {
     });
   }
   cached.conn = await cached.promise;
-  (global as any).mongoose = cached;
+  globalWithMongoose.mongoose = cached;
   return cached.conn;
 }

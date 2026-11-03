@@ -13,13 +13,13 @@ export async function POST(req: Request) {
     await connectDB();
     const prop = await Property.findById(propertyId);
     if (!prop) return fail('Not found', 404);
-    if (prop.owner.toString() !== (session.user as any).id) return fail('Forbidden', 403);
+    if (prop.owner.toString() !== session.user.id) return fail('Forbidden', 403);
     if (prop.status !== 'approved') return fail('Only approved can be featured');
     const order = await razorpay.orders.create({
       amount: FEATURED_PRICE_INR * 100,
       currency: 'INR',
       receipt: `feat_${propertyId}_${Date.now()}`,
-      notes: { propertyId, userId: (session.user as any).id },
+      notes: { propertyId, userId: session.user.id },
     });
     return ok({ orderId: order.id, amount: order.amount, keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID });
   } catch (e) {

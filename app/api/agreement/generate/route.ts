@@ -20,8 +20,8 @@ export async function POST(req: Request) {
       .lean();
     if (!property) return fail('Property not found', 404);
 
-    const me = (session.user as any).id;
-    const role = (session.user as any).role;
+    const me = session.user.id;
+    const role = session.user.role;
     if (property.owner._id.toString() !== me && role !== 'admin') {
       return fail('Forbidden', 403);
     }

@@ -11,19 +11,8 @@ export default function DisclaimerPage() {
       <h1>Legal Disclaimer</h1>
       <p className="text-sm text-gray-500">Last updated: October 27, 2026</p>
 
-      <div
-        style={{
-          background: "#fffbeb",
-          border: "1px solid #f59e0b",
-          borderRadius: "12px",
-          padding: "16px",
-          margin: "16px 0",
-        }}
-      >
-        <p
-          className="text-sm"
-          style={{ color: "#92400e", fontWeight: 600, margin: 0 }}
-        >
+      <div className="my-4 rounded-xl border border-warning-300 dark:border-warning-700 bg-warning-50 dark:bg-warning-900/20 p-4">
+        <p className="m-0 text-sm font-semibold text-warning-800 dark:text-warning-300">
           ⚠️ Important: Flatova is a marketplace, NOT a real estate broker,
           agent, or party to any rental transaction.
         </p>

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const rl = rateLimit(`pwd:${me}`, 3, 300_000);
     if (!rl.allowed) return fail('Too many attempts', 429);
 

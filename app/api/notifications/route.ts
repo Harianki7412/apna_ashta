@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
     await connectDB();
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const [items, unread] = await Promise.all([
       Notification.find({ user: me }).sort({ createdAt: -1 }).limit(50).lean(),
       Notification.countDocuments({ user: me, read: false }),
@@ -25,7 +25,7 @@ export async function PATCH() {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
     await connectDB();
-    await Notification.updateMany({ user: (session.user as any).id, read: false }, { read: true });
+    await Notification.updateMany({ user: session.user.id, read: false }, { read: true });
     return ok({ marked: true });
   } catch (e) {
     return handleError(e);
@@ -39,7 +39,7 @@ export async function DELETE(req: Request) {
     const { id } = await req.json();
     if (!id) return fail('id required');
     await connectDB();
-    await Notification.deleteOne({ _id: id, user: (session.user as any).id });
+    await Notification.deleteOne({ _id: id, user: session.user.id });
     return ok({ deleted: true });
   } catch (e) {
     return handleError(e);

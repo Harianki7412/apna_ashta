@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const url = await uploadAny(buf, 'apna-ashta/kyc');
     await connectDB();
     await User.findByIdAndUpdate(
-  (session.user as any).id,
+  session.user.id,
   { kycDocument: url, kycStatus: 'pending' },
   { returnDocument: 'after' }
 );

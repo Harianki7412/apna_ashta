@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Please login to report", 401);
 
-    const me = (session.user as any).id;
+    const me = session.user.id;
     const rl = rateLimit(`report:${me}`, 5, 60 * 60 * 1000); // 5 reports per hour
     if (!rl.allowed) return fail("Too many reports. Try again later.", 429);
 

@@ -12,7 +12,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== "admin") {
+    if (!session || session.user?.role !== "admin") {
       return fail("Forbidden", 403);
     }
 
@@ -27,7 +27,7 @@ export async function POST(
     if (action === "verify") {
       property.verified = true;
       property.verifiedAt = new Date();
-      property.verifiedBy = (session.user as any).id;
+      property.verifiedBy = session.user.id;
       property.verificationNotes = notes;
 
       if (property.owner) {
@@ -51,7 +51,7 @@ export async function POST(
     await property.save();
 
     await logActivity({
-      actor: (session.user as any).id,
+      actor: session.user.id,
       action: action === "verify" ? "approve" : "reject",
       targetType: "property",
       targetId: id,

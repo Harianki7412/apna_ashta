@@ -107,10 +107,6 @@ export default function AgreementDetailPage() {
     }
   }
 
-  async function downloadPdf() {
-    window.open(`/api/agreements/${id}/pdf`, "_blank");
-  }
-
   if (loading || !data) {
     return (
       <div className="max-w-3xl mx-auto">
@@ -198,9 +194,12 @@ export default function AgreementDetailPage() {
 
           <div className="flex gap-2">
             {agreement.status === "confirmed" && (
-              <button onClick={downloadPdf} className="btn btn-success btn-sm">
+              <a
+                href={`/api/agreements/${id}/pdf`}
+                className="btn btn-success btn-sm"
+              >
                 <Download size={14} /> Download PDF
-              </button>
+              </a>
             )}
             {agreement.status === "pending" && isTenant && (
               <>

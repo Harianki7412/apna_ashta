@@ -12,7 +12,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== "admin") {
+    if (!session || session.user?.role !== "admin") {
       return fail("Forbidden", 403);
     }
 
@@ -38,7 +38,7 @@ export async function PATCH(
     if (adminNote) report.adminNote = adminNote;
 
     if (action === "resolve" || action === "dismiss") {
-      report.resolvedBy = (session.user as any).id;
+      report.resolvedBy = session.user.id;
       report.resolvedAt = new Date();
     }
     await report.save();
@@ -55,7 +55,7 @@ export async function PATCH(
     }
 
     await logActivity({
-      actor: (session.user as any).id,
+      actor: session.user.id,
       action: "approve",
       targetType: "property",
       targetId: report.property.toString(),

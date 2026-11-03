@@ -49,6 +49,7 @@ interface CityData {
 
 function PropertiesPage() {
   const t = useTranslations("search");
+  const tCommon = useTranslations("common");
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -128,7 +129,7 @@ function PropertiesPage() {
         name: `Search in ${filters.city || "All cities"}${filters.area ? " - " + filters.area : ""}`,
         filters,
       });
-      toast.success("Search saved! We'll notify you of new matches.");
+      toast.success(t("searchSaved"));
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -186,7 +187,7 @@ function PropertiesPage() {
               : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-brand-300"
           }`}
         >
-          <MapPin size={14} /> All Cities
+          <MapPin size={14} /> {tCommon("allCities")}
         </button>
 
         {cities.map((c) => (
@@ -220,7 +221,7 @@ function PropertiesPage() {
               : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400"
           }`}
         >
-          Any BHK
+          {t("anyBhk") || tCommon("anyBhk")}
         </button>
         {BHK_OPTIONS.map((b) => (
           <button
@@ -257,7 +258,7 @@ function PropertiesPage() {
         </div>
 
         <input
-          placeholder="Area / Colony"
+          placeholder={t("areaColony") || tCommon("areaColony")}
           list="area-filter-options"
           value={filters.area}
           onChange={(e) => setFilters({ ...filters, area: e.target.value })}
@@ -276,7 +277,7 @@ function PropertiesPage() {
           onChange={(e) => setFilters({ ...filters, type: e.target.value })}
           className="input w-40"
         >
-          <option value="">All Types</option>
+          <option value="">{tCommon("allTypes")}</option>
           <option value="Room">Room</option>
           <option value="Flat">Flat</option>
           <option value="Builder Floor">Builder Floor</option>
@@ -322,7 +323,7 @@ function PropertiesPage() {
           className={`btn ${showAdvanced ? "btn-primary" : "btn-ghost"} flex items-center gap-1`}
         >
           <SlidersHorizontal size={16} />
-          Filters
+          {t("filters") || tCommon("filters")}
           {activeFilterCount > 0 && (
             <span className="bg-white/25 text-current text-xs px-1.5 py-0.5 rounded-full">
               {activeFilterCount}
@@ -343,18 +344,18 @@ function PropertiesPage() {
       {showAdvanced && (
         <div className="card p-4 mb-4 space-y-4 animate-slide-down">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold">Advanced Filters</h3>
+            <h3 className="font-bold">{t("advancedFilters")}</h3>
             <button
               onClick={clearFilters}
               className="text-xs text-brand-600 hover:underline flex items-center gap-1"
             >
-              <X size={12} /> Reset all
+              <X size={12} /> {t("resetAll") || tCommon("resetAll")}
             </button>
           </div>
 
           {/* Verified only */}
           <div>
-            <label className="label">Verified</label>
+            <label className="label">{tCommon("verified")}</label>
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -370,14 +371,14 @@ function PropertiesPage() {
                     : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700"
                 }`}
               >
-                <Shield size={12} /> Physically Verified Only
+                <Shield size={12} /> {t("verifiedOnly")}
               </button>
             </div>
           </div>
 
           {/* Furnishing */}
           <div>
-            <label className="label">Furnishing</label>
+            <label className="label">{t("furnishing") || tCommon("filters")}</label>
             <div className="flex flex-wrap gap-2">
               {FURNISHING_OPTIONS.map((o) => (
                 <button
@@ -403,7 +404,7 @@ function PropertiesPage() {
 
           {/* Parking */}
           <div>
-            <label className="label">Parking</label>
+            <label className="label">{t("parking") || tCommon("filters")}</label>
             <div className="flex flex-wrap gap-2">
               {PARKING_OPTIONS.filter((o) => o.value !== "None").map((o) => (
                 <button
@@ -429,7 +430,7 @@ function PropertiesPage() {
 
           {/* Bathrooms */}
           <div>
-            <label className="label">Bathrooms</label>
+            <label className="label">{t("bathrooms") || tCommon("filters")}</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4].map((n) => (
                 <button
@@ -456,7 +457,7 @@ function PropertiesPage() {
 
           {/* Preferred tenants */}
           <div>
-            <label className="label">Preferred Tenants</label>
+            <label className="label">{t("preferredTenants") || tCommon("filters")}</label>
             <div className="flex flex-wrap gap-2">
               {TENANT_PREFERENCES.map((o) => (
                 <button

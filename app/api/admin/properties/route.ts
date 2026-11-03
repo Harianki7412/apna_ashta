@@ -6,9 +6,14 @@ import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
 
+interface UpdatedProperty {
+  title: string;
+  owner: { _id: { toString(): string } } | null;
+}
+
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return (s?.user as any)?.role === "admin" ? s : null;
+  return s?.user?.role === "admin" ? s : null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -25,7 +30,10 @@ export async function GET(req: Request) {
     const limit = 20;
     const search = sp.get("q");
 
-    const query: any = { status };
+    const query: {
+      status: string;
+      $or?: { title?: RegExp; area?: RegExp; city?: RegExp }[];
+    } = { status };
 
     if (search) {
       query.$or = [
@@ -86,34 +94,34 @@ export async function PATCH(req: Request) {
     // Update populated version for notification
     const updated = await Property.findById(id)
       .populate("owner", "name email")
-      .lean();
+      .lean<UpdatedProperty>();
     if (!updated) return fail("Not found", 404);
 
     // ═══ Activity Log ═══
     await logActivity({
-      actor: (session.user as any).id,
+      actor: session.user.id,
       action: status === "approved" ? "approve" : "reject",
       targetType: "property",
       targetId: id,
-      targetLabel: (updated as any).title,
+      targetLabel: updated.title,
       metadata: { from: oldStatus, to: status },
       ip: req.headers.get("x-forwarded-for") || "unknown",
       userAgent: req.headers.get("user-agent") || "",
     });
 
     // ═══ Notify owner ═══
-    if ((updated as any).owner?._id) {
-      await notifyUser((updated as any).owner._id.toString(), {
+    if (updated.owner?._id) {
+      await notifyUser(updated.owner._id.toString(), {
         type: status === "approved" ? "property_approved" : "property_rejected",
         title:
           status === "approved"
             ? "Your property is live!"
             : "Property rejected",
-        body: (updated as any).title,
+        body: updated.title,
         link: `/properties/${id}`,
         email: true,
         emailData: {
-          propertyTitle: (updated as any).title,
+          propertyTitle: updated.title,
           propertyId: id,
         },
       });
@@ -142,7 +150,7 @@ export async function DELETE(req: Request) {
     if (!property) return fail("Property not found", 404);
 
     await logActivity({
-      actor: (session.user as any).id,
+      actor: session.user.id,
       action: "delete",
       targetType: "property",
       targetId: id,

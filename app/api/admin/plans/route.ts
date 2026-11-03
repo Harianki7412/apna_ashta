@@ -6,7 +6,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return (s?.user as any)?.role === "admin" ? s : null;
+  return s?.user?.role === "admin" ? s : null;
 }
 
 /* ═══ GET: List all plans (admin) ═══ */

@@ -6,7 +6,7 @@ import { ok, fail, handleError } from '@/lib/api-helpers';
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return (s?.user as any)?.role === 'admin' ? s : null;
+  return s?.user?.role === 'admin' ? s : null;
 }
 
 export async function GET(req: Request) {
@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
 
     const { userId, action, role, reason } = await req.json();
 
-    if (userId === (adminSession.user as any).id) {
+    if (userId === adminSession.user.id) {
       return fail('Cannot modify yourself');
     }
 

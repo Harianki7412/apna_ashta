@@ -56,6 +56,7 @@ async function getStats() {
 
 export default async function Home() {
   const t = await getTranslations("home");
+  const tCommon = await getTranslations("common");
   const { latest, totalCount, cityCounts } = await getStats();
 
   return (
@@ -92,11 +93,11 @@ export default async function Home() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-sm font-medium mb-6">
             <Sparkles size={14} className="text-accent-400" />
-            <span>Ashta ka #1 Rental Platform</span>
+            <span>{t("topBadge")}</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
-            Apna Ghar,
+            {t("heroTitle")},
             <br />
             <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-400 bg-clip-text text-transparent">
               Flatova
@@ -104,8 +105,7 @@ export default async function Home() {
           </h1>
 
           <p className="text-lg md:text-xl text-brand-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Verified rooms, flats, and homes in Ashta, Kothri &amp; Sehore.
-            Direct from owners — zero brokerage, zero middlemen.
+            {t("heroDescription")}
           </p>
 
           {/* Search CTA */}
@@ -115,7 +115,7 @@ export default async function Home() {
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-brand-700 font-bold text-base shadow-2xl shadow-brand-900/30 hover:bg-brand-50 hover:scale-[1.02] transition-all"
             >
               <Search size={20} />
-              Search Properties
+              {t("browseBtn")}
               <ArrowRight size={18} />
             </Link>
             <Link
@@ -123,7 +123,7 @@ export default async function Home() {
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur border-2 border-white/30 text-white font-bold text-base hover:bg-white/20 hover:border-white/50 transition-all"
             >
               <PlusCircleIcon />
-              List Your Property
+              {t("addProperty")}
             </Link>
           </div>
 
@@ -134,20 +134,20 @@ export default async function Home() {
                 <CountUp end={totalCount} suffix="+" />
               </p>
               <p className="text-xs md:text-sm text-brand-200 mt-1">
-                Properties
+                {t("properties")}
               </p>
             </div>
             <div>
               <p className="text-3xl md:text-4xl font-extrabold">
                 <CountUp end={CITIES.length} />
               </p>
-              <p className="text-xs md:text-sm text-brand-200 mt-1">Cities</p>
+              <p className="text-xs md:text-sm text-brand-200 mt-1">{t("cities")}</p>
             </div>
             <div>
               <p className="text-3xl md:text-4xl font-extrabold">
                 <CountUp end={100} suffix="%" />
               </p>
-              <p className="text-xs md:text-sm text-brand-200 mt-1">Verified</p>
+              <p className="text-xs md:text-sm text-brand-200 mt-1">{t("verified")}</p>
             </div>
           </div>
         </div>
@@ -157,10 +157,10 @@ export default async function Home() {
       <section className="mb-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { icon: Shield, label: "Verified Listings", color: "success" },
-            { icon: Zap, label: "Direct Contact", color: "accent" },
-            { icon: Users, label: "No Brokerage", color: "brand" },
-            { icon: Award, label: "Admin Approved", color: "warning" },
+            { icon: Shield, label: tCommon("verifiedListings"), color: "success" },
+            { icon: Zap, label: tCommon("directContact"), color: "accent" },
+            { icon: Users, label: tCommon("noBrokerage"), color: "brand" },
+            { icon: Award, label: tCommon("adminApproved"), color: "warning" },
           ].map((item, i) => {
             const Icon = item.icon;
             const colors: any = {
@@ -193,10 +193,10 @@ export default async function Home() {
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold mb-1">
-              Browse by City
+              {tCommon("browseByCity")}
             </h2>
             <p className="text-gray-500 text-sm">
-              Explore properties in your city
+              {tCommon("exploreCity")}
             </p>
           </div>
         </div>
@@ -208,7 +208,7 @@ export default async function Home() {
               href={`/rent-in/${city.slug}`}
               className="group relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:border-brand-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-brand-50 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-brand-50 dark:from-brand-900/40 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center mb-4 shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform duration-300">
@@ -224,10 +224,10 @@ export default async function Home() {
 
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                   <span className="text-sm font-semibold text-brand-600">
-                    {count} {count === 1 ? "property" : "properties"}
+                    {count} {count === 1 ? tCommon("property") : tCommon("properties")}
                   </span>
                   <span className="flex items-center gap-1 text-brand-600 text-sm font-semibold group-hover:translate-x-1 transition-transform">
-                    View <ArrowRight size={14} />
+                    {tCommon("view")} <ArrowRight size={14} />
                   </span>
                 </div>
               </div>
@@ -243,13 +243,13 @@ export default async function Home() {
             <h2 className="text-2xl md:text-3xl font-bold mb-1">
               {t("latest")}
             </h2>
-            <p className="text-gray-500 text-sm">Recently added properties</p>
+            <p className="text-gray-500 text-sm">{tCommon("recentlyAdded")}</p>
           </div>
           <Link
             href="/properties"
             className="flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 hover:gap-2.5 transition-all"
           >
-            View all <ArrowRight size={16} />
+            {tCommon("viewAll")} <ArrowRight size={16} />
           </Link>
         </div>
 
@@ -268,9 +268,9 @@ export default async function Home() {
         ) : (
           <EmptyState
             icon={HomeIcon}
-            title="No listings yet"
-            description="Be the first to list a property in Ashta."
-            actionLabel="Add Property"
+            title={t("noListingsYet")}
+            description={t("beFirstToList")}
+            actionLabel={t("addProperty")}
             actionHref="/properties/new"
           />
         )}
@@ -278,20 +278,20 @@ export default async function Home() {
 
       {/* ═══════════ HOW IT WORKS TEASER ═══════════ */}
       <section className="mb-14">
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 md:p-12 border border-gray-100">
+        <div className="bg-gradient-to-br from-gray-50 to-white dark:from-slate-900 dark:to-slate-800 rounded-3xl p-8 md:p-12 border border-gray-100 dark:border-slate-700">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              How It Works
+              {tCommon("howItWorks")}
             </h2>
-            <p className="text-gray-500">Get started in 3 simple steps</p>
+            <p className="text-gray-500">{tCommon("getStarted")}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
                 icon: Search,
-                title: "Search",
-                desc: "Find properties by city, area, BHK & budget",
+                title: tCommon("searchStepTitle"),
+                desc: tCommon("searchStepDesc"),
                 color: "brand",
               },
               {
@@ -302,8 +302,8 @@ export default async function Home() {
               },
               {
                 icon: HomeIcon,
-                title: "Move In",
-                desc: "Visit, finalize, and shift into your new home",
+                title: tCommon("moveIn"),
+                desc: tCommon("moveInStepDesc"),
                 color: "accent",
               },
             ].map((step, i) => {
@@ -337,7 +337,7 @@ export default async function Home() {
               href="/how-it-works"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-brand-200 text-brand-700 font-semibold hover:bg-brand-50 hover:border-brand-300 transition-all"
             >
-              Learn More <ArrowRight size={16} />
+              {tCommon("learnMore")} <ArrowRight size={16} />
             </Link>
           </div>
         </div>
@@ -345,35 +345,35 @@ export default async function Home() {
 
       {/* ═══════════ LEARN MORE CARDS ═══════════ */}
       <section className="mb-14">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6">Learn More</h2>
+        <h2 className="text-2xl md:text-3xl font-bold mb-6">{tCommon("learnMore")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             {
               href: "/about",
               icon: Info,
-              label: "About Us",
-              desc: "Our story & mission",
+              label: tCommon("aboutUs"),
+              desc: tCommon("aboutUsDesc"),
               color: "brand",
             },
             {
               href: "/how-it-works",
               icon: BookOpen,
-              label: "How It Works",
-              desc: "Step-by-step guide",
+              label: tCommon("howItWorks"),
+              desc: tCommon("howItWorksDesc"),
               color: "success",
             },
             {
               href: "/safety-tips",
               icon: Shield,
-              label: "Safety Tips",
-              desc: "Stay protected",
+              label: tCommon("safetyTips"),
+              desc: tCommon("stayProtected"),
               color: "warning",
             },
             {
               href: "/faq",
               icon: HelpCircle,
-              label: "FAQ",
-              desc: "Common questions",
+              label: tCommon("faq"),
+              desc: tCommon("commonQuestions"),
               color: "accent",
             },
           ].map((item) => {
@@ -410,9 +410,9 @@ export default async function Home() {
       <section className="mb-14">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            What Our Users Say
+            {tCommon("whatOurUsersSay")}
           </h2>
-          <p className="text-gray-500">Real stories from real people</p>
+          <p className="text-gray-500">{tCommon("realStories")}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -478,7 +478,7 @@ export default async function Home() {
               {t("areas")}
             </h2>
             <p className="text-gray-500 text-sm">
-              Explore properties by locality
+              {tCommon("exploreByLocality")}
             </p>
           </div>
         </div>
@@ -510,15 +510,14 @@ export default async function Home() {
         <div className="relative max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-sm font-medium mb-6">
             <UserPlus size={14} />
-            <span>Free forever for basic listings</span>
+            <span>{tCommon("freeForeverBasic")}</span>
           </div>
 
           <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
-            Ready to list your property?
+            {tCommon("readyToList")}?
           </h2>
           <p className="text-brand-100 mb-8 text-base md:text-lg leading-relaxed">
-            Reach thousands of verified tenants. Free listing, direct contact,
-            zero brokerage. Flatova pe apna ghar rent pe dein.
+            {tCommon("reachTenants")}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -527,29 +526,29 @@ export default async function Home() {
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-brand-700 font-bold shadow-2xl shadow-brand-900/30 hover:bg-brand-50 hover:scale-[1.02] transition-all"
             >
               <PlusCircleIcon />
-              List Property Free
+              {tCommon("listPropertyFree")}
               <ArrowRight size={18} />
             </Link>
             <Link
               href="/how-it-works"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur border-2 border-white/30 text-white font-bold hover:bg-white/20 transition-all"
             >
-              Learn More
+              {tCommon("learnMore")}
             </Link>
           </div>
 
           <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mt-10 pt-8 border-t border-white/20">
             <div>
-              <p className="text-2xl font-bold">Free</p>
-              <p className="text-xs text-brand-200">Listing</p>
+              <p className="text-2xl font-bold">{tCommon("free")}</p>
+              <p className="text-xs text-brand-200">{tCommon("listing")}</p>
             </div>
             <div>
               <p className="text-2xl font-bold">24hr</p>
-              <p className="text-xs text-brand-200">Approval</p>
+              <p className="text-xs text-brand-200">{tCommon("approval")}</p>
             </div>
             <div>
               <p className="text-2xl font-bold">0%</p>
-              <p className="text-xs text-brand-200">Brokerage</p>
+              <p className="text-xs text-brand-200">{tCommon("brokerage")}</p>
             </div>
           </div>
         </div>

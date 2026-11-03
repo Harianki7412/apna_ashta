@@ -8,6 +8,15 @@ import { z } from 'zod';
 
 type Ctx = { params: Promise<{ id: string }> };
 
+interface PopulatedPropertyOwner {
+  _id: { toString(): string };
+}
+
+interface PublicProperty {
+  status: string;
+  owner: PopulatedPropertyOwner | null;
+}
+
 export async function GET(_: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
@@ -15,13 +24,13 @@ export async function GET(_: Request, ctx: Ctx) {
     await connectDB();
     const property = await Property.findById(id)
       .populate('owner', 'name email phone phoneVerified kycStatus')
-      .lean();
+      .lean<PublicProperty>();
     if (!property) return fail('Not found', 404);
 
     const session = await getServerSession(authOptions);
-    const me = (session?.user as any)?.id;
-    const role = (session?.user as any)?.role;
-    const isOwner = (property.owner as any)?._id?.toString() === me;
+    const me = session?.user?.id;
+    const role = session?.user?.role;
+    const isOwner = property.owner?._id.toString() === me;
     if (property.status !== 'approved' && !isOwner && role !== 'admin')
       return fail('Not found', 404);
     return ok(property);
@@ -43,8 +52,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
     const property = await Property.findById(id);
     if (!property) return fail('Not found', 404);
 
-    const me = (session.user as any).id;
-    const role = (session.user as any).role;
+    const me = session.user.id;
+    const role = session.user.role;
     if (property.owner.toString() !== me && role !== 'admin') return fail('Forbidden', 403);
 
     const parsed = updateSchema.parse(await req.json());
@@ -58,12 +67,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
       'area',
       'address',
       'images',
-    ];
-    for (const f of fields) {
-      if ((parsed as any)[f] !== undefined) (property as any)[f] = (parsed as any)[f];
+      'videos',
+    ] as const;
+    for (const field of fields) {
+      if (parsed[field] !== undefined) property.set(field, parsed[field]);
     }
     if (parsed.lat !== undefined && parsed.lng !== undefined) {
-      property.location = { type: 'Point', coordinates: [parsed.lng, parsed.lat] } as any;
+      property.location = { type: 'Point', coordinates: [parsed.lng, parsed.lat] };
     }
     if (role !== 'admin' && property.status === 'approved') property.status = 'pending';
     await property.save();
@@ -88,8 +98,8 @@ export async function DELETE(_: Request, ctx: Ctx) {
     const property = await Property.findById(id);
     if (!property) return fail('Not found', 404);
 
-    const me = (session.user as any).id;
-    const role = (session.user as any).role;
+    const me = session.user.id;
+    const role = session.user.role;
     if (property.owner.toString() !== me && role !== 'admin') return fail('Forbidden', 403);
 
     await property.deleteOne();

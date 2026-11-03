@@ -11,7 +11,7 @@ export async function POST(
 ) {
   try {
     const s = await getServerSession(authOptions);
-    if ((s?.user as any)?.role !== "admin") return fail("Forbidden", 403);
+    if (s?.user?.role !== "admin") return fail("Forbidden", 403);
 
     const { id } = await ctx.params;
     const { reply } = await req.json();

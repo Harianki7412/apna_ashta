@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
-    if ((session.user as any).role !== "owner") {
+    if (session.user.role !== "owner") {
       return fail("Only owners can subscribe", 403);
     }
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     // Cancel any existing pending subscriptions
     await Subscription.updateMany(
-      { user: (session.user as any).id, status: "pending" },
+      { user: session.user.id, status: "pending" },
       { status: "failed" },
     );
 
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       currency: "INR",
       receipt: `sub_${planId}_${Date.now()}`,
       notes: {
-        userId: (session.user as any).id,
+        userId: session.user.id,
         planId,
         billingCycle,
         type: "subscription",
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     });
 
     const sub = await Subscription.create({
-      user: (session.user as any).id,
+      user: session.user.id,
       planId,
       billingCycle,
       amount,
@@ -76,11 +76,11 @@ export async function GET() {
     if (!session) return fail("Unauthorized", 401);
 
     await connectDB();
-    const user = await User.findById((session.user as any).id)
+    const user = await User.findById(session.user.id)
       .select("subscription")
       .lean();
 
-    const history = await Subscription.find({ user: (session.user as any).id })
+    const history = await Subscription.find({ user: session.user.id })
       .sort({ createdAt: -1 })
       .limit(10)
       .lean();
@@ -102,7 +102,7 @@ export async function DELETE() {
 
     await connectDB();
     await User.updateOne(
-      { _id: (session.user as any).id },
+      { _id: session.user.id },
       { "subscription.autoRenew": false },
     );
 

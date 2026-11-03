@@ -9,7 +9,22 @@ export interface ScamWarning {
   code: string;
 }
 
-export function analyzePropertyForScams(property: any): ScamWarning[] {
+interface ScamProperty {
+  city: string;
+  area: string;
+  bhk?: string;
+  rent: number;
+  owner?: {
+    createdAt?: Date | string;
+    kycStatus?: string;
+    phoneVerified?: boolean;
+  } | null;
+  reportCount?: number;
+  images?: string[];
+  flagged?: boolean;
+}
+
+export function analyzePropertyForScams(property: ScamProperty): ScamWarning[] {
   const warnings: ScamWarning[] = [];
 
   // 1. Too cheap (40%+ below market for area)
@@ -50,7 +65,7 @@ export function analyzePropertyForScams(property: any): ScamWarning[] {
   }
 
   // 4. Multiple reports
-  if (property.reportCount >= 3) {
+  if (property.reportCount !== undefined && property.reportCount >= 3) {
     warnings.push({
       level: "high",
       code: "reported",

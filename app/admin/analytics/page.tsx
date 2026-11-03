@@ -138,13 +138,15 @@ export default function AnalyticsPage() {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={revenueChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#9ca3af" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="var(--chart-axis)" />
+              <YAxis tick={{ fontSize: 11 }} stroke="var(--chart-axis)" />
               <Tooltip
                 contentStyle={{
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--chart-tooltip-border)",
+                  backgroundColor: "var(--chart-tooltip-bg)",
+                  color: "var(--chart-tooltip-text)",
                   fontSize: 12,
                 }}
               />
@@ -196,17 +198,19 @@ export default function AnalyticsPage() {
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={usersChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10 }}
-                  stroke="#9ca3af"
+                  stroke="var(--chart-axis)"
                 />
-                <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" />
+                <YAxis tick={{ fontSize: 10 }} stroke="var(--chart-axis)" />
                 <Tooltip
                   contentStyle={{
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--chart-tooltip-border)",
+                    backgroundColor: "var(--chart-tooltip-bg)",
+                    color: "var(--chart-tooltip-text)",
                     fontSize: 12,
                   }}
                 />
@@ -228,17 +232,19 @@ export default function AnalyticsPage() {
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={listingsChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10 }}
-                  stroke="#9ca3af"
+                  stroke="var(--chart-axis)"
                 />
-                <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" />
+                <YAxis tick={{ fontSize: 10 }} stroke="var(--chart-axis)" />
                 <Tooltip
                   contentStyle={{
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--chart-tooltip-border)",
+                    backgroundColor: "var(--chart-tooltip-bg)",
+                    color: "var(--chart-tooltip-text)",
                     fontSize: 12,
                   }}
                 />
@@ -259,19 +265,21 @@ export default function AnalyticsPage() {
         </h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={cityChart} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis type="number" tick={{ fontSize: 12 }} stroke="#9ca3af" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+            <XAxis type="number" tick={{ fontSize: 12 }} stroke="var(--chart-axis)" />
             <YAxis
               type="category"
               dataKey="city"
               width={100}
               tick={{ fontSize: 12 }}
-              stroke="#9ca3af"
+              stroke="var(--chart-axis)"
             />
             <Tooltip
               contentStyle={{
                 borderRadius: 8,
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--chart-tooltip-border)",
+                backgroundColor: "var(--chart-tooltip-bg)",
+                color: "var(--chart-tooltip-text)",
                 fontSize: 12,
               }}
             />

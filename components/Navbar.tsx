@@ -30,6 +30,7 @@ import ThemeToggle from "./ThemeToggle";
 export default function Navbar() {
   const { data: session } = useSession();
   const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -54,8 +55,8 @@ export default function Navbar() {
   // Admin sees minimal nav
   const mainLinks = isAdmin
     ? [
-        { href: "/admin", label: "Admin Panel", icon: Shield },
-        { href: "/properties", label: "Browse Site", icon: Search },
+        { href: "/admin", label: t("adminPanel"), icon: Shield },
+        { href: "/properties", label: t("browseSite"), icon: Search },
       ]
     : [
         { href: "/properties", label: t("browse"), icon: Search },
@@ -71,7 +72,7 @@ export default function Navbar() {
         ...(session
           ? [
               { href: "/chat", label: t("chat"), icon: MessageCircle },
-              { href: "/agreements", label: "Agreements", icon: FileText },
+              { href: "/agreements", label: t("agreements"), icon: FileText },
               {
                 href: "/dashboard",
                 label: t("dashboard"),
@@ -83,12 +84,12 @@ export default function Navbar() {
       ];
 
   const infoLinks = [
-    { href: "/about", label: "About Us", icon: Info },
-    { href: "/how-it-works", label: "How It Works", icon: HelpCircle },
-    { href: "/pricing", label: "Pricing", icon: Package },
-    { href: "/faq", label: "FAQ", icon: HelpCircle },
-    { href: "/safety-tips", label: "Safety Tips", icon: Shield },
-    { href: "/contact", label: "Contact", icon: MessageSquare },
+    { href: "/about", label: t("aboutUs"), icon: Info },
+    { href: "/how-it-works", label: t("howItWorks"), icon: HelpCircle },
+    { href: "/pricing", label: t("pricing"), icon: Package },
+    { href: "/faq", label: t("faq"), icon: HelpCircle },
+    { href: "/safety-tips", label: t("safetyTips"), icon: Shield },
+    { href: "/contact", label: t("contact"), icon: MessageSquare },
   ];
 
   const isActive = (href: string) =>
@@ -164,7 +165,7 @@ export default function Navbar() {
                 }`}
               >
                 <Info size={16} />
-                Info
+                {t("info")}
                 <ChevronDown
                   size={14}
                   className={`transition-transform duration-200 ${

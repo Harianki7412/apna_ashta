@@ -7,7 +7,7 @@ import { ok, fail, handleError } from "@/lib/api-helpers";
 export async function GET(req: Request) {
   try {
     const s = await getServerSession(authOptions);
-    if ((s?.user as any)?.role !== "admin") return fail("Forbidden", 403);
+    if (s?.user?.role !== "admin") return fail("Forbidden", 403);
 
     const sp = new URL(req.url).searchParams;
     const page = Math.max(1, Number(sp.get("page") || 1));
