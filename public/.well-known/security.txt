@@ -1,0 +1,7 @@
+Contact: mailto:hello@Flatova.in
+Expires: 2027-12-31T00:00:00.000Z
+Encryption: https://flatova.in/.well-known/pgp-key.asc
+Acknowledgments: https://flatova.in/about
+Preferred-Languages: en, hi
+Canonical: https://flatova.in
+Policy: https://flatova.in/privacy
