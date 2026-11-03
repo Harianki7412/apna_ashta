@@ -1,5 +1,3 @@
-const DEVELOPMENT_OTP = '123456';
-
 function getCredentials() {
   const authKey = process.env.MSG91_AUTH_KEY;
   const templateId = process.env.MSG91_TEMPLATE_ID;
@@ -19,8 +17,6 @@ function isSuccessfulResponse(data: unknown): boolean {
 }
 
 export async function sendOtp(phone: string): Promise<boolean> {
-  if (process.env.NODE_ENV === 'development') return true;
-
   const { authKey, templateId } = getCredentials();
   const res = await fetch('https://control.msg91.com/api/v5/otp', {
     method: 'POST',
@@ -37,8 +33,6 @@ export async function sendOtp(phone: string): Promise<boolean> {
 }
 
 export async function verifyOtp(phone: string, otp: string): Promise<boolean> {
-  if (process.env.NODE_ENV === 'development') return otp === DEVELOPMENT_OTP;
-
   const { authKey } = getCredentials();
   const url = new URL('https://control.msg91.com/api/v5/otp/verify');
   url.searchParams.set('mobile', `91${phone}`);
