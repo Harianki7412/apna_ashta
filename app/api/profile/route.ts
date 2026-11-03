@@ -13,7 +13,9 @@ export async function GET() {
     if (!session) return fail('Unauthorized', 401);
     await connectDB();
     const user = await User.findById(session.user.id)
-      .select('-password -resetToken -resetTokenExpiry -kycDocument')
+      .select(
+        '-password -resetToken -resetTokenExpiry -kycDocument -kycDocumentFront -kycDocumentBack'
+      )
       .lean();
     if (!user) return fail('Not found', 404);
     return ok(user);
@@ -30,7 +32,7 @@ export async function PATCH(req: Request) {
     if (name !== undefined && (typeof name !== 'string' || name.length < 2)) return fail('Name too short');
     if (phone !== undefined && phone !== '' && !/^\d{10}$/.test(phone)) return fail('Invalid phone');
     await connectDB();
-    const update: any = {};
+    const update: { name?: string; phone?: string } = {};
     if (name) update.name = name;
     if (phone !== undefined) update.phone = phone || undefined;
     const user = await User.findByIdAndUpdate(

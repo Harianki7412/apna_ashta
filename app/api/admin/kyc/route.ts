@@ -15,7 +15,7 @@ export async function GET() {
     if (!(await requireAdmin())) return fail("Forbidden", 403);
     await connectDB();
     const users = await User.find({ kycStatus: "pending" })
-      .select("name email phone kycDocument createdAt")
+      .select("name email phone kycDocument kycDocumentFront kycDocumentBack createdAt")
       .lean();
     return ok(users);
   } catch (e) {

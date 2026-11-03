@@ -7,10 +7,20 @@ import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
 import { ArrowLeft } from "lucide-react";
 
+type KycUser = {
+  _id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  kycDocument?: string;
+  kycDocumentFront?: string;
+  kycDocumentBack?: string;
+};
+
 export default function AdminKyc() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<KycUser[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -18,8 +28,7 @@ export default function AdminKyc() {
       return;
     }
     if (status === "authenticated") {
-      const r = (session?.user as any)?.role;
-      if (r !== "admin") {
+      if (session?.user.role !== "admin") {
         toast.error("Admin access required");
         router.push("/");
       }
@@ -28,29 +37,38 @@ export default function AdminKyc() {
 
   async function load() {
     try {
-      const d = await api.get<any[]>("/api/admin/kyc");
+      const d = await api.get<KycUser[]>("/api/admin/kyc");
       setUsers(d);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Unable to load KYC requests");
     }
   }
 
   useEffect(() => {
-    if (
-      status === "authenticated" &&
-      (session?.user as any)?.role === "admin"
-    ) {
-      load();
-    }
+    if (status !== "authenticated" || session?.user.role !== "admin") return;
+    let active = true;
+    api.get<KycUser[]>("/api/admin/kyc")
+      .then((data) => {
+        if (active) setUsers(data);
+      })
+      .catch((e: unknown) => {
+        if (active)
+          toast.error(
+            e instanceof Error ? e.message : "Unable to load KYC requests",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, [status, session]);
 
-  async function review(userId: string, stat: string) {
+  async function review(userId: string, stat: "verified" | "rejected") {
     try {
       await api.patch("/api/admin/kyc", { userId, status: stat });
       toast.success(`KYC ${stat}`);
       load();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Unable to update KYC");
     }
   }
 
@@ -74,16 +92,38 @@ export default function AdminKyc() {
               {u.name} · {u.email}
             </p>
             <p className="text-sm text-gray-500">Phone: {u.phone || "—"}</p>
-            {u.kycDocument && (
-              <a
-                href={u.kycDocument}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-600 text-sm underline"
-              >
-                View Document
-              </a>
-            )}
+            <div className="flex flex-wrap gap-3 mt-2">
+              {u.kycDocumentFront && (
+                <a
+                  href={u.kycDocumentFront}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-600 text-sm underline"
+                >
+                  View Aadhaar front
+                </a>
+              )}
+              {u.kycDocumentBack && (
+                <a
+                  href={u.kycDocumentBack}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-600 text-sm underline"
+                >
+                  View Aadhaar back
+                </a>
+              )}
+              {!u.kycDocumentFront && !u.kycDocumentBack && u.kycDocument && (
+                <a
+                  href={u.kycDocument}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-600 text-sm underline"
+                >
+                  View legacy document
+                </a>
+              )}
+            </div>
             <div className="flex gap-2 mt-2">
               <button
                 onClick={() => review(u._id, "verified")}

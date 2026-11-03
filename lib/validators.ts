@@ -9,7 +9,7 @@ export const otpSendSchema = z
     (d) =>
       d.method === "email"
         ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.identifier)
-        : /^\d{10}$/.test(d.identifier),
+        : /^[6-9]\d{9}$/.test(d.identifier),
     {
       message: "Invalid email or phone for the chosen method",
       path: ["identifier"],
@@ -20,7 +20,13 @@ export const otpVerifySchema = z.object({
   identifier: z.string().min(3),
   method: z.enum(["email", "phone"]),
   otp: z.string().regex(/^\d{6}$/),
-});
+}).refine(
+  (d) => d.method !== "phone" || /^[6-9]\d{9}$/.test(d.identifier),
+  {
+    message: "Enter a valid 10-digit Indian mobile number",
+    path: ["identifier"],
+  },
+);
 
 export const registerSchema = z
   .object({

@@ -14,20 +14,17 @@ import {
   ArrowRight,
   ArrowLeft,
   Mail,
-  Phone,
   ShieldCheck,
   RefreshCw,
   Lock,
 } from "lucide-react";
 
 type Role = "tenant" | "owner";
-type VerifyMethod = "email" | "phone";
 type Step = "role" | "details" | "otp";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("role");
-  const [method, setMethod] = useState<VerifyMethod>("email");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +35,6 @@ export default function RegisterPage() {
     role: "tenant" as Role,
     name: "",
     email: "",
-    phone: "",
     password: "",
   });
 
@@ -75,14 +71,9 @@ export default function RegisterPage() {
     if (form.name.trim().length < 2) return "Enter your full name";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       return "Enter a valid email";
-    if (!/^\d{10}$/.test(form.phone)) return "Enter a valid 10-digit phone";
     if (form.password.length < 6)
       return "Password must be at least 6 characters";
     return null;
-  }
-
-  function getIdentifier(): string {
-    return method === "email" ? form.email.toLowerCase() : form.phone;
   }
 
   async function sendOtp(isResend = false) {
@@ -94,19 +85,17 @@ export default function RegisterPage() {
 
     try {
       await api.post("/api/otp/send", {
-        identifier: getIdentifier(),
-        method,
+        identifier: form.email.toLowerCase(),
+        method: "email",
       });
-      toast.success(
-        method === "email"
-          ? `OTP sent to ${form.email}`
-          : `OTP sent to +91 ${form.phone}`,
-      );
+      toast.success(`OTP sent to ${form.email}`);
       setStep("otp");
       setOtp("");
       setResendCountdown(30);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof Error ? e.message : "Unable to send email verification code",
+      );
     } finally {
       setLoading(false);
       setResending(false);
@@ -120,8 +109,8 @@ export default function RegisterPage() {
     try {
       // Step 1: Verify OTP
       await api.post("/api/otp/verify", {
-        identifier: getIdentifier(),
-        method,
+        identifier: form.email.toLowerCase(),
+        method: "email",
         otp,
       });
 
@@ -129,16 +118,15 @@ export default function RegisterPage() {
       await api.post("/api/auth/register", {
         name: form.name,
         email: form.email,
-        phone: form.phone,
         password: form.password,
         role: form.role,
-        verifiedBy: method,
+        verifiedBy: "email",
       });
 
       toast.success("Account created! Please login.");
       router.push("/login");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Unable to create account");
       setLoading(false);
     }
   }
@@ -275,31 +263,6 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="label">Phone number</label>
-                <div className="flex gap-2">
-                  <span className="flex items-center px-3 bg-gray-100 rounded-xl text-sm font-medium text-gray-600 border border-gray-200">
-                    +91
-                  </span>
-                  <input
-                    required
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    placeholder="9876543210"
-                    className="input flex-1"
-                    maxLength={10}
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
                 <label className="label">Password</label>
                 <div className="relative">
                   <input
@@ -340,37 +303,11 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* ═══ Verification Method Selector ═══ */}
               <div className="pt-2">
-                <label className="label">Verify with</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMethod("email")}
-                    className={`p-3 rounded-xl text-sm font-semibold border-2 transition-all flex items-center justify-center gap-2 ${
-                      method === "email"
-                        ? "bg-brand-50 border-brand-600 text-brand-700"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <Mail size={16} /> Email
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMethod("phone")}
-                    className={`p-3 rounded-xl text-sm font-semibold border-2 transition-all flex items-center justify-center gap-2 ${
-                      method === "phone"
-                        ? "bg-brand-50 border-brand-600 text-brand-700"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <Phone size={16} /> Phone (SMS)
-                  </button>
-                </div>
+                <label className="label">Email verification</label>
                 <p className="text-xs text-gray-500 mt-2">
-                  {method === "email"
-                    ? `OTP will be sent to ${form.email || "your email"}`
-                    : `OTP will be sent to +91 ${form.phone || "your phone"}`}
+                  A verification code will be sent to{" "}
+                  {form.email || "your email"}.
                 </p>
               </div>
 
@@ -380,15 +317,11 @@ export default function RegisterPage() {
                 className="btn btn-primary btn-lg w-full mt-2"
               >
                 {loading ? (
-                  "Sending OTP..."
+                  "Sending code..."
                 ) : (
                   <>
-                    {method === "email" ? (
-                      <Mail size={16} />
-                    ) : (
-                      <Phone size={16} />
-                    )}
-                    Send OTP via {method === "email" ? "Email" : "SMS"}
+                    <Mail size={16} />
+                    Send email verification code
                   </>
                 )}
               </button>
@@ -419,12 +352,12 @@ export default function RegisterPage() {
 
               <div className="text-center mb-4">
                 <h2 className="text-xl font-bold mb-1">
-                  Verify your {method === "email" ? "email" : "phone"}
+                  Verify your email
                 </h2>
                 <p className="text-sm text-gray-500">
                   We sent a 6-digit OTP to{" "}
                   <strong className="text-gray-900">
-                    {method === "email" ? form.email : `+91 ${form.phone}`}
+                    {form.email}
                   </strong>
                 </p>
               </div>
@@ -554,11 +487,10 @@ export default function RegisterPage() {
 
           <div className="mt-10 p-4 bg-white/10 rounded-xl backdrop-blur border border-white/20">
             <p className="text-sm font-semibold mb-1">
-              🔒 Flexible Verification
+              🔒 Email verification
             </p>
             <p className="text-xs text-brand-100">
-              Verify with email OR phone — your choice. Login with either one
-              later.
+              Verify your email address to create your account.
             </p>
           </div>
         </div>

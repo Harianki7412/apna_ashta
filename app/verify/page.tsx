@@ -14,6 +14,7 @@ import {
   ArrowRight,
   FileCheck,
   Lock,
+  RefreshCw,
 } from "lucide-react";
 
 type Step = "phone" | "otp" | "kyc" | "done";
@@ -25,7 +26,9 @@ export default function VerifyPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [frontFile, setFrontFile] = useState<File | null>(null);
+  const [backFile, setBackFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -33,15 +36,27 @@ export default function VerifyPage() {
     }
   }, [status, router]);
 
-  async function sendOtp() {
-    if (phone.length !== 10) return toast.error("10-digit phone");
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setInterval(
+      () => setResendCountdown((countdown) => Math.max(0, countdown - 1)),
+      1000,
+    );
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
+
+  async function sendOtp(isResend = false) {
+    if (!/^[6-9]\d{9}$/.test(phone))
+      return toast.error("Enter a valid 10-digit Indian mobile number");
     setLoading(true);
     try {
       await api.post("/api/otp/send", { identifier: phone, method: "phone" });
       setStep("otp");
-      toast.success("OTP sent");
-    } catch (e: any) {
-      toast.error(e.message);
+      setOtp("");
+      setResendCountdown(30);
+      toast.success(isResend ? "A new OTP was sent" : "OTP sent to your mobile");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Unable to send OTP");
     } finally {
       setLoading(false);
     }
@@ -58,24 +73,26 @@ export default function VerifyPage() {
       });
       setStep("kyc");
       toast.success("Phone verified!");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Unable to verify OTP");
     } finally {
       setLoading(false);
     }
   }
 
   async function uploadKyc() {
-    if (!file) return toast.error("Select a document");
+    if (!frontFile || !backFile)
+      return toast.error("Add clear photos of both sides of your Aadhaar card");
     setLoading(true);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("front", frontFile);
+    fd.append("back", backFile);
     try {
       await api.post("/api/kyc/upload", fd);
       setStep("done");
       toast.success("KYC submitted");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Unable to submit KYC");
     } finally {
       setLoading(false);
     }
@@ -155,13 +172,16 @@ export default function VerifyPage() {
       <div className="card p-6 md:p-8">
         {step === "phone" && (
           <div className="space-y-4 animate-fade-up">
-            <h2 className="text-xl font-bold">Enter your phone</h2>
+            <h2 className="text-xl font-bold">Verify your mobile number</h2>
             <div className="flex gap-2">
               <span className="flex items-center px-3 bg-gray-100 rounded-xl text-sm font-medium border border-gray-200">
                 +91
               </span>
               <input
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                aria-label="10-digit mobile number"
                 className="input flex-1 text-lg"
                 placeholder="9876543210"
                 maxLength={10}
@@ -173,8 +193,8 @@ export default function VerifyPage() {
               />
             </div>
             <button
-              onClick={sendOtp}
-              disabled={loading || phone.length !== 10}
+              onClick={() => sendOtp()}
+              disabled={loading || !/^[6-9]\d{9}$/.test(phone)}
               className="btn btn-primary btn-lg w-full"
             >
               {loading ? (
@@ -189,11 +209,13 @@ export default function VerifyPage() {
         )}
         {step === "otp" && (
           <div className="space-y-4 animate-fade-up">
-            <h2 className="text-xl font-bold">Enter OTP</h2>
+            <h2 className="text-xl font-bold">Enter mobile OTP</h2>
             <p className="text-sm text-gray-500">Sent to +91 {phone}</p>
             <input
+              aria-label="6-digit OTP"
               type="text"
               inputMode="numeric"
+              autoComplete="one-time-code"
               className="input text-center text-3xl tracking-[0.5em] font-bold"
               placeholder="000000"
               maxLength={6}
@@ -217,44 +239,76 @@ export default function VerifyPage() {
               )}
             </button>
             <button
-              onClick={() => setStep("phone")}
+              onClick={() => {
+                setStep("phone");
+                setOtp("");
+              }}
               className="text-sm text-gray-500 w-full"
             >
-              ← Change
+            ← Change mobile number
+            </button>
+            <button
+            type="button"
+            onClick={() => sendOtp(true)}
+            disabled={loading || resendCountdown > 0}
+            className="text-brand-600 font-semibold flex items-center justify-center gap-2 w-full disabled:opacity-50"
+            >
+            <RefreshCw size={14} />
+            {resendCountdown > 0
+              ? `Resend OTP in ${resendCountdown}s`
+              : "Resend OTP"}
             </button>
           </div>
         )}
         {step === "kyc" && (
           <div className="space-y-4 animate-fade-up">
-            <h2 className="text-xl font-bold">Upload ID</h2>
+            <h2 className="text-xl font-bold">Aadhaar card photos</h2>
             <p className="text-sm text-gray-500">
-              Aadhaar, PAN, or any govt ID
+            Take or choose a clear photo of the front and back of your
+            Aadhaar card. Images only, up to 10MB each.
             </p>
-            <label className="flex flex-col items-center border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-xl p-8 cursor-pointer bg-gray-50/50">
-              <Upload size={36} className="text-gray-400 mb-2" />
-              <span className="text-sm font-medium">
-                {file ? file.name : "Click to upload"}
-              </span>
-              <span className="text-xs text-gray-500 mt-1">
-                JPG, PNG, PDF up to 10MB
+            {[
+            {
+              side: "front",
+              label: "Front side",
+              file: frontFile,
+              setFile: setFrontFile,
+            },
+            {
+              side: "back",
+              label: "Back side",
+              file: backFile,
+              setFile: setBackFile,
+            },
+            ].map(({ side, label, file, setFile }) => (
+            <label
+              key={side}
+              className="flex flex-col items-center border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-xl p-6 cursor-pointer bg-gray-50/50"
+            >
+              <Upload size={30} className="text-gray-400 mb-2" />
+              <span className="text-sm font-semibold">{label}</span>
+              <span className="text-sm text-gray-600 mt-1">
+                {file?.name || "Tap to take or select a photo"}
               </span>
               <input
                 type="file"
-                accept="image/*,.pdf"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                capture="environment"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="hidden"
               />
             </label>
-            {file && (
-              <div className="flex items-center gap-2 p-3 bg-success-50 rounded-lg text-sm text-success-700">
-                <CheckCircle2 size={16} />
-                <span className="truncate">{file.name}</span>
-              </div>
+            ))}
+            {frontFile && backFile && (
+            <div className="flex items-center gap-2 p-3 bg-success-50 rounded-lg text-sm text-success-700">
+              <CheckCircle2 size={16} />
+              Front and back photos are ready to submit.
+            </div>
             )}
             <button
-              onClick={uploadKyc}
-              disabled={loading || !file}
-              className="btn btn-primary btn-lg w-full"
+            onClick={uploadKyc}
+            disabled={loading || !frontFile || !backFile}
+            className="btn btn-primary btn-lg w-full"
             >
               {loading ? (
                 "Uploading..."

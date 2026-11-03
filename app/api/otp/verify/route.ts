@@ -16,7 +16,16 @@ export async function POST(req: Request) {
     const rl = rateLimit(`otpv:${identifier}`, 5, 300_000);
     if (!rl.allowed) return fail('Too many attempts. Try in 5 min.', 429);
 
+    const session = await getServerSession(authOptions);
     await connectDB();
+    if (method === 'phone' && session) {
+      const alreadyUsed = await User.exists({
+        phone: identifier,
+        _id: { $ne: session.user.id },
+      });
+      if (alreadyUsed) return fail('This mobile number is already in use', 409);
+    }
+
     const rec = await Verification.findOne({ identifier, method });
     if (!rec) return fail('Request OTP first', 400);
     if (rec.expiresAt < new Date()) return fail('OTP expired. Request a new one.', 400);
@@ -40,7 +49,6 @@ export async function POST(req: Request) {
     rec.expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await rec.save();
 
-    const session = await getServerSession(authOptions);
     if (session) {
       const update =
         method === 'phone'

@@ -27,6 +27,8 @@ const UserSchema = new Schema({
     default: "none",
   },
   kycDocument: String,
+  kycDocumentFront: String,
+  kycDocumentBack: String,
 
   // ✅ NEW: Subscription
   subscription: {

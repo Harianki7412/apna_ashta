@@ -22,7 +22,7 @@ const FAQS: Record<string, { q: string; a: string }[]> = {
   tenant: [
     {
       q: "How do I create a Flatova account?",
-      a: "Go to the registration page and enter your name, email or phone number, and password. Verify your email or phone number with an OTP. Your account will be ready in about a minute.",
+      a: "Go to the registration page and enter your name, email address, and password. Verify your email with the code we send, and your account will be ready in about a minute.",
     },
     {
       q: "Does it cost anything to browse properties?",
