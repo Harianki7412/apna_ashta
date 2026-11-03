@@ -24,7 +24,8 @@ export default function ThemeToggle() {
     }
 
     // Persist to cookie (1 year)
-    document.cookie = `theme=${next ? "dark" : "light"};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
+    const isSecure = window.location.protocol === "https:";
+    document.cookie = `theme=${next ? "dark" : "light"};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax;${isSecure ? " secure;" : ""}`;
   }
 
   // Prevent hydration mismatch

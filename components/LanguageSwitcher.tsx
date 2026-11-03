@@ -8,7 +8,8 @@ export default function LanguageSwitcher() {
   const router = useRouter();
 
   function change(newLocale: string) {
-    document.cookie = `locale=${newLocale};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
+    const isSecure = window.location.protocol === "https:";
+    document.cookie = `locale=${newLocale};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax;${isSecure ? " secure;" : ""}`;
     router.refresh();
   }
 
