@@ -5,11 +5,12 @@ import { User } from "@/models/User";
 import { Property } from "@/models/Property";
 import { RentAgreement } from "@/models/RentAgreement";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 export async function GET(req: Request) {
   try {
     const s = await getServerSession(authOptions);
-    if (s?.user?.role !== "admin") return fail("Forbidden", 403);
+    if (!hasAdminAccess(s?.user?.role)) return fail("Forbidden", 403);
 
     const q = new URL(req.url).searchParams.get("q")?.trim();
     if (!q || q.length < 2) return ok({ results: [] });

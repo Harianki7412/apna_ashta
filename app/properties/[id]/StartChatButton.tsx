@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api-client";
 import { MessageCircle, Check } from "lucide-react";
+import { trackEvent } from "@/components/GoogleAnalytics";
 
 export default function StartChatButton({
   ownerId,
@@ -21,6 +22,7 @@ export default function StartChatButton({
 
   async function start() {
     if (!session) return router.push("/login");
+    trackEvent("start_property_chat", { property_id: propertyId });
     try {
       const convo: any = await api.post("/api/conversations", {
         otherUserId: ownerId,

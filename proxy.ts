@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { hasAdminAccess, hasOwnerAccess } from "@/lib/role-access";
 
 const LOCALES = ["en", "hi"];
 const DEFAULT_LOCALE = "en";
@@ -121,29 +122,33 @@ export default async function proxy(request: NextRequest) {
       secret: process.env.NEXTAUTH_SECRET,
     });
 
-    if (!token) {
+    if (!token?.id) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname + search);
       const res = NextResponse.redirect(loginUrl);
       return secureResponse(res, request, csp);
     }
 
-    const role = typeof token.role === "string" ? token.role : "";
+    const role = ["owner", "tenant", "admin", "management_team"].includes(
+      typeof token.role === "string" ? token.role : "",
+    )
+      ? token.role
+      : "";
 
     // 🔒 Admin redirect: keep admin out of user-only pages
-    if (role === "admin" && matches(ADMIN_BLOCKED, pathname)) {
+    if (hasAdminAccess(role) && matches(ADMIN_BLOCKED, pathname)) {
       const res = NextResponse.redirect(new URL("/admin", request.url));
       return secureResponse(res, request, csp);
     }
 
     // 🔒 Admin-only routes: non-admin users blocked
-    if (matches(ADMIN_ONLY, pathname) && role !== "admin") {
+    if (matches(ADMIN_ONLY, pathname) && !hasAdminAccess(role)) {
       const res = NextResponse.redirect(new URL("/", request.url));
       return secureResponse(res, request, csp);
     }
 
     // 🔒 Owner/admin routes: tenants blocked
-    if (matches(OWNER_ONLY, pathname) && !["owner", "admin"].includes(role)) {
+    if (matches(OWNER_ONLY, pathname) && !hasOwnerAccess(role)) {
       const res = NextResponse.redirect(new URL("/", request.url));
       return secureResponse(res, request, csp);
     }

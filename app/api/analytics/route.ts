@@ -4,7 +4,9 @@ import { connectDB } from '@/lib/mongodb';
 import { Property } from '@/models/Property';
 import { Conversation } from '@/models/Conversation';
 import { Review } from '@/models/Review';
+import { Favorite } from '@/models/Favorite';
 import { ok, fail, handleError } from '@/lib/api-helpers';
+import { hasOwnerAccess } from '@/lib/role-access';
 
 type PropertyStatus = 'approved' | 'pending' | 'rejected' | 'rented';
 
@@ -36,7 +38,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
-    if (!['owner', 'admin'].includes(session.user.role)) return fail('Forbidden', 403);
+    if (!hasOwnerAccess(session.user.role)) return fail('Forbidden', 403);
     await connectDB();
     const me = session.user.id;
     const props = await Property.find({ owner: me }).lean<AnalyticsProperty[]>();
@@ -54,9 +56,10 @@ export async function GET() {
       ? approved.reduce((sum, p) => sum + p.rent, 0) / approved.length
       : 0;
     const propIds = props.map((p) => p._id);
-    const [chats, reviews] = await Promise.all([
+    const [chats, reviews, totalFavorites] = await Promise.all([
       Conversation.find({ property: { $in: propIds } }).lean<AnalyticsConversation[]>(),
       Review.find({ property: { $in: propIds } }).lean<AnalyticsReview[]>(),
+      Favorite.countDocuments({ property: { $in: propIds } }),
     ]);
     const avgRating = reviews.length
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
@@ -85,7 +88,7 @@ export async function GET() {
       status: p.status,
     }));
 
-    return ok({ stats: { ...stats, avgRent, totalChats: chats.length, avgRating }, monthlyTrend, propertyBreakdown });
+    return ok({ stats: { ...stats, avgRent, totalChats: chats.length, totalFavorites, avgRating }, monthlyTrend, propertyBreakdown });
   } catch (e) {
     return handleError(e);
   }

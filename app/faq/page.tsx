@@ -251,14 +251,9 @@ export default function FAQPage() {
           <Link href="/contact" className="btn btn-primary">
             Contact Us
           </Link>
-          <a
-            href="https://wa.me/919999999999"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-whatsapp"
-          >
-            WhatsApp
-          </a>
+          <Link href="/contact#contact-form" className="btn btn-secondary">
+            Send a message
+          </Link>
         </div>
       </div>
     </div>

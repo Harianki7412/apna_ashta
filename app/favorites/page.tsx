@@ -2,15 +2,19 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import PropertyCard from "@/components/PropertyCard";
 import { EmptyState } from "@/components/EmptyState";
-import { api } from "@/lib/api-client";
+import { api, getErrorMessage } from "@/lib/api-client";
 import { Heart } from "lucide-react";
+import { PageShell } from "@/components/PageShell";
+import { SectionHeader } from "@/components/SectionHeader";
+import type { PropertySummary } from "@/types";
 
 export default function FavoritesPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<PropertySummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,28 +26,30 @@ export default function FavoritesPage() {
   useEffect(() => {
     if (status !== "authenticated") return;
     api
-      .get<any[]>("/api/favorites")
+      .get<PropertySummary[]>("/api/favorites")
       .then(setItems)
-      .catch(() => {})
+      .catch((error: unknown) =>
+        toast.error(getErrorMessage(error, "Could not load favorites")),
+      )
       .finally(() => setLoading(false));
   }, [status]);
 
   if (status === "loading" || loading) {
     return (
-      <div className="space-y-4">
+      <PageShell className="space-y-4">
         <div className="skeleton h-8 w-48 rounded" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="skeleton h-64 rounded-2xl" />
           ))}
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">My Favorites</h1>
+    <PageShell className="mx-auto w-full">
+      <SectionHeader title="My Favorites" />
       {items.length ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((p) => (
@@ -59,6 +65,6 @@ export default function FavoritesPage() {
           actionHref="/properties"
         />
       )}
-    </div>
+    </PageShell>
   );
 }

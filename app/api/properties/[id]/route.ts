@@ -5,6 +5,8 @@ import { Property } from '@/models/Property';
 import { propertySchema } from '@/lib/validators';
 import { ok, fail, handleError } from '@/lib/api-helpers';
 import { z } from 'zod';
+import { getListingFreshness } from '@/lib/property-freshness';
+import { hasAdminAccess } from '@/lib/role-access';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,6 +17,8 @@ interface PopulatedPropertyOwner {
 interface PublicProperty {
   status: string;
   owner: PopulatedPropertyOwner | null;
+  createdAt: Date;
+  lastAvailabilityConfirmedAt?: Date | null;
 }
 
 export async function GET(_: Request, ctx: Ctx) {
@@ -31,7 +35,15 @@ export async function GET(_: Request, ctx: Ctx) {
     const me = session?.user?.id;
     const role = session?.user?.role;
     const isOwner = property.owner?._id.toString() === me;
-    if (property.status !== 'approved' && !isOwner && role !== 'admin')
+    if (property.status !== 'approved' && !isOwner && !hasAdminAccess(role))
+      return fail('Not found', 404);
+    if (
+      property.status === 'approved' &&
+      !isOwner &&
+      !hasAdminAccess(role) &&
+      getListingFreshness(property.createdAt, property.lastAvailabilityConfirmedAt)
+        .isHidden
+    )
       return fail('Not found', 404);
     return ok(property);
   } catch (e) {
@@ -54,7 +66,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
     const me = session.user.id;
     const role = session.user.role;
-    if (property.owner.toString() !== me && role !== 'admin') return fail('Forbidden', 403);
+    if (property.owner.toString() !== me && !hasAdminAccess(role)) return fail('Forbidden', 403);
 
     const parsed = updateSchema.parse(await req.json());
     const fields = [
@@ -75,7 +87,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (parsed.lat !== undefined && parsed.lng !== undefined) {
       property.location = { type: 'Point', coordinates: [parsed.lng, parsed.lat] };
     }
-    if (role !== 'admin' && property.status === 'approved') property.status = 'pending';
+    if (!hasAdminAccess(role) && property.status === 'approved') property.status = 'pending';
     await property.save();
 
     const updated = await Property.findById(id)
@@ -100,7 +112,7 @@ export async function DELETE(_: Request, ctx: Ctx) {
 
     const me = session.user.id;
     const role = session.user.role;
-    if (property.owner.toString() !== me && role !== 'admin') return fail('Forbidden', 403);
+    if (property.owner.toString() !== me && !hasAdminAccess(role)) return fail('Forbidden', 403);
 
     await property.deleteOne();
     return ok({ deleted: true, id });

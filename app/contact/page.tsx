@@ -1,18 +1,16 @@
 "use client";
-import { useState } from "react";
-import {
-  Mail,
-  Phone,
-  MapPin,
-  MessageCircle,
-  Clock,
-  Send,
-  Loader2,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mail, MessageCircle, Send, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
 
+interface SupportSettings {
+  supportEmail?: string;
+  supportPhone?: string;
+}
+
 export default function ContactPage() {
+  const [support, setSupport] = useState<SupportSettings>({});
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -21,6 +19,20 @@ export default function ContactPage() {
     message: "",
   });
   const [sending, setSending] = useState(false);
+  const supportPhoneDigits = support.supportPhone?.replace(/\D/g, "") || "";
+  const whatsappNumber =
+    supportPhoneDigits.length === 10
+      ? `91${supportPhoneDigits}`
+      : supportPhoneDigits.startsWith("91") && supportPhoneDigits.length === 12
+        ? supportPhoneDigits
+        : "";
+
+  useEffect(() => {
+    api
+      .get<{ settings?: SupportSettings }>("/api/plans")
+      .then((data) => setSupport(data.settings || {}))
+      .catch((error) => console.error("[Contact settings]", error));
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,10 +40,14 @@ export default function ContactPage() {
     setSending(true);
     try {
       await api.post("/api/contact", form);
-      toast.success("Message sent! We will reply within 24 hours.");
+      toast.success(
+        "Message sent! We will get back to you as soon as possible.",
+      );
       setForm({ name: "", email: "", phone: "", subject: "", message: "" });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to send message.",
+      );
     } finally {
       setSending(false);
     }
@@ -45,60 +61,53 @@ export default function ContactPage() {
         </div>
         <h1 className="text-4xl font-bold mb-3">Get in Touch</h1>
         <p className="text-gray-500 max-w-lg mx-auto">
-          Koi sawal, suggestion, ya problem? Hum yahan hain. Message bhejein ya
-          direct WhatsApp karein.
+          Koi sawal, suggestion, ya problem? Neeche diye gaye form se humein
+          message bhejein.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <a
-          href="https://wa.me/919999999999?text=Namaste!%20Apna%20Ashta%20ke%20baare%20mein%20jaankari%20chahiye."
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card p-5 hover:border-success-300 hover:shadow-card-hover transition-all group text-center"
-        >
-          <div className="w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-3 group-hover:bg-green-500 group-hover:text-white transition-colors">
-            <MessageCircle size={24} />
-          </div>
-          <p className="font-bold mb-1">WhatsApp</p>
-          <p className="text-xs text-gray-500">Fastest reply</p>
-          <p className="text-sm text-brand-600 font-semibold mt-2">
-            +91 99999 99999
-          </p>
-        </a>
-
-        <a
-          href="tel:+919999999999"
-          className="card p-5 hover:border-brand-300 hover:shadow-card-hover transition-all group text-center"
-        >
-          <div className="w-12 h-12 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center mx-auto mb-3 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-            <Phone size={24} />
-          </div>
-          <p className="font-bold mb-1">Call Us</p>
-          <p className="text-xs text-gray-500">Mon-Sat, 9am-7pm</p>
-          <p className="text-sm text-brand-600 font-semibold mt-2">
-            +91 99999 99999
-          </p>
-        </a>
-
-        <a
-          href="mailto:hello@Flatova.in"
-          className="card p-5 hover:border-brand-300 hover:shadow-card-hover transition-all group text-center"
-        >
-          <div className="w-12 h-12 rounded-xl bg-accent-400/20 text-accent-600 flex items-center justify-center mx-auto mb-3 group-hover:bg-accent-500 group-hover:text-white transition-colors">
-            <Mail size={24} />
-          </div>
-          <p className="font-bold mb-1">Email</p>
-          <p className="text-xs text-gray-500">Response in 24 hrs</p>
-          <p className="text-sm text-brand-600 font-semibold mt-2 break-all">
-            hello@Flatova.in
-          </p>
-        </a>
-      </div>
+      {(whatsappNumber || support.supportEmail) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          {whatsappNumber && (
+            <a
+              href={`https://wa.me/${whatsappNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="card p-5 hover:border-success-300 hover:shadow-card-hover transition-all group text-center"
+            >
+              <div className="w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-3 group-hover:bg-green-500 group-hover:text-white transition-colors">
+                <MessageCircle size={24} />
+              </div>
+              <p className="font-bold mb-1">WhatsApp</p>
+              <p className="text-sm text-brand-600 font-semibold mt-2">
+                {support.supportPhone}
+              </p>
+            </a>
+          )}
+          {support.supportEmail && (
+            <a
+              href={`mailto:${support.supportEmail}`}
+              className="card p-5 hover:border-brand-300 hover:shadow-card-hover transition-all group text-center"
+            >
+              <div className="w-12 h-12 rounded-xl bg-accent-400/20 text-accent-600 flex items-center justify-center mx-auto mb-3 group-hover:bg-accent-500 group-hover:text-white transition-colors">
+                <Mail size={24} />
+              </div>
+              <p className="font-bold mb-1">Email</p>
+              <p className="text-sm text-brand-600 font-semibold mt-2 break-all">
+                {support.supportEmail}
+              </p>
+            </a>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3">
-          <form onSubmit={submit} className="card p-6 md:p-8 space-y-4">
+          <form
+            id="contact-form"
+            onSubmit={submit}
+            className="card p-6 md:p-8 space-y-4"
+          >
             <h2 className="text-xl font-bold">Send us a message</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -211,48 +220,6 @@ export default function ContactPage() {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-          <div className="card p-6">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              <MapPin size={18} className="text-brand-600" /> Our Office
-            </h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Flatova
-              <br />
-              College Road, Ashta
-              <br />
-              District Sehore
-              <br />
-              Madhya Pradesh — 466116
-            </p>
-            <a
-              href="https://maps.google.com/?q=Ashta,Sehore,MP"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-brand-600 font-semibold hover:underline"
-            >
-              View on Google Maps →
-            </a>
-          </div>
-
-          <div className="card p-6">
-            <h3 className="font-bold mb-3 flex items-center gap-2">
-              <Clock size={18} className="text-brand-600" /> Business Hours
-            </h3>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Mon — Sat</span>
-                <span className="font-semibold">9:00 AM — 7:00 PM</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Sunday</span>
-                <span className="font-semibold">10:00 AM — 2:00 PM</span>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-3">
-              WhatsApp pe 24/7 available hain
-            </p>
-          </div>
-
           <div className="card p-6 bg-brand-50 border-brand-200">
             <h3 className="font-bold mb-2 text-brand-700">Quick Help</h3>
             <p className="text-sm text-gray-600 mb-3">

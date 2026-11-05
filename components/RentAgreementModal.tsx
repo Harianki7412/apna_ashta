@@ -44,37 +44,37 @@ export default function RentAgreementModal({
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
 
-  const [form, setForm] = useState({
-    place: city || "Ashta",
-    agreementDate: new Date().toISOString().split("T")[0],
-    ownerName: "",
-    ownerFatherName: "",
-    ownerAddress: "",
-    tenantName: "",
-    tenantFatherName: "",
-    tenantOfficeOrInstitution: "",
-    tenantAddress: "",
-    propertyAddress: propertyAddress || "",
-    startDate: new Date().toISOString().split("T")[0],
-    expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0],
-    rentAmount: rent,
-    maintenanceCharge: 0,
-    securityDeposit: deposit,
-    chequeNumber: "",
-    chequeDate: "",
-    noticePeriodDays: 30,
-    city: city || "Ashta",
-    bedrooms: bedrooms || 1,
-    fans: 2,
-    cflLights: 4,
-    geysers: 1,
-    mirrors: 2,
-    witness1Name: "",
-    witness1Address: "",
-    witness2Name: "",
-    witness2Address: "",
+  const [form, setForm] = useState(() => {
+    return {
+      place: city || "Ashta",
+      agreementDate: "",
+      ownerName: "",
+      ownerFatherName: "",
+      ownerAddress: "",
+      tenantName: "",
+      tenantFatherName: "",
+      tenantOfficeOrInstitution: "",
+      tenantAddress: "",
+      propertyAddress: propertyAddress || "",
+      startDate: "",
+      expiryDate: "",
+      rentAmount: rent,
+      maintenanceCharge: 0,
+      securityDeposit: deposit,
+      chequeNumber: "",
+      chequeDate: "",
+      noticePeriodDays: 30,
+      city: city || "Ashta",
+      bedrooms: bedrooms || 1,
+      fans: 2,
+      cflLights: 4,
+      geysers: 1,
+      mirrors: 2,
+      witness1Name: "",
+      witness1Address: "",
+      witness2Name: "",
+      witness2Address: "",
+    };
   });
 
   const steps: { key: Step; label: string; icon: any }[] = [
@@ -86,6 +86,22 @@ export default function RentAgreementModal({
   ];
 
   const stepIndex = steps.findIndex((s) => s.key === step);
+
+  function openAgreement() {
+    const today = new Date();
+    const todayInput = today.toISOString().split("T")[0];
+    const nextYear = new Date(today);
+    nextYear.setFullYear(today.getFullYear() + 1);
+    const expiryInput = nextYear.toISOString().split("T")[0];
+
+    setForm((current) => ({
+      ...current,
+      agreementDate: current.agreementDate || todayInput,
+      startDate: current.startDate || todayInput,
+      expiryDate: current.expiryDate || expiryInput,
+    }));
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open || phase !== "select-tenant") return;
@@ -178,13 +194,13 @@ export default function RentAgreementModal({
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="btn btn-success w-full">
+      <button onClick={openAgreement} className="btn btn-success w-full">
         <FileText size={16} /> Send Rent Agreement
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-brand-600 to-brand-700 text-white">
               <div>

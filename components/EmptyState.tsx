@@ -1,4 +1,5 @@
 import { SearchX } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 export function EmptyState({
@@ -8,7 +9,7 @@ export function EmptyState({
   actionLabel,
   actionHref,
 }: {
-  icon?: any;
+  icon?: LucideIcon;
   title: string;
   description: string;
   actionLabel?: string;

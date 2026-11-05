@@ -17,13 +17,16 @@ export const otpSendSchema = z
   );
 
 export const otpVerifySchema = z.object({
-  identifier: z.string().min(3),
+  identifier: z.string().min(3).max(120),
   method: z.enum(["email", "phone"]),
   otp: z.string().regex(/^\d{6}$/),
 }).refine(
-  (d) => d.method !== "phone" || /^[6-9]\d{9}$/.test(d.identifier),
+  (d) =>
+    d.method === "phone"
+      ? /^[6-9]\d{9}$/.test(d.identifier)
+      : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.identifier),
   {
-    message: "Enter a valid 10-digit Indian mobile number",
+    message: "Enter a valid email address or 10-digit Indian mobile number",
     path: ["identifier"],
   },
 );
@@ -106,6 +109,40 @@ export const reviewSchema = z.object({
   propertyId: z.string().min(1),
   rating: z.coerce.number().int().min(1).max(5),
   comment: z.string().max(500).optional(),
+});
+
+export const reportSchema = z.object({
+  propertyId: z.string().regex(/^[a-f\d]{24}$/i),
+  reason: z.enum([
+    "fake_listing",
+    "wrong_info",
+    "already_rented",
+    "spam",
+    "scam",
+    "inappropriate",
+    "other",
+  ]),
+  description: z.string().trim().max(500).optional(),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email().max(120),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().regex(/^[a-f\d]{64}$/i),
+  password: z.string().min(6).max(100),
+});
+
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1).max(100),
+  newPassword: z.string().min(6).max(100),
+});
+
+export const razorpayPaymentSchema = z.object({
+  razorpay_order_id: z.string().regex(/^order_[a-z\d]{6,40}$/i),
+  razorpay_payment_id: z.string().regex(/^pay_[a-z\d]{6,40}$/i),
+  razorpay_signature: z.string().regex(/^[a-f\d]{64}$/i),
 });
 
 export const agreementSchema = z.object({

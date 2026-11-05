@@ -12,10 +12,11 @@ import { AdminNote } from "@/models/AdminNote";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return s?.user?.role === "admin" ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 export async function GET(
@@ -116,7 +117,7 @@ export async function PATCH(
 
     if (
       action === "change-role" &&
-      ["owner", "tenant", "admin"].includes(role)
+      ["owner", "tenant", "admin", "management_team"].includes(role)
     ) {
       const oldRole = target.role;
       target.role = role;

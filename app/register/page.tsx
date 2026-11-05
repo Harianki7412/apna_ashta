@@ -4,9 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import PasswordInput from "@/components/PasswordInput";
 import {
-  Eye,
-  EyeOff,
   Home,
   User,
   Building2,
@@ -17,19 +16,23 @@ import {
   ShieldCheck,
   RefreshCw,
   Lock,
+  Loader2,
 } from "lucide-react";
 
 type Role = "tenant" | "owner";
 type Step = "role" | "details" | "otp";
+type DetailsField = "name" | "email" | "password" | "otp";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("role");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<DetailsField, string>>
+  >({});
 
   const [form, setForm] = useState({
     role: "tenant" as Role,
@@ -67,28 +70,35 @@ export default function RegisterPage() {
     "bg-success-500",
   ];
 
-  function validateDetails(): string | null {
-    if (form.name.trim().length < 2) return "Enter your full name";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      return "Enter a valid email";
+  function clearFieldError(field: DetailsField) {
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+  }
+
+  function validateDetails(): boolean {
+    const errors: Partial<Record<DetailsField, string>> = {};
+    if (form.name.trim().length < 2)
+      errors.name = "Enter your full name (at least 2 characters).";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      errors.email = "Enter a valid email address.";
     if (form.password.length < 6)
-      return "Password must be at least 6 characters";
-    return null;
+      errors.password = "Use at least 6 characters for your password.";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function sendOtp(isResend = false) {
-    const err = validateDetails();
-    if (err) return toast.error(err);
+    if (!validateDetails()) return;
 
+    const email = form.email.trim().toLowerCase();
     if (isResend) setResending(true);
     else setLoading(true);
 
     try {
       await api.post("/api/otp/send", {
-        identifier: form.email.toLowerCase(),
+        identifier: email,
         method: "email",
       });
-      toast.success(`OTP sent to ${form.email}`);
+      toast.success(`OTP sent to ${email}`);
       setStep("otp");
       setOtp("");
       setResendCountdown(30);
@@ -103,21 +113,24 @@ export default function RegisterPage() {
   }
 
   async function verifyAndCreate() {
-    if (!/^\d{6}$/.test(otp)) return toast.error("Enter 6-digit OTP");
+    if (!/^\d{6}$/.test(otp)) {
+      setFieldErrors((current) => ({ ...current, otp: "Enter the 6-digit verification code." }));
+      return;
+    }
 
     setLoading(true);
     try {
       // Step 1: Verify OTP
       await api.post("/api/otp/verify", {
-        identifier: form.email.toLowerCase(),
+        identifier: form.email.trim().toLowerCase(),
         method: "email",
         otp,
       });
 
       // Step 2: Register (server checks verification record)
       await api.post("/api/auth/register", {
-        name: form.name,
-        email: form.email,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
         password: form.password,
         role: form.role,
         verifiedBy: "email",
@@ -127,6 +140,7 @@ export default function RegisterPage() {
       router.push("/login");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Unable to create account");
+    } finally {
       setLoading(false);
     }
   }
@@ -157,6 +171,7 @@ export default function RegisterPage() {
               </p>
 
               <button
+                type="button"
                 onClick={() => {
                   setForm({ ...form, role: "tenant" });
                   setStep("details");
@@ -181,6 +196,7 @@ export default function RegisterPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   setForm({ ...form, role: "owner" });
                   setStep("details");
@@ -216,6 +232,7 @@ export default function RegisterPage() {
           {/* ═══ Step 2: Details ═══ */}
           {step === "details" && (
             <form
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
                 sendOtp(false);
@@ -237,55 +254,75 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="label">Full name</label>
+                <label className="label" htmlFor="register-name">Full name</label>
                 <input
+                  id="register-name"
                   required
                   type="text"
                   autoComplete="name"
                   placeholder="Ram Kumar"
-                  className="input"
+                  className={`input${fieldErrors.name ? " input-error" : ""}`}
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value });
+                    clearFieldError("name");
+                  }}
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  aria-describedby={fieldErrors.name ? "register-name-error" : undefined}
                 />
+                {fieldErrors.name && (
+                  <p id="register-name-error" className="mt-1 text-sm text-red-600" role="alert">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="label">Email address</label>
+                <label className="label" htmlFor="register-email">Email address</label>
                 <input
+                  id="register-email"
                   required
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className="input"
+                  className={`input${fieldErrors.email ? " input-error" : ""}`}
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, email: e.target.value });
+                    clearFieldError("email");
+                  }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? "register-email-error" : undefined}
                 />
+                {fieldErrors.email && (
+                  <p id="register-email-error" className="mt-1 text-sm text-red-600" role="alert">
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="label">Password</label>
-                <div className="relative">
-                  <input
+                <label className="label" htmlFor="register-password">Password</label>
+                <PasswordInput
+                    id="register-password"
                     required
-                    type={showPassword ? "text" : "password"}
                     minLength={6}
                     autoComplete="new-password"
                     placeholder="At least 6 characters"
-                    className="input pr-10"
+                    className="input"
                     value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setForm({ ...form, password: e.target.value });
+                      clearFieldError("password");
+                    }}
+                    invalid={Boolean(fieldErrors.password)}
+                    describedBy={fieldErrors.password ? "register-password-error" : undefined}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+                {fieldErrors.password && (
+                  <p id="register-password-error" className="mt-1 text-sm text-red-600" role="alert">
+                    {fieldErrors.password}
+                  </p>
+                )}
                 {form.password && (
                   <div className="mt-2">
                     <div className="flex gap-1">
@@ -317,7 +354,10 @@ export default function RegisterPage() {
                 className="btn btn-primary btn-lg w-full mt-2"
               >
                 {loading ? (
-                  "Sending code..."
+                  <>
+                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    Sending code...
+                  </>
                 ) : (
                   <>
                     <Mail size={16} />
@@ -345,7 +385,14 @@ export default function RegisterPage() {
 
           {/* ═══ Step 3: OTP ═══ */}
           {step === "otp" && (
-            <div className="space-y-4 animate-fade-up">
+            <form
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault();
+                void verifyAndCreate();
+              }}
+              className="space-y-4 animate-fade-up"
+            >
               <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-2">
                 <ShieldCheck size={32} className="text-brand-600" />
               </div>
@@ -363,39 +410,51 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="label text-center">Enter OTP</label>
+                <label className="label text-center" htmlFor="register-otp">Enter OTP</label>
                 <div className="relative">
                   <Lock
                     size={20}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                   />
                   <input
+                    id="register-otp"
                     required
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="000000"
-                    className="input text-center text-3xl tracking-[0.5em] font-bold py-4 pl-12"
+                    className={`input text-center text-3xl tracking-[0.5em] font-bold py-4 pl-12${fieldErrors.otp ? " input-error" : ""}`}
                     value={otp}
-                    onChange={(e) =>
-                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      clearFieldError("otp");
+                    }}
+                    aria-invalid={Boolean(fieldErrors.otp)}
+                    aria-describedby={fieldErrors.otp ? "register-otp-error" : undefined}
                     autoFocus
                   />
                 </div>
+                {fieldErrors.otp && (
+                  <p id="register-otp-error" className="mt-1 text-center text-sm text-red-600" role="alert">
+                    {fieldErrors.otp}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 text-center mt-2">
                   OTP valid for 15 minutes
                 </p>
               </div>
 
               <button
-                onClick={verifyAndCreate}
-                disabled={loading || otp.length !== 6}
+                type="submit"
+                disabled={loading}
                 className="btn btn-primary btn-lg w-full disabled:opacity-50"
               >
                 {loading ? (
-                  "Verifying..."
+                  <>
+                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    Verifying...
+                  </>
                 ) : (
                   <>
                     <CheckCircle2 size={16} /> Verify & Create Account
@@ -429,7 +488,7 @@ export default function RegisterPage() {
                       : "Resend OTP"}
                 </button>
               </div>
-            </div>
+            </form>
           )}
         </div>
       </div>

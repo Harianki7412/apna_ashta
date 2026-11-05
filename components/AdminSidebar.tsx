@@ -91,13 +91,19 @@ export default function AdminSidebar() {
     newMessages: 0,
     total: 0,
   });
+  const [statsError, setStatsError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
         const d = await api.get<Stats>("/api/admin/stats");
         setStats(d);
-      } catch {}
+        setStatsError("");
+      } catch (error) {
+        setStatsError(
+          error instanceof Error ? error.message : "Unable to load admin alerts.",
+        );
+      }
     }
     load();
     const t = setInterval(load, 30000);
@@ -127,7 +133,7 @@ export default function AdminSidebar() {
           onClick={() => setMobileOpen(false)}
           className="flex items-center gap-2.5 font-extrabold"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-danger-500 to-danger-700 text-white flex items-center justify-center shadow-md shadow-danger-500/25 flex-shrink-0 relative">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center shadow-md shadow-brand-500/25 flex-shrink-0 relative">
             <ShieldCheck size={18} />
             {stats.total > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-danger-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
@@ -182,7 +188,7 @@ export default function AdminSidebar() {
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors relative ${
                 active
-                  ? "bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300"
+                  ? "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300"
                   : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
               } ${collapsed ? "justify-center" : ""}`}
               title={collapsed ? item.label : ""}
@@ -228,6 +234,11 @@ export default function AdminSidebar() {
 
       {/* User + Logout */}
       <div className="p-3 border-t border-gray-100 dark:border-slate-700 space-y-2">
+        {!collapsed && statsError && (
+          <p role="status" className="rounded-lg bg-warning-50 dark:bg-warning-900/20 px-3 py-2 text-[11px] text-warning-800 dark:text-warning-200">
+            Admin alerts unavailable: {statsError}
+          </p>
+        )}
         {!collapsed && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 text-[10px] text-gray-500 dark:text-slate-400">
             <kbd className="bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">
@@ -273,7 +284,7 @@ export default function AdminSidebar() {
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
         <Link href="/admin" className="flex items-center gap-2 font-extrabold">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-danger-500 to-danger-700 text-white flex items-center justify-center relative">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center relative">
             <ShieldCheck size={16} />
             {stats.total > 0 && (
               <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-danger-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white dark:border-slate-900">

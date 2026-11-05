@@ -1,13 +1,29 @@
-function getErrorMessage(response: unknown, status: number): string {
-  if (
-    typeof response === "object" &&
-    response !== null &&
-    "error" in response &&
-    typeof response.error === "string"
-  ) {
-    return response.error;
-  }
-  return `HTTP ${status}`;
+import type { ApiFailure, ApiSuccess } from "@/types";
+
+function isApiFailure(value: unknown): value is ApiFailure {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "error" in value &&
+    typeof value.error === "string"
+  );
+}
+
+function isApiSuccess<T>(value: unknown): value is ApiSuccess<T> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "data" in value &&
+    value.data !== undefined
+  );
+}
+
+function getResponseErrorMessage(response: unknown, status: number): string {
+  return isApiFailure(response) ? response.error : `HTTP ${status}`;
+}
+
+export function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 async function request<T>(url: string, opts?: RequestInit): Promise<T> {
@@ -22,15 +38,8 @@ async function request<T>(url: string, opts?: RequestInit): Promise<T> {
     headers,
   });
   const json: unknown = await res.json();
-  if (!res.ok) throw new Error(getErrorMessage(json, res.status));
-  if (
-    typeof json === "object" &&
-    json !== null &&
-    "data" in json &&
-    json.data !== undefined
-  ) {
-    return json.data as T;
-  }
+  if (!res.ok) throw new Error(getResponseErrorMessage(json, res.status));
+  if (isApiSuccess<T>(json)) return json.data;
   return json as T;
 }
 

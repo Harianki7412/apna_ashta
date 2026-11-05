@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { hasAdminAccess } from "@/lib/role-access";
 import {
   ArrowLeft,
   Search,
@@ -31,6 +32,7 @@ export default function AdminUsers() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -39,7 +41,7 @@ export default function AdminUsers() {
     }
     if (status === "authenticated") {
       const r = (session?.user as any)?.role;
-      if (r !== "admin") {
+      if (!hasAdminAccess(r)) {
         toast.error("Admin access required");
         router.push("/");
       }
@@ -57,7 +59,9 @@ export default function AdminUsers() {
       setTotalPages(d.totalPages);
       setTotal(d.total);
       setPage(p);
+      setLoadError("");
     } catch (e: any) {
+      setLoadError(e instanceof Error ? e.message : "Unable to load users.");
       toast.error(e.message);
     } finally {
       setLoading(false);
@@ -67,7 +71,7 @@ export default function AdminUsers() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      (session?.user as any)?.role === "admin"
+      hasAdminAccess(session?.user?.role)
     ) {
       load(1);
     }
@@ -156,6 +160,7 @@ export default function AdminUsers() {
           <option value="owner">Owners</option>
           <option value="tenant">Tenants</option>
           <option value="admin">Admins</option>
+          <option value="management_team">Management Team</option>
         </select>
         <button onClick={() => load(1)} className="btn btn-primary">
           Search
@@ -170,6 +175,23 @@ export default function AdminUsers() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="skeleton h-14 rounded-lg" />
               ))}
+            </div>
+          ) : loadError ? (
+            <div role="alert" className="p-10 text-center">
+              <UsersIcon
+                size={36}
+                className="text-danger-400 mx-auto mb-3"
+              />
+              <p className="font-semibold">Users could not be loaded</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                {loadError}
+              </p>
+              <button
+                onClick={() => load(page)}
+                className="btn btn-secondary btn-sm mt-4"
+              >
+                Try again
+              </button>
             </div>
           ) : users.length === 0 ? (
             <div className="p-12 text-center">
@@ -239,6 +261,7 @@ export default function AdminUsers() {
                         <option value="tenant">Tenant</option>
                         <option value="owner">Owner</option>
                         <option value="admin">Admin</option>
+                        <option value="management_team">Management Team</option>
                       </select>
                     </td>
                     <td className="p-3 hidden md:table-cell">

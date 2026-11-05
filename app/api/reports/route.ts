@@ -5,6 +5,7 @@ import { Property } from "@/models/Property";
 import { Report } from "@/models/Report";
 import { rateLimit } from "@/lib/rate-limit";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { reportSchema } from "@/lib/validators";
 
 export async function POST(req: Request) {
   try {
@@ -15,8 +16,9 @@ export async function POST(req: Request) {
     const rl = rateLimit(`report:${me}`, 5, 60 * 60 * 1000); // 5 reports per hour
     if (!rl.allowed) return fail("Too many reports. Try again later.", 429);
 
-    const { propertyId, reason, description } = await req.json();
-    if (!propertyId || !reason) return fail("Property and reason required");
+    const { propertyId, reason, description } = reportSchema.parse(
+      await req.json(),
+    );
 
     await connectDB();
     const property = await Property.findById(propertyId);

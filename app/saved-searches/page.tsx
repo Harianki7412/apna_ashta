@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { api } from "@/lib/api-client";
+import { api, getErrorMessage } from "@/lib/api-client";
 import { EmptyState } from "@/components/EmptyState";
 import {
   Bell,
@@ -15,11 +15,15 @@ import {
   Home,
   Clock,
 } from "lucide-react";
+import { PageShell } from "@/components/PageShell";
+import { SectionHeader } from "@/components/SectionHeader";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { SavedSearchItem } from "@/types";
 
 export default function SavedSearchesPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [searches, setSearches] = useState<any[]>([]);
+  const [searches, setSearches] = useState<SavedSearchItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,10 +34,10 @@ export default function SavedSearchesPage() {
 
   async function load() {
     try {
-      const data = await api.get<any[]>("/api/saved-searches");
+      const data = await api.get<SavedSearchItem[]>("/api/saved-searches");
       setSearches(data);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not load saved searches"));
     } finally {
       setLoading(false);
     }
@@ -49,12 +53,12 @@ export default function SavedSearchesPage() {
       await api.delete("/api/saved-searches", { id });
       setSearches((s) => s.filter((x) => x._id !== id));
       toast.success("Deleted");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not delete saved search"));
     }
   }
 
-  function searchUrl(s: any) {
+  function searchUrl(s: SavedSearchItem) {
     const params = new URLSearchParams();
     Object.entries(s.filters || {}).forEach(([k, v]) => {
       if (v) params.set(k, String(v));
@@ -64,23 +68,23 @@ export default function SavedSearchesPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <PageShell className="max-w-4xl mx-auto">
         <div className="skeleton h-24 rounded-2xl" />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Saved Searches</h1>
-          <p className="text-gray-500 mt-1">Get notified of new matches</p>
-        </div>
-        <Link href="/properties" className="btn btn-primary">
-          <Search size={16} /> New Search
-        </Link>
-      </div>
+    <PageShell className="max-w-4xl mx-auto">
+      <SectionHeader
+        title="Saved Searches"
+        description="Get notified of new matches"
+        action={
+          <Link href="/properties" className="btn btn-primary">
+            <Search size={16} /> New Search
+          </Link>
+        }
+      />
 
       {searches.length === 0 ? (
         <div className="card">
@@ -100,13 +104,12 @@ export default function SavedSearchesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-2">
                     <h3 className="font-bold">{s.name}</h3>
-                    {s.notifyOnNew ? (
-                      <span className="badge badge-success">
-                        <Bell size={10} /> ON
-                      </span>
-                    ) : (
-                      <span className="badge badge-warning">OFF</span>
-                    )}
+                    <StatusBadge
+                      tone={s.notifyOnNew ? "success" : "warning"}
+                      icon={s.notifyOnNew ? Bell : undefined}
+                    >
+                      {s.notifyOnNew ? "ON" : "OFF"}
+                    </StatusBadge>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     {s.filters.area && (
@@ -152,6 +155,6 @@ export default function SavedSearchesPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { hasAdminAccess } from "@/lib/role-access";
 import {
   MapPin,
   Plus,
@@ -45,7 +46,7 @@ export default function AdminStatesPage() {
       router.push("/login?callbackUrl=/admin/states");
     else if (
       status === "authenticated" &&
-      (session?.user as any)?.role !== "admin"
+      !hasAdminAccess(session?.user?.role)
     )
       router.push("/");
   }, [status, session, router]);
@@ -63,7 +64,7 @@ export default function AdminStatesPage() {
   }
 
   useEffect(() => {
-    if (status === "authenticated" && (session?.user as any)?.role === "admin")
+    if (status === "authenticated" && hasAdminAccess(session?.user?.role))
       load();
   }, [status, session]);
 

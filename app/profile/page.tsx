@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { hasOwnerAccess } from "@/lib/role-access";
 import {
   User,
   Lock,
@@ -71,7 +72,7 @@ function ProfileContent() {
   });
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  const isOwner = profile.role === "owner" || profile.role === "admin";
+  const isOwner = hasOwnerAccess(profile.role);
   const isVerified = profile.kycStatus === "verified";
 
   // ═══ Load all data in parallel ═══
@@ -294,7 +295,9 @@ function ProfileContent() {
             <div className="flex items-center gap-2 mt-3 flex-wrap">
               <span className="bg-white/20 backdrop-blur text-xs font-semibold px-3 py-1 rounded-full capitalize flex items-center gap-1">
                 {isOwner ? <Building2 size={12} /> : <User size={12} />}
-                {profile.role}
+                {profile.role === "management_team"
+                  ? "Management Team"
+                  : profile.role}
               </span>
               {profile.phoneVerified && (
                 <span className="bg-success-500 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">

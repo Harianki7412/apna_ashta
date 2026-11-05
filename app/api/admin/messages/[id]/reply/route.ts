@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { ContactMessage } from "@/models/ContactMessage";
 import { sendGenericEmail } from "@/lib/email";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 export async function POST(
   req: Request,
@@ -11,7 +12,7 @@ export async function POST(
 ) {
   try {
     const s = await getServerSession(authOptions);
-    if (s?.user?.role !== "admin") return fail("Forbidden", 403);
+    if (!hasAdminAccess(s?.user?.role)) return fail("Forbidden", 403);
 
     const { id } = await ctx.params;
     const { reply } = await req.json();

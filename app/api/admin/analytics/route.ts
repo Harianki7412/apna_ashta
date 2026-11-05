@@ -7,6 +7,7 @@ import { Subscription } from "@/models/Subscription";
 import { LeadPack } from "@/models/LeadPack";
 import { RentAgreementOrder } from "@/models/RentAgreementOrder";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 type PropertyStatus = "pending" | "approved" | "rejected" | "rented";
 
@@ -30,7 +31,7 @@ interface AnalyticsPayment {
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "admin") return fail("Forbidden", 403);
+    if (!hasAdminAccess(session?.user?.role)) return fail("Forbidden", 403);
 
     const days = Math.min(
       90,

@@ -8,6 +8,7 @@ const withPWA = withPWAInit({
   dest: 'public',
   register: true,
   disable: process.env.NODE_ENV === 'development',
+  extendDefaultRuntimeCaching: false,
   fallbacks: { document: '/offline' },
   workboxOptions: {
     skipWaiting: true,
@@ -20,11 +21,6 @@ const withPWA = withPWAInit({
           cacheName: 'cloudinary-images',
           expiration: { maxEntries: 200, maxAgeSeconds: 2592000 },
         },
-      },
-      {
-        urlPattern: /\/api\/properties/,
-        handler: 'NetworkFirst',
-        options: { cacheName: 'api-properties', networkTimeoutSeconds: 5 },
       },
     ],
   },

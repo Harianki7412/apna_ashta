@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
@@ -7,6 +6,13 @@ import { Subscription } from "@/models/Subscription";
 import { notifyUser } from "@/lib/notify";
 import { getPlan } from "@/lib/pricing";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { razorpayPaymentSchema } from "@/lib/validators";
+import { verifyRazorpayPayment } from "@/lib/verify-razorpay-payment";
+import { z } from "zod";
+
+const subscriptionPaymentSchema = razorpayPaymentSchema.extend({
+  subscriptionId: z.string().regex(/^[a-f\d]{24}$/i),
+});
 
 export async function POST(req: Request) {
   try {
@@ -14,24 +20,11 @@ export async function POST(req: Request) {
     if (!session) return fail("Unauthorized", 401);
 
     const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
+      razorpay_order_id: orderId,
+      razorpay_payment_id: paymentId,
+      razorpay_signature: signature,
       subscriptionId,
-    } = await req.json();
-
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return fail("Missing payment details");
-    }
-
-    // Verify signature
-    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expected = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(body)
-      .digest("hex");
-
-    if (expected !== razorpay_signature) return fail("Invalid signature", 400);
+    } = subscriptionPaymentSchema.parse(await req.json());
 
     await connectDB();
 
@@ -40,8 +33,31 @@ export async function POST(req: Request) {
     if (sub.user.toString() !== session.user.id) {
       return fail("Forbidden", 403);
     }
+    if (sub.razorpayOrderId !== orderId) {
+      return fail("Invalid payment details", 400);
+    }
     if (sub.status === "active")
       return ok({ activated: true, alreadyActive: true });
+    if (sub.status !== "pending") {
+      return fail("Subscription is not pending", 409);
+    }
+
+    const verification = await verifyRazorpayPayment({
+      orderId,
+      paymentId,
+      signature,
+      userId: session.user.id,
+      amountInRupees: sub.amount,
+      notes: {
+        userId: session.user.id,
+        planId: sub.planId,
+        billingCycle: sub.billingCycle,
+        type: "subscription",
+      },
+    });
+    if (!verification.valid) {
+      return fail(verification.message, verification.status);
+    }
 
     const plan = getPlan(sub.planId);
     if (!plan) return fail("Invalid plan");
@@ -59,7 +75,7 @@ export async function POST(req: Request) {
     sub.status = "active";
     sub.startDate = now;
     sub.expiresAt = expiresAt;
-    sub.razorpayPaymentId = razorpay_payment_id;
+    sub.razorpayPaymentId = paymentId;
     sub.autoRenew = true;
     await sub.save();
 

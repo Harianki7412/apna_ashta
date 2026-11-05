@@ -5,7 +5,9 @@ import { Property } from "@/models/Property";
 import { propertySchema } from "@/lib/validators";
 import { getOwnerResponseScore } from "@/lib/response-score";
 import { analyzePropertyForScams } from "@/lib/anti-scam";
+import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
 import { ok, fail, handleError, paginate } from "@/lib/api-helpers";
+import { hasOwnerAccess } from "@/lib/role-access";
 
 export async function GET(req: Request) {
   try {
@@ -23,13 +25,16 @@ export async function GET(req: Request) {
     const sort = sp.get("sort") || "newest";
     const verified = sp.get("verified");
 
-    const query: any = { status: "approved" };
+    const query: any = {
+      status: "approved",
+      $and: [getPublicListingFreshnessFilter()],
+    };
 
     if (city) {
       if (city === "Ashta") {
-        query.$and = [
+        query.$and.push(
           { $or: [{ city: "Ashta" }, { city: { $exists: false } }] },
-        ];
+        );
       } else {
         query.city = city;
       }
@@ -102,7 +107,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
-    if (!["owner", "admin"].includes(session.user.role))
+    if (!hasOwnerAccess(session.user.role))
       return fail("Only owners can create listings", 403);
 
     const data = propertySchema.parse(await req.json());

@@ -5,6 +5,7 @@ import { Property } from "@/models/Property";
 import { Conversation } from "@/models/Conversation";
 import { RentAgreement } from "@/models/RentAgreement";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 export async function GET(
   _: Request,
@@ -23,7 +24,7 @@ export async function GET(
     if (!property) return fail("Property not found", 404);
 
     // Only owner or admin
-    if (property.owner.toString() !== me && role !== "admin") {
+    if (property.owner.toString() !== me && !hasAdminAccess(role)) {
       return fail("Forbidden", 403);
     }
 

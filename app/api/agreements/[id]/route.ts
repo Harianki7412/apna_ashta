@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { RentAgreement } from '@/models/RentAgreement';
 import { notifyUser } from '@/lib/notify';
 import { ok, fail, handleError } from '@/lib/api-helpers';
+import { hasAdminAccess } from '@/lib/role-access';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -28,7 +29,7 @@ export async function GET(_: Request, ctx: Ctx) {
     const isTenant = agreement.tenant._id.toString() === me;
     const role = session.user.role;
 
-    if (!isOwner && !isTenant && role !== 'admin') {
+    if (!isOwner && !isTenant && !hasAdminAccess(role)) {
       return fail('Forbidden', 403);
     }
 

@@ -85,7 +85,9 @@ const PropertySchema = new Schema({
   },
   featured: { type: Boolean, default: false },
   featuredUntil: Date,
+  featuredPaymentId: String,
   views: { type: Number, default: 0 },
+  lastAvailabilityConfirmedAt: { type: Date, default: Date.now },
 
   // ═══ NEW: Verification ═══
   verified: { type: Boolean, default: false, index: true },

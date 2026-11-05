@@ -6,7 +6,7 @@ import {
   Plus_Jakarta_Sans,
 } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { cookies, headers } from "next/headers";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
@@ -15,6 +15,8 @@ import MobileNav from "@/components/MobileNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import WhatsAppFAB from "@/components/WhatsAppFAB";
 import { Toaster } from "react-hot-toast";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { SITE_URL } from "@/lib/site-url";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,8 +37,59 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Flatova — Rentals in Ashta",
-  description: "Find verified rooms, flats, and homes for rent in Ashta",
+  metadataBase: SITE_URL,
+  title: {
+    default: "Verified Rooms, Flats & Homes for Rent in Ashta",
+    template: "%s | Flatova",
+  },
+  description:
+    "Find verified rooms, flats, and houses for rent in Ashta. Browse current listings, compare rents, and connect directly with property owners on Flatova.",
+  applicationName: "Flatova",
+  keywords: [
+    "rent in Ashta",
+    "flats for rent in Ashta",
+    "rooms for rent in Ashta",
+    "houses for rent in Ashta",
+    "verified rental properties",
+    "no broker rentals",
+  ],
+  authors: [{ name: "Flatova" }],
+  creator: "Flatova",
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    alternateLocale: ["hi_IN"],
+    siteName: "Flatova",
+    title: "Verified Rooms, Flats & Homes for Rent in Ashta",
+    description:
+      "Browse verified rentals in Ashta, compare properties, and connect directly with owners.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Flatova — verified rentals in Ashta",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Verified Rooms, Flats & Homes for Rent in Ashta",
+    description:
+      "Browse verified rentals in Ashta and connect directly with property owners.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -61,6 +114,7 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const tCommon = await getTranslations("common");
 
   const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
   const theme = cookieStore.get("theme")?.value || "light";
@@ -80,6 +134,7 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
+                  window.__nonce__ = ${JSON.stringify(nonce ?? "")};
                   var m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
                   var s = m ? m[1] : null;
                   var p = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -93,13 +148,20 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-brand-700 focus:shadow-lg"
+        >
+          {tCommon("skipToContent")}
+        </a>
+        <GoogleAnalytics nonce={nonce} />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Navbar />
-            <main className="container mx-auto p-4 flex-1 pb-24 md:pb-4">
+            <main id="main-content" className="container mx-auto p-4 flex-1 pb-24 md:pb-4">
               {children}
             </main>
-            <Footer />
+            <Footer year={new Date().getFullYear()} />
             <MobileNav />
             <InstallPrompt />
             <WhatsAppFAB />

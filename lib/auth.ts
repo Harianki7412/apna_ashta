@@ -7,7 +7,7 @@ import { clientIPFromHeaders, rateLimit } from './rate-limit';
 import { User } from '@/models/User';
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 },
   pages: { signIn: '/login' },
   providers: [
     CredentialsProvider({
@@ -17,9 +17,17 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials, req) {
-        if (!credentials?.identifier || !credentials?.password) return null;
+        if (
+          !credentials?.identifier ||
+          credentials.identifier.length > 120 ||
+          !credentials.password ||
+          credentials.password.length > 100
+        ) {
+          return null;
+        }
 
         const id = credentials.identifier.trim();
+        if (!id) return null;
         const ip = clientIPFromHeaders(req.headers ?? {});
         const ipLimit = rateLimit(`login-ip:${ip}`, 10, 15 * 60_000);
         if (!ipLimit.allowed) throw new Error('Too many login attempts');
@@ -63,19 +71,27 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.phoneVerified = user.phoneVerified;
       }
-      if (trigger === 'update' && token.id) {
+      if (token.id) {
         await connectDB();
-        const u = await User.findById(token.id).select('role phoneVerified name').lean();
-        if (u) {
+        const u = await User.findById(token.id)
+          .select('role phoneVerified name blocked')
+          .lean();
+        if (u && !u.blocked) {
           token.role = u.role;
           token.phoneVerified = u.phoneVerified;
           token.name = u.name;
+        } else {
+          token.id = '';
+          token.role = 'tenant';
+          token.phoneVerified = false;
+          token.name = undefined;
+          token.email = undefined;
         }
       }
       return token;

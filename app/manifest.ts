@@ -2,12 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Flatova — Rentals in Ashta",
+    name: "Flatova — Verified Rentals in Ashta",
     short_name: "Flatova",
-    description: "Find rooms, flats, and homes for rent in Ashta",
+    description:
+      "Find verified rooms, flats, and homes for rent in Ashta. Browse listings and connect directly with owners.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
+    background_color: "#f8fafc",
     theme_color: "#2563eb",
     orientation: "portrait",
     scope: "/",

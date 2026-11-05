@@ -10,12 +10,14 @@ import {
   FileText,
   ArrowRight,
 } from "lucide-react";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata = {
-  title: "How It Works — Flatova",
+export const metadata = createPageMetadata({
+  title: "How Renting on Flatova Works",
   description:
     "Learn how to find or list rental properties on Flatova in 3 simple steps.",
-};
+  path: "/how-it-works",
+});
 
 function Step({
   num,

@@ -1,20 +1,38 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
 import { format } from "date-fns";
-import {
-  Activity,
-  CheckCircle2,
-  XCircle,
-  Trash2,
-  UserCog,
-  Shield,
-  Loader2,
-  Filter,
-} from "lucide-react";
+import { Activity, CheckCircle2, XCircle, Trash2, UserCog, Shield } from "lucide-react";
 
-const ACTION_ICONS: Record<string, any> = {
+type ActivityAction =
+  | "approve"
+  | "bulk_approve"
+  | "reject"
+  | "bulk_reject"
+  | "delete"
+  | "bulk_delete"
+  | "role_change"
+  | "block"
+  | "unblock"
+  | "kyc_verify"
+  | "kyc_reject";
+
+type ActivityLog = {
+  _id: string;
+  action: ActivityAction | string;
+  actor?: { name?: string };
+  targetLabel?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+};
+
+type ActivityResponse = {
+  logs: ActivityLog[];
+  totalPages: number;
+};
+
+const ACTION_ICONS: Record<string, typeof Activity> = {
   approve: CheckCircle2,
   bulk_approve: CheckCircle2,
   reject: XCircle,
@@ -43,31 +61,35 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function ActivityPage() {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [action, setAction] = useState("");
 
-  async function load(p = 1) {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(p) });
-      if (action) params.set("action", action);
-      const d = await api.get<any>(`/api/admin/activity?${params}`);
-      setLogs(d.logs);
-      setTotalPages(d.totalPages);
-      setPage(p);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const load = useCallback(
+    async (p = 1) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: String(p) });
+        if (action) params.set("action", action);
+        const d = (await api.get<ActivityResponse>(`/api/admin/activity?${params}`)) as ActivityResponse;
+        setLogs(d.logs);
+        setTotalPages(d.totalPages);
+        setPage(p);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load activity.";
+        toast.error(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [action],
+  );
 
   useEffect(() => {
-    load(1);
-  }, [action]);
+    void load(1);
+  }, [load]);
 
   return (
     <div className="space-y-6">

@@ -6,13 +6,21 @@ import { RentAgreementOrder } from "@/models/RentAgreementOrder";
 import { razorpay } from "@/lib/razorpay";
 import { AGREEMENT_PRICE } from "@/lib/pricing";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
+
+const agreementOrderSchema = z.object({
+  propertyId: z.string().regex(/^[a-f\d]{24}$/i),
+});
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
 
-    const { propertyId } = await req.json();
+    const limit = rateLimit(`agreement-order:${session.user.id}`, 5, 60_000);
+    if (!limit.allowed) return fail("Too many order requests", 429);
+    const { propertyId } = agreementOrderSchema.parse(await req.json());
     await connectDB();
 
     const property = await Property.findById(propertyId);

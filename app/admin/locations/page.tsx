@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { hasAdminAccess } from "@/lib/role-access";
 import { format } from "date-fns";
 import {
   MapPin,
@@ -28,7 +29,7 @@ export default function AdminLocationsPage() {
       router.push("/login?callbackUrl=/admin/locations");
     else if (
       status === "authenticated" &&
-      (session?.user as any)?.role !== "admin"
+      !hasAdminAccess(session?.user?.role)
     )
       router.push("/");
   }, [status, session, router]);
@@ -46,7 +47,7 @@ export default function AdminLocationsPage() {
   }
 
   useEffect(() => {
-    if (status === "authenticated" && (session?.user as any)?.role === "admin")
+    if (status === "authenticated" && hasAdminAccess(session?.user?.role))
       load();
   }, [tab, status, session]);
 

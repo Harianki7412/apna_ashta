@@ -1,20 +1,25 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import type { ApiFailure, ApiSuccess } from '@/types';
 
-export function ok(data: unknown, status = 200) {
+export function ok<T>(data: T, status = 200): NextResponse<ApiSuccess<T>> {
   return NextResponse.json({ data }, { status });
 }
 
-export function fail(message: string, status = 400, details?: unknown) {
+export function fail(
+  message: string,
+  status = 400,
+  details?: unknown,
+): NextResponse<ApiFailure> {
   return NextResponse.json({ error: message, details }, { status });
 }
 
-export function handleError(err: unknown) {
+export function handleError(err: unknown): NextResponse<ApiFailure> {
   console.error('[API]', err);
-  if (err instanceof ZodError) return fail('Validation failed', 400, err.flatten());
+  if (err instanceof ZodError) return fail('Validation failed', 400);
   if (err instanceof Error) {
     if (err.message.includes('E11000')) return fail('Duplicate entry', 409);
-    return fail(err.message, 500);
+    if (err instanceof SyntaxError) return fail('Invalid JSON body', 400);
   }
   return fail('Server error', 500);
 }

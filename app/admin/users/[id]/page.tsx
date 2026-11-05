@@ -2,6 +2,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
 import { format } from "date-fns";
@@ -111,7 +112,9 @@ export default function UserDetailPage({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="text-2xl font-bold">{user.name}</h1>
-              <span className="badge badge-brand capitalize">{user.role}</span>
+              <span className="badge badge-brand capitalize">
+                {user.role === "management_team" ? "Management Team" : user.role}
+              </span>
               {user.kycStatus === "verified" && (
                 <span className="badge badge-success">
                   <Shield size={10} /> KYC Verified
@@ -148,6 +151,7 @@ export default function UserDetailPage({
             <option value="tenant">Tenant</option>
             <option value="owner">Owner</option>
             <option value="admin">Admin</option>
+            <option value="management_team">Management Team</option>
           </select>
 
           {!user.blocked ? (
@@ -224,9 +228,11 @@ export default function UserDetailPage({
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
               >
                 {p.images?.[0] && (
-                  <img
+                  <Image
                     src={p.images[0]}
                     alt=""
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-lg object-cover"
                   />
                 )}

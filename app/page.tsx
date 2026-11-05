@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
+import { Review } from "@/models/Review";
 import PropertyCard from "@/components/PropertyCard";
 import { EmptyState } from "@/components/EmptyState";
 import { CountUp } from "@/components/CountUp";
@@ -14,9 +15,7 @@ import {
   HelpCircle,
   ArrowRight,
   Search,
-  CheckCircle2,
   Users,
-  TrendingUp,
   Sparkles,
   Star,
   Zap,
@@ -25,44 +24,101 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { CITIES, getAllAreas } from "@/lib/cities";
+import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
+import { createPageMetadata } from "@/lib/metadata";
+
+export const metadata = createPageMetadata({
+  title: "Verified Rooms, Flats & Homes for Rent in Ashta",
+  description:
+    "Find verified rooms, flats, and houses for rent in Ashta. Browse current listings, compare rents, and connect directly with property owners on Flatova.",
+  path: "/",
+});
+
+interface HomepageReview {
+  _id: { toString(): string };
+  rating: number;
+  comment: string;
+  author: { name: string } | null;
+  property: {
+    _id: { toString(): string };
+    title: string;
+    area: string;
+    status: string;
+  } | null;
+}
+
+type DisplayableHomepageReview = HomepageReview & {
+  author: { name: string };
+  property: NonNullable<HomepageReview["property"]>;
+};
 
 async function getStats() {
   await connectDB();
-  const [latest, totalCount, cityCounts] = await Promise.all([
-    Property.find({ status: "approved" })
+  const freshnessFilter = getPublicListingFreshnessFilter();
+  const [latest, totalCount, verifiedCount, latestReviews, cityCounts] =
+    await Promise.all([
+    Property.find({
+      status: "approved",
+      $and: [freshnessFilter],
+    })
       .populate("owner", "name")
       .sort({ featured: -1, createdAt: -1 })
       .limit(6)
       .lean(),
-    Property.countDocuments({ status: "approved" }),
+    Property.countDocuments({
+      status: "approved",
+      $and: [freshnessFilter],
+    }),
+    Property.countDocuments({
+      status: "approved",
+      verified: true,
+      $and: [freshnessFilter],
+    }),
+    Review.find({ comment: { $ne: "" } })
+      .populate("author", "name")
+      .populate("property", "title area city status")
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean<HomepageReview[]>(),
     Promise.all(
       CITIES.map(async (c) => {
         const count =
           c.name === "Ashta"
             ? await Property.countDocuments({
                 status: "approved",
-                $or: [{ city: "Ashta" }, { city: { $exists: false } }],
-              })
+              $and: [
+                freshnessFilter,
+                { $or: [{ city: "Ashta" }, { city: { $exists: false } }] },
+              ],
+            })
             : await Property.countDocuments({
-                status: "approved",
-                city: c.name,
-              });
+              status: "approved",
+              city: c.name,
+              $and: [freshnessFilter],
+            });
         return { city: c, count };
       }),
     ),
   ]);
-  return { latest, totalCount, cityCounts };
+  const reviews = latestReviews
+    .filter(
+      (review): review is DisplayableHomepageReview =>
+        review.property?.status === "approved" && Boolean(review.author?.name),
+    )
+    .slice(0, 3);
+  return { latest, totalCount, verifiedCount, reviews, cityCounts };
 }
 
 export default async function Home() {
   const t = await getTranslations("home");
   const tCommon = await getTranslations("common");
-  const { latest, totalCount, cityCounts } = await getStats();
+  const { latest, totalCount, verifiedCount, reviews, cityCounts } =
+    await getStats();
 
   return (
     <div className="animate-fade-in">
       {/* ═══════════ HERO ═══════════ */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 text-white py-16 md:py-24 mb-12">
+      <section className="relative isolate mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 py-10 text-white sm:mb-12 sm:py-14 md:py-20">
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-20 pointer-events-none">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
@@ -89,14 +145,14 @@ export default async function Home() {
           </svg>
         </div>
 
-        <div className="relative max-w-4xl mx-auto text-center px-6">
+        <div className="relative mx-auto max-w-4xl px-5 text-center sm:px-8">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-sm font-medium mb-6">
             <Sparkles size={14} className="text-accent-400" />
             <span>{t("topBadge")}</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+          <h1 className="mb-5 text-4xl font-extrabold leading-tight tracking-tight sm:mb-6 sm:text-5xl md:text-6xl lg:text-7xl">
             {t("heroTitle")},
             <br />
             <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-400 bg-clip-text text-transparent">
@@ -104,15 +160,15 @@ export default async function Home() {
             </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-brand-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-brand-100 sm:mb-9 sm:text-lg md:text-xl">
             {t("heroDescription")}
           </p>
 
           {/* Search CTA */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
+          <div className="mb-9 flex flex-col justify-center gap-3 sm:mb-11 sm:flex-row">
             <Link
               href="/properties"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-brand-700 font-bold text-base shadow-2xl shadow-brand-900/30 hover:bg-brand-50 hover:scale-[1.02] transition-all"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-base font-bold text-brand-700 shadow-2xl shadow-brand-900/30 transition-all hover:scale-[1.02] hover:bg-brand-50 sm:px-8 sm:py-4"
             >
               <Search size={20} />
               {t("browseBtn")}
@@ -120,7 +176,7 @@ export default async function Home() {
             </Link>
             <Link
               href="/properties/new"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur border-2 border-white/30 text-white font-bold text-base hover:bg-white/20 hover:border-white/50 transition-all"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-white/30 bg-white/10 px-6 py-3.5 text-base font-bold text-white backdrop-blur transition-all hover:border-white/50 hover:bg-white/20 sm:px-8 sm:py-4"
             >
               <PlusCircleIcon />
               {t("addProperty")}
@@ -128,26 +184,26 @@ export default async function Home() {
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-4 md:gap-8 max-w-2xl mx-auto">
-            <div>
+          <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:gap-4 md:gap-8">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 sm:px-4 sm:py-4">
               <p className="text-3xl md:text-4xl font-extrabold">
                 <CountUp end={totalCount} suffix="+" />
               </p>
-              <p className="text-xs md:text-sm text-brand-200 mt-1">
+              <p className="mt-1 text-[11px] leading-tight text-brand-200 sm:text-sm">
                 {t("properties")}
               </p>
             </div>
-            <div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 sm:px-4 sm:py-4">
               <p className="text-3xl md:text-4xl font-extrabold">
                 <CountUp end={CITIES.length} />
               </p>
-              <p className="text-xs md:text-sm text-brand-200 mt-1">{t("cities")}</p>
+              <p className="mt-1 text-[11px] leading-tight text-brand-200 sm:text-sm">{t("cities")}</p>
             </div>
-            <div>
-              <p className="text-3xl md:text-4xl font-extrabold">
-                <CountUp end={100} suffix="%" />
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 sm:px-4 sm:py-4">
+              <p className="text-3xl font-extrabold sm:text-4xl">
+                <CountUp end={verifiedCount} />
               </p>
-              <p className="text-xs md:text-sm text-brand-200 mt-1">{t("verified")}</p>
+              <p className="mt-1 text-[11px] leading-tight text-brand-200 sm:text-sm">{t("verified")}</p>
             </div>
           </div>
         </div>
@@ -157,7 +213,7 @@ export default async function Home() {
       <section className="mb-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { icon: Shield, label: tCommon("verifiedListings"), color: "success" },
+            { icon: Shield, label: tCommon("verifiedBadgeExplainer"), color: "success" },
             { icon: Zap, label: tCommon("directContact"), color: "accent" },
             { icon: Users, label: tCommon("noBrokerage"), color: "brand" },
             { icon: Award, label: tCommon("adminApproved"), color: "warning" },
@@ -297,7 +353,7 @@ export default async function Home() {
               {
                 icon: MessageCircle,
                 title: "Connect",
-                desc: "Chat directly with verified owners — no brokers",
+                desc: "Chat directly with property owners — no brokers",
                 color: "success",
               },
               {
@@ -406,69 +462,46 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ═══════════ TESTIMONIALS ═══════════ */}
-      <section className="mb-14">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            {tCommon("whatOurUsersSay")}
-          </h2>
-          <p className="text-gray-500">{tCommon("realStories")}</p>
-        </div>
+      {reviews.length > 0 && (
+        <section className="mb-14">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">
+              {tCommon("propertyReviews")}
+            </h2>
+            <p className="text-gray-500">{tCommon("reviewsFromRenters")}</p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            {
-              name: "Priya Sharma",
-              role: "Tenant",
-              quote:
-                "Found my dream 2BHK in 3 days. Direct owner contact, no broker fees!",
-              rating: 5,
-            },
-            {
-              name: "Rajesh Verma",
-              role: "Property Owner",
-              quote:
-                "Listed my flat and got 8 genuine inquiries within a week. Amazing platform!",
-              rating: 5,
-            },
-            {
-              name: "Anita Patel",
-              role: "Student",
-              quote:
-                "As a student, budget-friendly rooms were hard to find. Flatova made it easy.",
-              rating: 5,
-            },
-          ].map((testimonial, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex gap-1 mb-3">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star
-                    key={n}
-                    size={14}
-                    fill={n <= testimonial.rating ? "#f59e0b" : "none"}
-                    color="#f59e0b"
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-gray-700 leading-relaxed mb-4 italic">
-                "{testimonial.quote}"
-              </p>
-              <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-bold text-sm">
-                  {testimonial.name[0]}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {reviews.map((review) => (
+              <Link
+                key={review._id.toString()}
+                href={`/properties/${review.property._id.toString()}`}
+                className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex gap-1 mb-3" aria-label={`${review.rating} out of 5 stars`}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      size={14}
+                      fill={n <= review.rating ? "#f59e0b" : "none"}
+                      color="#f59e0b"
+                    />
+                  ))}
                 </div>
-                <div>
-                  <p className="font-semibold text-sm">{testimonial.name}</p>
-                  <p className="text-xs text-gray-500">{testimonial.role}</p>
+                <p className="text-sm text-gray-700 leading-relaxed mb-4 line-clamp-4">
+                  {review.comment}
+                </p>
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="font-semibold text-sm">{review.author.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {review.property.title} · {review.property.area}
+                  </p>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ═══════════ POPULAR AREAS ═══════════ */}
       <section className="mb-14">
@@ -543,7 +576,7 @@ export default async function Home() {
               <p className="text-xs text-brand-200">{tCommon("listing")}</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">24hr</p>
+              <p className="text-2xl font-bold">{tCommon("adminReview")}</p>
               <p className="text-xs text-brand-200">{tCommon("approval")}</p>
             </div>
             <div>

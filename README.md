@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Contact and social links
+
+Set the real support email and phone in **Admin > Settings** before publishing them on the contact page. Set `SUPPORT_EMAIL` in the deployment environment if contact-form submissions should also be forwarded by email.
+
+The homepage WhatsApp button and footer social icons are hidden unless these public environment variables are configured with the correct account URLs:
+
+- `NEXT_PUBLIC_WHATSAPP_URL`
+- `NEXT_PUBLIC_FACEBOOK_URL`
+- `NEXT_PUBLIC_INSTAGRAM_URL`
+
+## Production SEO and analytics
+
+Set `NEXT_PUBLIC_SITE_URL` to the canonical public origin (for example, `https://your-domain.example`) in every production deployment. It is used for canonical metadata, sitemap URLs, and absolute social-sharing links. On Vercel, `VERCEL_URL` is used as a fallback; local development falls back to `http://localhost:3000`.
+
+Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` to a Google Analytics 4 measurement ID to enable analytics. Analytics is disabled when the variable is unset. Tracked events include page views, property views, searches, favorites, property shares, chat starts, and PWA install interactions.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

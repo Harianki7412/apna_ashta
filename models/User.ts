@@ -15,7 +15,7 @@ const UserSchema = new Schema({
   phoneVerified: { type: Boolean, default: false },
   role: {
     type: String,
-    enum: ["owner", "tenant", "admin"],
+    enum: ["owner", "tenant", "admin", "management_team"],
     default: "tenant",
     index: true,
   },

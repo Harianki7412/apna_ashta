@@ -2,12 +2,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { uploadAny, uploadBuffer } from '@/lib/cloudinary';
 import { ok, fail, handleError } from '@/lib/api-helpers';
+import { hasOwnerAccess } from '@/lib/role-access';
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail('Unauthorized', 401);
-    if (!['owner', 'admin'].includes(session.user.role)) return fail('Forbidden', 403);
+    if (!hasOwnerAccess(session.user.role)) return fail('Forbidden', 403);
 
     const form = await req.formData();
     const files = form.getAll('files') as File[];

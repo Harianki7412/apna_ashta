@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { hasAdminAccess } from "@/lib/role-access";
 import {
   LayoutDashboard,
   Building2,
@@ -43,7 +45,11 @@ export default function AdminDashboard() {
   const [items, setItems] = useState<any[]>([]);
   const [stat, setStat] = useState("pending");
   const [loading, setLoading] = useState(true);
+  const propertiesByStatus = useRef<Record<string, any[]> | null>(null);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [loadError, setLoadError] = useState("");
+  const [badgeError, setBadgeError] = useState("");
   const [stats, setStats] = useState<any>({
     pending: 0,
     approved: 0,
@@ -63,31 +69,42 @@ export default function AdminDashboard() {
     }
     if (status === "authenticated") {
       const role = (session?.user as any)?.role;
-      if (role !== "admin") {
+      if (!hasAdminAccess(role)) {
         toast.error("Admin access required");
         router.push("/");
       }
     }
   }, [status, session, router]);
 
-  async function load(s = stat) {
+  async function load(s = stat, refresh = false) {
+    if (!refresh && propertiesByStatus.current) {
+      setItems(propertiesByStatus.current[s] || []);
+      setLoading(false);
+      setLoadError("");
+      return;
+    }
+
+    if (refresh) propertiesByStatus.current = null;
     setLoading(true);
     try {
       const statuses = ["pending", "approved", "rejected", "rented"];
       const results = await Promise.all(
         statuses.map((st) =>
-          api
-            .get<any>(`/api/admin/properties?status=${st}`)
-            .catch(() => ({ items: [] })),
+          api.get<any>(`/api/admin/properties?status=${st}`),
         ),
       );
       const newStats: any = {};
+      const newPropertiesByStatus: Record<string, any[]> = {};
       results.forEach((r, i) => {
-        newStats[statuses[i]] = r.items.length;
+        newStats[statuses[i]] = r.total ?? r.items.length;
+        newPropertiesByStatus[statuses[i]] = r.items;
       });
+      propertiesByStatus.current = newPropertiesByStatus;
       setStats(newStats);
-      setItems(results[statuses.indexOf(s)].items);
+      setItems(newPropertiesByStatus[s] || []);
+      setLoadError("");
     } catch (e: any) {
+      setLoadError(e instanceof Error ? e.message : "Unable to load properties.");
       toast.error(e.message);
     } finally {
       setLoading(false);
@@ -98,13 +115,16 @@ export default function AdminDashboard() {
     try {
       const d = await api.get<any>("/api/admin/stats");
       setBadges(d);
-    } catch {}
+      setBadgeError("");
+    } catch (e: any) {
+      setBadgeError(e instanceof Error ? e.message : "Unable to load admin alerts.");
+    }
   }
 
   useEffect(() => {
     if (
       status === "authenticated" &&
-      (session?.user as any)?.role === "admin"
+      hasAdminAccess(session?.user?.role)
     ) {
       load(stat);
       loadBadges();
@@ -115,7 +135,7 @@ export default function AdminDashboard() {
     try {
       await api.patch("/api/admin/properties", { id, status: newStatus });
       toast.success(`Marked ${newStatus}`);
-      load();
+      load(stat, true);
       loadBadges();
     } catch (e: any) {
       toast.error(e.message);
@@ -128,7 +148,7 @@ export default function AdminDashboard() {
         action: currentlyVerified ? "unverify" : "verify",
       });
       toast.success(currentlyVerified ? "Unverified" : "Property verified!");
-      load();
+      load(stat, true);
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -151,6 +171,12 @@ export default function AdminDashboard() {
       p.owner?.name?.toLowerCase().includes(search.toLowerCase()) ||
       p.area?.toLowerCase().includes(search.toLowerCase()),
   );
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    if (sort === "rent-low") return Number(a.rent || 0) - Number(b.rent || 0);
+    if (sort === "rent-high") return Number(b.rent || 0) - Number(a.rent || 0);
+    if (sort === "views") return Number(b.views || 0) - Number(a.views || 0);
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   const totalListings =
     stats.pending + stats.approved + stats.rejected + stats.rented;
@@ -264,6 +290,11 @@ export default function AdminDashboard() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-danger-500 to-danger-700 text-white flex items-center justify-center shadow-md shadow-danger-500/25">
             <ShieldCheck size={20} />
           </div>
+          {badgeError && (
+            <div role="status" className="mb-5 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-900/20 dark:text-warning-200">
+              Admin alerts could not be refreshed: {badgeError}
+            </div>
+          )}
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100">
               Admin Dashboard
@@ -371,18 +402,32 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">
               Properties ({stat})
             </h2>
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
-              />
-              <input
-                type="text"
-                placeholder="Search title, owner, area..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="input pl-9 py-2 text-sm w-64"
-              />
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
+                />
+                <input
+                  type="search"
+                  placeholder="Search title, owner, area..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="input pl-9 py-2 text-sm"
+                  aria-label="Search properties"
+                />
+              </div>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="input sm:w-48"
+                aria-label="Sort properties"
+              >
+                <option value="newest">Newest first</option>
+                <option value="rent-low">Rent: low to high</option>
+                <option value="rent-high">Rent: high to low</option>
+                <option value="views">Most viewed</option>
+              </select>
             </div>
           </div>
 
@@ -422,7 +467,16 @@ export default function AdminDashboard() {
               <div className="skeleton h-16 w-full rounded mb-2" />
               <div className="skeleton h-16 w-full rounded" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : loadError ? (
+            <div role="alert" className="p-10 text-center">
+              <AlertTriangle size={32} className="text-danger-500 mx-auto mb-3" />
+              <p className="font-semibold">Properties could not be loaded</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{loadError}</p>
+              <button onClick={() => load()} className="btn btn-secondary btn-sm mt-4">
+                Try again
+              </button>
+            </div>
+          ) : sortedFiltered.length === 0 ? (
             <div className="p-12 text-center">
               <Building2
                 size={40}
@@ -453,7 +507,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                {filtered.map((p) => (
+                {sortedFiltered.map((p) => (
                   <tr
                     key={p._id}
                     className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -461,9 +515,11 @@ export default function AdminDashboard() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         {p.images?.[0] ? (
-                          <img
+                          <Image
                             src={p.images[0]}
                             alt=""
+                            width={56}
+                            height={56}
                             className="w-14 h-14 rounded-lg object-cover"
                           />
                         ) : (

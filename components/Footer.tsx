@@ -4,8 +4,6 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import {
   Home,
-  Mail,
-  Phone,
   MapPin,
   MessageCircle,
   Info,
@@ -57,7 +55,7 @@ function InstagramIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function Footer() {
+export default function Footer({ year }: { year: number }) {
   const pathname = usePathname();
   const t = useTranslations("footer");
 
@@ -65,7 +63,7 @@ export default function Footer() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-16">
+    <footer className="site-footer mt-16">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
           <div className="space-y-4">
@@ -82,33 +80,49 @@ export default function Footer() {
               {t("brandDescription")}
             </p>
             <div className="flex gap-2">
-              <a
-                href="https://wa.me/919999999999"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors"
-                title="WhatsApp"
+              {process.env.NEXT_PUBLIC_WHATSAPP_URL && (
+                <a
+                  href={process.env.NEXT_PUBLIC_WHATSAPP_URL}
+                  aria-label="WhatsApp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors"
+                  title="WhatsApp"
+                >
+                  <WhatsAppIcon size={16} />
+                </a>
+              )}
+              {process.env.NEXT_PUBLIC_FACEBOOK_URL && (
+                <a
+                  href={process.env.NEXT_PUBLIC_FACEBOOK_URL}
+                  aria-label="Facebook"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-gray-800 hover:bg-blue-600 flex items-center justify-center transition-colors"
+                  title="Facebook"
+                >
+                  <FacebookIcon size={16} />
+                </a>
+              )}
+              {process.env.NEXT_PUBLIC_INSTAGRAM_URL && (
+                <a
+                  href={process.env.NEXT_PUBLIC_INSTAGRAM_URL}
+                  aria-label="Instagram"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-gray-800 hover:bg-pink-600 flex items-center justify-center transition-colors"
+                  title="Instagram"
+                >
+                  <InstagramIcon size={16} />
+                </a>
+              )}
+              <Link
+                href="/contact#contact-form"
+                className="w-9 h-9 rounded-full bg-gray-800 hover:bg-brand-600 flex items-center justify-center transition-colors"
+                title={t("contact")}
               >
-                <WhatsAppIcon size={16} />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-gray-800 hover:bg-blue-600 flex items-center justify-center transition-colors"
-                title="Facebook"
-              >
-                <FacebookIcon size={16} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-gray-800 hover:bg-pink-600 flex items-center justify-center transition-colors"
-                title="Instagram"
-              >
-                <InstagramIcon size={16} />
-              </a>
+                <MessageCircle size={16} />
+              </Link>
             </div>
           </div>
 
@@ -251,22 +265,16 @@ export default function Footer() {
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <Mail size={16} className="text-brand-400 flex-shrink-0" />
-                <a
-                  href="mailto:hello@Flatova.in"
+                <MessageCircle
+                  size={16}
+                  className="text-brand-400 flex-shrink-0"
+                />
+                <Link
+                  href="/contact#contact-form"
                   className="hover:text-white transition-colors"
                 >
-                  hello@Flatova.in
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone size={16} className="text-brand-400 flex-shrink-0" />
-                <a
-                  href="tel:+919999999999"
-                  className="hover:text-white transition-colors"
-                >
-                  +91 99999 99999
-                </a>
+                  {t("contact")}
+                </Link>
               </li>
             </ul>
           </div>
@@ -275,7 +283,7 @@ export default function Footer() {
         <div className="pt-6 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400 mb-4">
             <p>
-              © {new Date().getFullYear()} Flatova. {t("allRightsReserved")}
+              © {year} Flatova. {t("allRightsReserved")}
             </p>
             <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
               <Link

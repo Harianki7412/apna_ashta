@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
 import AdminCommandPalette from "@/components/AdminCommandPalette";
+import { hasAdminAccess } from "@/lib/role-access";
 
 export default function AdminLayout({
   children,
@@ -18,7 +19,7 @@ export default function AdminLayout({
       router.push("/login?callbackUrl=/admin");
     } else if (
       status === "authenticated" &&
-      (session?.user as any)?.role !== "admin"
+      !hasAdminAccess(session?.user?.role)
     ) {
       router.push("/");
     }
@@ -34,7 +35,7 @@ export default function AdminLayout({
   if (
     status === "loading" ||
     !session ||
-    (session?.user as any)?.role !== "admin"
+    !hasAdminAccess(session?.user?.role)
   ) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
@@ -53,7 +54,9 @@ export default function AdminLayout({
       <AdminSidebar />
       <AdminCommandPalette />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-4 pt-20 lg:pt-6 lg:p-6">{children}</div>
+        <div className="admin-content mx-auto w-full max-w-[1680px] px-4 pt-20 pb-8 lg:px-8 lg:py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

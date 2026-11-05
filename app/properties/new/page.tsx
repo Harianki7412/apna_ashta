@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import { hasOwnerAccess } from "@/lib/role-access";
 import {
   PROPERTY_TYPES,
   BHK_OPTIONS,
@@ -96,7 +97,7 @@ export default function NewPropertyPage() {
     parking: "None",
     preferredTenants: ["Family"] as string[],
     amenities: [] as string[],
-    availableFrom: new Date().toISOString().split("T")[0],
+    availableFrom: "",
     stateId: "",
     city: "",
     rent: "",
@@ -113,6 +114,13 @@ export default function NewPropertyPage() {
   const [addAreaOpen, setAddAreaOpen] = useState(false);
   const [newCityName, setNewCityName] = useState("");
   const [newAreaName, setNewAreaName] = useState("");
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      availableFrom: new Date().toISOString().split("T")[0],
+    }));
+  }, []);
   const [newAreaType, setNewAreaType] = useState("area");
   const [adding, setAdding] = useState(false);
 
@@ -124,7 +132,7 @@ export default function NewPropertyPage() {
     }
     if (status === "authenticated") {
       const role = (session?.user as any)?.role;
-      if (!["owner", "admin"].includes(role)) {
+      if (!hasOwnerAccess(role)) {
         toast.error("Only owners can add properties");
         router.push("/");
       }

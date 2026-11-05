@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import { SavedSearch } from "@/models/SavedSearch";
 import { Property } from "@/models/Property";
+import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
 import { notifyUser } from "@/lib/notify";
 import { ok, fail, handleError } from "@/lib/api-helpers";
 
@@ -20,7 +21,11 @@ export async function GET(req: Request) {
 
     let notified = 0;
     for (const s of searches as any[]) {
-      const q: any = { status: "approved", createdAt: { $gte: since } };
+      const q: any = {
+        status: "approved",
+        createdAt: { $gte: since },
+        $and: [getPublicListingFreshnessFilter()],
+      };
       if (s.filters?.area) q.area = new RegExp(s.filters.area, "i");
       if (s.filters?.type) q.propertyType = s.filters.type;
       if (s.filters?.min || s.filters?.max) {

@@ -2,11 +2,15 @@ import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { ok, fail, handleError } from '@/lib/api-helpers';
+import { resetPasswordSchema } from '@/lib/validators';
+import { clientIP, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
-    const { token, password } = await req.json();
-    if (!token || !password || password.length < 6) return fail('Invalid input');
+    const rl = rateLimit(`password-reset:${clientIP(req)}`, 5, 15 * 60_000);
+    if (!rl.allowed) return fail('Too many requests. Try again later.', 429);
+
+    const { token, password } = resetPasswordSchema.parse(await req.json());
     await connectDB();
     const user = await User.findOne({
       resetToken: token,

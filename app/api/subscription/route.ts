@@ -6,6 +6,13 @@ import { Subscription } from "@/models/Subscription";
 import { razorpay } from "@/lib/razorpay";
 import { getPlan } from "@/lib/pricing";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
+
+const subscriptionOrderSchema = z.object({
+  planId: z.string().min(1).max(40),
+  billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
+});
 
 /* ═══ POST: Create subscription order ═══ */
 export async function POST(req: Request) {
@@ -16,7 +23,11 @@ export async function POST(req: Request) {
       return fail("Only owners can subscribe", 403);
     }
 
-    const { planId, billingCycle = "monthly" } = await req.json();
+    const limit = rateLimit(`subscription-order:${session.user.id}`, 5, 60_000);
+    if (!limit.allowed) return fail("Too many order requests", 429);
+    const { planId, billingCycle } = subscriptionOrderSchema.parse(
+      await req.json(),
+    );
     const plan = getPlan(planId);
     if (!plan || plan.id === "free") return fail("Invalid plan");
 

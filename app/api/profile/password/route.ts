@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { rateLimit } from '@/lib/rate-limit';
 import { ok, fail, handleError } from '@/lib/api-helpers';
+import { passwordChangeSchema } from '@/lib/validators';
 
 export async function POST(req: Request) {
   try {
@@ -14,9 +15,9 @@ export async function POST(req: Request) {
     const rl = rateLimit(`pwd:${me}`, 3, 300_000);
     if (!rl.allowed) return fail('Too many attempts', 429);
 
-    const { currentPassword, newPassword } = await req.json();
-    if (!currentPassword || !newPassword) return fail('Both required');
-    if (newPassword.length < 6) return fail('Min 6 chars');
+    const { currentPassword, newPassword } = passwordChangeSchema.parse(
+      await req.json(),
+    );
 
     await connectDB();
     const user = await User.findById(me).select('+password');

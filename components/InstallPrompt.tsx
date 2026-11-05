@@ -1,42 +1,85 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
+import toast from "react-hot-toast";
+import { trackEvent } from "@/components/GoogleAnalytics";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
 
 export default function InstallPrompt() {
   const pathname = usePathname();
-  const [prompt, setPrompt] = useState<any>(null);
+  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [step, setStep] = useState<"idle" | "installing" | "installed">("idle");
+  const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (pathname.startsWith("/admin")) return;
     if (window.matchMedia("(display-mode: standalone)").matches) return;
-    const dismissed = localStorage.getItem("install-dismissed");
-    if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
+    try {
+      const dismissed = localStorage.getItem("install-dismissed");
+      if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
+    } catch (error) {
+      console.warn("[PWA] Could not read install preference:", error);
+    }
     const handler = (e: Event) => {
       e.preventDefault();
-      setPrompt(e);
-      setTimeout(() => setShow(true), 20000);
+      setPrompt(e as BeforeInstallPromptEvent);
+      showTimer.current = setTimeout(() => {
+        setShow(true);
+        trackEvent("pwa_install_prompt_shown");
+      }, 20000);
+    };
+    const installed = () => {
+      setStep("installed");
+      setShow(true);
+      trackEvent("pwa_installed");
+      closeTimer.current = setTimeout(() => setShow(false), 2000);
     };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+    window.addEventListener("appinstalled", installed);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installed);
+      if (showTimer.current) clearTimeout(showTimer.current);
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, [pathname]);
 
   async function install() {
     if (!prompt) return;
     setStep("installing");
-    prompt.prompt();
-    const { outcome } = await prompt.userChoice;
-    if (outcome === "accepted") {
-      setStep("installed");
-      setTimeout(() => setShow(false), 2000);
-    } else setStep("idle");
-    setPrompt(null);
+    try {
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      trackEvent(
+        outcome === "accepted" ? "pwa_install_accepted" : "pwa_install_declined",
+      );
+      if (outcome === "accepted") {
+        setStep("installed");
+        closeTimer.current = setTimeout(() => setShow(false), 2000);
+      } else setStep("idle");
+      setPrompt(null);
+    } catch (error) {
+      console.error("[PWA] Install prompt failed:", error);
+      setStep("idle");
+      toast.error("Could not start the install prompt. Please try again.");
+    }
   }
 
   function dismiss() {
     setShow(false);
-    localStorage.setItem("install-dismissed", String(Date.now()));
+    try {
+      localStorage.setItem("install-dismissed", String(Date.now()));
+    } catch (error) {
+      console.warn("[PWA] Could not save install preference:", error);
+    }
+    trackEvent("pwa_install_prompt_dismissed");
   }
 
   if (!show) return null;
@@ -61,7 +104,7 @@ export default function InstallPrompt() {
           <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">
             {step === "installed"
               ? "Look on your home screen"
-              : "Faster access + offline browsing"}
+              : "Quick access and an offline fallback when your connection drops."}
           </p>
           {step !== "installed" && (
             <div className="flex gap-2 mt-3">

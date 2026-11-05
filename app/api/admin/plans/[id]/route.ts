@@ -3,10 +3,11 @@ import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { Plan } from "@/models/Plan";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return s?.user?.role === "admin" ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 /* ═══ PATCH: Update plan ═══ */

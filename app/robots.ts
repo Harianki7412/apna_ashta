@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site-url";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   return {
     rules: [
       {
@@ -9,15 +9,23 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: [
           "/admin",
-          "/dashboard",
           "/api",
           "/chat",
+          "/dashboard",
           "/profile",
-          "/settings",
+          "/favorites",
+          "/notifications",
+          "/saved-searches",
+          "/agreements",
+          "/login",
+          "/register",
+          "/forgot-password",
+          "/reset-password",
+          "/offline",
         ],
       },
     ],
-    sitemap: `${base}/sitemap.xml`,
-    host: base,
+    sitemap: new URL("/sitemap.xml", SITE_URL).toString(),
+    host: SITE_URL.host,
   };
 }

@@ -6,6 +6,7 @@ import { Property } from '@/models/Property';
 import { agreementSchema } from '@/lib/validators';
 import { generateRentAgreement } from '@/lib/pdf/rentAgreement';
 import { fail, handleError } from '@/lib/api-helpers';
+import { hasAdminAccess } from '@/lib/role-access';
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
 
     const me = session.user.id;
     const role = session.user.role;
-    if (property.owner._id.toString() !== me && role !== 'admin') {
+    if (property.owner._id.toString() !== me && !hasAdminAccess(role)) {
       return fail('Forbidden', 403);
     }
 

@@ -5,6 +5,7 @@ import { Property } from "@/models/Property";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 interface UpdatedProperty {
   title: string;
@@ -13,7 +14,7 @@ interface UpdatedProperty {
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return s?.user?.role === "admin" ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 /* ═══════════════════════════════════════════════════════════

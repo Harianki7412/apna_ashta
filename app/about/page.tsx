@@ -11,12 +11,14 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { CITIES } from "@/lib/cities";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata = {
-  title: "About Us — Flatova",
+export const metadata = createPageMetadata({
+  title: "About Us",
   description:
     "Flatova is Ashta's own rental platform connecting verified property owners with tenants across Ashta, Kothri, and Sehore.",
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

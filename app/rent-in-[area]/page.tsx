@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import PropertyCard from "@/components/PropertyCard";
+import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
+import { createPageMetadata } from "@/lib/metadata";
 
 const AREAS = [
   "college-road",
@@ -33,18 +35,22 @@ export async function generateMetadata({
   const { area } = await params;
   if (!AREAS.includes(area)) return { title: "Not Found" };
   const areaName = slugToArea(area);
-  return {
-    title: `Rent in ${areaName}, Ashta — Rooms & Flats | Flatova`,
-    description: `Find verified rooms, flats, and homes for rent in ${areaName}, Ashta.`,
-    alternates: {
-      canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in-${area}`,
-    },
-  };
+  const title = `Rent in ${areaName}, Ashta — Rooms & Flats`;
+  const description = `Find verified rooms, flats, and homes for rent in ${areaName}, Ashta. Browse current listings and contact property owners directly.`;
+  return createPageMetadata({
+    title,
+    description,
+    path: `/rent-in/ashta/${area}`,
+  });
 }
 
 async function getProperties(areaName: string) {
   await connectDB();
-  return Property.find({ status: "approved", area: new RegExp(areaName, "i") })
+  return Property.find({
+    status: "approved",
+    area: new RegExp(areaName, "i"),
+    $and: [getPublicListingFreshnessFilter()],
+  })
     .populate("owner", "name")
     .sort({ featured: -1, createdAt: -1 })
     .limit(50)

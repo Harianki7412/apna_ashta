@@ -96,7 +96,16 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
   await connectDB();
   const settings = await AppSetting.find({})
     .lean<{ key: string; value: unknown }[]>();
-  return Object.fromEntries(settings.map(({ key, value }) => [key, value]));
+  const values = Object.fromEntries(settings.map(({ key, value }) => [key, value]));
+
+  if (values.supportEmail?.toString().toLowerCase() === "hello@flatova.in") {
+    values.supportEmail = "";
+  }
+  if (values.supportPhone?.toString().replace(/\D/g, "") === "919999999999") {
+    values.supportPhone = "";
+  }
+
+  return values;
 }
 
 /* ═══ Default settings (used when DB empty) ═══ */
@@ -105,8 +114,8 @@ export const DEFAULT_SETTINGS = {
   agreementSplitPrice: 99,
   freeLeadsPerProperty: 10,
   siteName: "Flatova",
-  supportEmail: "hello@Flatova.in",
-  supportPhone: "+919999999999",
+  supportEmail: "",
+  supportPhone: "",
   enableSubscriptions: true,
   enableLeadPacks: true,
   enableFeaturedListings: true,

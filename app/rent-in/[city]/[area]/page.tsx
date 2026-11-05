@@ -8,6 +8,8 @@ import PropertyCard from "@/components/PropertyCard";
 import { EmptyState } from "@/components/EmptyState";
 import { getCityBySlug, getAreaBySlug } from "@/lib/cities";
 import { MapPin, Home as HomeIcon } from "lucide-react";
+import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
+import { createPageMetadata } from "@/lib/metadata";
 
 export async function generateStaticParams() {
   const { CITIES } = await import("@/lib/cities");
@@ -26,13 +28,13 @@ export async function generateMetadata({
   const area = getAreaBySlug(citySlug, areaSlug);
   if (!city || !area) return { title: "Not Found" };
 
-  return {
-    title: `Rent in ${area.name}, ${city.name} — Rooms & Flats | Flatova`,
-    description: `Find verified rentals in ${area.name}, ${city.name}. Direct from owners, no brokers.`,
-    alternates: {
-      canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/rent-in/${city.slug}/${area.slug}`,
-    },
-  };
+  const title = `Rent in ${area.name}, ${city.name} — Rooms & Flats`;
+  const description = `Find verified rentals in ${area.name}, ${city.name}. Browse current room and flat listings and contact owners directly.`;
+  return createPageMetadata({
+    title,
+    description,
+    path: `/rent-in/${city.slug}/${area.slug}`,
+  });
 }
 
 async function getProperties(cityName: string, areaName: string) {
@@ -40,9 +42,12 @@ async function getProperties(cityName: string, areaName: string) {
   const query: any = {
     status: "approved",
     area: new RegExp(areaName, "i"),
+    $and: [getPublicListingFreshnessFilter()],
   };
   if (cityName === "Ashta") {
-    query.$or = [{ city: "Ashta" }, { city: { $exists: false } }];
+    query.$and.push({
+      $or: [{ city: "Ashta" }, { city: { $exists: false } }],
+    });
   } else {
     query.city = cityName;
   }

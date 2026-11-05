@@ -1,5 +1,5 @@
-import { Metadata } from "next";
 import Link from "next/link";
+import { createPageMetadata } from "@/lib/metadata";
 import {
   FileText,
   Scale,
@@ -20,10 +20,11 @@ import {
   Calendar,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Terms of Service — Flatova",
+export const metadata = createPageMetadata({
+  title: "Terms of Service",
   description: "Terms and conditions for using the Flatova rental platform.",
-};
+  path: "/terms",
+});
 
 const LAST_UPDATED = "October 28, 2026";
 

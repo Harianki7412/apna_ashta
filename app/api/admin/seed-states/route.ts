@@ -5,10 +5,11 @@ import { State } from "@/models/State";
 import { City } from "@/models/City";
 import { clearCityCache } from "@/lib/cities-server";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return s?.user?.role === "admin" ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 function slugify(s: string) {

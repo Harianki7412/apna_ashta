@@ -1,5 +1,5 @@
-import { Metadata } from "next";
 import Link from "next/link";
+import { createPageMetadata } from "@/lib/metadata";
 import {
   Shield,
   Lock,
@@ -20,11 +20,12 @@ import {
   UserCheck,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy — Flatova",
+export const metadata = createPageMetadata({
+  title: "Privacy Policy",
   description:
     "How Flatova collects, uses, and protects your personal information.",
-};
+  path: "/privacy",
+});
 
 const LAST_UPDATED = "October 28, 2026";
 
@@ -160,7 +161,7 @@ export default function PrivacyPage() {
               {[
                 {
                   bold: "Account data:",
-                  rest: "Name, email, phone number, password (encrypted), user role (owner/tenant/admin)",
+                  rest: "Name, email, phone number, password (encrypted), user role (owner/tenant/admin/management team)",
                 },
                 {
                   bold: "Property listings:",

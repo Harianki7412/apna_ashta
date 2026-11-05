@@ -66,8 +66,8 @@ export default function DeletePropertyButton({
       )}
 
       {open && (
-        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 animate-fade-up border border-gray-100 dark:border-slate-700">
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-md w-full p-6 animate-fade-up">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-danger-50 dark:bg-danger-900/30 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle

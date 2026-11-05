@@ -9,12 +9,14 @@ import {
   Lock,
   FileCheck,
 } from "lucide-react";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata = {
-  title: "Safety Tips — Flatova",
+export const metadata = createPageMetadata({
+  title: "Rental Safety Tips",
   description:
     "Learn how to stay safe while renting in Ashta. Tips to avoid scams and frauds.",
-};
+  path: "/safety-tips",
+});
 
 export default function SafetyTipsPage() {
   return (
@@ -210,7 +212,7 @@ export default function SafetyTipsPage() {
             },
             {
               title: "Report & Block",
-              desc: "Report suspicious users instantly — 24hr action",
+              desc: "Report a suspicious listing or user for review by the team.",
               icon: Shield,
             },
             {
@@ -254,14 +256,9 @@ export default function SafetyTipsPage() {
           >
             Report to Admin
           </Link>
-          <a
-            href="https://wa.me/919999999999"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-whatsapp btn-sm"
-          >
-            WhatsApp Support
-          </a>
+          <Link href="/contact#contact-form" className="btn btn-secondary btn-sm">
+            Contact Support
+          </Link>
         </div>
       </section>
     </div>

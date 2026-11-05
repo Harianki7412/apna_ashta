@@ -1,5 +1,6 @@
 "use client";
 import { MessageCircle } from "lucide-react";
+import { trackEvent } from "@/components/GoogleAnalytics";
 
 export default function WhatsAppShare({
   title,
@@ -13,6 +14,10 @@ export default function WhatsAppShare({
   propertyId: string;
 }) {
   function share() {
+    trackEvent("share_property", {
+      property_id: propertyId,
+      method: "whatsapp",
+    });
     const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const url = `${base}/properties/${propertyId}`;
     const text = `🏠 *${title}*\n📍 ${area}\n💰 ₹${rent}/month\n🔗 ${url}\n\n_Flatova_`;

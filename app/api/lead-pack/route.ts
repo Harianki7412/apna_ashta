@@ -5,6 +5,12 @@ import { LeadPack } from "@/models/LeadPack";
 import { razorpay } from "@/lib/razorpay";
 import { LEAD_PACKS } from "@/lib/pricing";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
+
+const leadPackOrderSchema = z.object({
+  packId: z.string().min(1).max(40),
+});
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +19,9 @@ export async function POST(req: Request) {
     if (session.user.role !== "owner")
       return fail("Only owners can buy leads", 403);
 
-    const { packId } = await req.json();
+    const limit = rateLimit(`lead-order:${session.user.id}`, 5, 60_000);
+    if (!limit.allowed) return fail("Too many order requests", 429);
+    const { packId } = leadPackOrderSchema.parse(await req.json());
     const pack = LEAD_PACKS.find((p) => p.id === packId);
     if (!pack) return fail("Invalid pack");
 

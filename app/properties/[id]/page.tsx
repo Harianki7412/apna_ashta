@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
+import { formatDistanceToNow } from "date-fns";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
@@ -13,10 +14,15 @@ import RentAgreementModal from "@/components/RentAgreementModal";
 import DeletePropertyButton from "@/components/DeletePropertyButton";
 import ReportButton from "@/components/ReportButton";
 import StartChatButton from "./StartChatButton";
+import VisitRequestButton from "./VisitRequestButton";
+import AvailabilityConfirmationButton from "@/components/AvailabilityConfirmationButton";
+import { hasAdminAccess } from "@/lib/role-access";
 import PropertyGallery from "@/components/PropertyGallery";
+import { getListingFreshness } from "@/lib/property-freshness";
 import { getTranslations } from "next-intl/server";
 import { getBhkLabel } from "@/lib/property-types";
 import { analyzePropertyForScams } from "@/lib/anti-scam";
+import { TrackEvent } from "@/components/GoogleAnalytics";
 import {
   MapPin,
   Home,
@@ -61,18 +67,45 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const property: any = await getProperty(id);
-  if (!property) return { title: "Not found — Flatova" };
+  if (!property || property.status !== "approved")
+    return {
+      title: "Listing unavailable",
+      robots: { index: false, follow: false },
+    };
+  if (
+    getListingFreshness(
+      property.createdAt,
+      property.lastAvailabilityConfirmedAt,
+    ).isHidden
+  )
+    return {
+      title: "Listing unavailable",
+      robots: { index: false, follow: false },
+    };
 
   const bhkPart = property.bhk ? `${property.bhk} ` : "";
   return {
-    title: `${bhkPart}${property.title} — ₹${property.rent}/month | Flatova`,
+    title: `${bhkPart}${property.title} — ₹${property.rent}/month`,
     description: `${bhkPart}${property.propertyType} for rent in ${property.area}, ${
       property.city || "Ashta"
     }.`,
+    alternates: { canonical: `/properties/${id}` },
     openGraph: {
-      title: property.title,
-      description: `₹${property.rent}/month in ${property.area}`,
-      images: property.images?.[0] ? [{ url: property.images[0] }] : [],
+      type: "website",
+      title: `${bhkPart}${property.title} — ₹${property.rent}/month`,
+      description: `${bhkPart}${property.propertyType} for rent in ${property.area}, ${property.city || "Ashta"} for ₹${property.rent}/month.`,
+      url: `/properties/${id}`,
+      images: property.images?.[0]
+        ? [{ url: property.images[0], alt: property.title }]
+        : ["/opengraph-image"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${bhkPart}${property.title} — ₹${property.rent}/month`,
+      description: `${bhkPart}${property.propertyType} for rent in ${property.area}, ${property.city || "Ashta"}.`,
+      images: property.images?.[0]
+        ? [property.images[0]]
+        : ["/opengraph-image"],
     },
   };
 }
@@ -94,9 +127,21 @@ export default async function PropertyDetail({
   const me = (session?.user as any)?.id;
   const role = (session?.user as any)?.role;
   const ownerId = property.owner?._id?.toString();
-  const canManage = me === ownerId || role === "admin";
+  const ownerPhoneDigits = (property.owner?.phone || "").replace(/\D/g, "");
+  const whatsappPhone =
+    ownerPhoneDigits.length === 10
+      ? `91${ownerPhoneDigits}`
+      : ownerPhoneDigits.startsWith("91") && ownerPhoneDigits.length === 12
+        ? ownerPhoneDigits
+        : "";
+  const canManage = me === ownerId || hasAdminAccess(role);
 
   if (property.status !== "approved" && !canManage) notFound();
+  const freshness = getListingFreshness(
+    property.createdAt,
+    property.lastAvailabilityConfirmedAt,
+  );
+  if (freshness.isHidden && !canManage) notFound();
 
   // Increment view count (fire and forget)
   try {
@@ -106,6 +151,10 @@ export default async function PropertyDetail({
 
   // ═══ Anti-scam analysis ═══
   const scamWarnings = analyzePropertyForScams(property);
+  const estimatedFirstPayment =
+    (property.rent || 0) +
+    (property.deposit || 0) +
+    (property.maintenanceCharge || 0);
 
   // ═══ Check if user has already chatted with owner ═══
   let hasChatted = false;
@@ -127,6 +176,16 @@ export default async function PropertyDetail({
 
   return (
     <div className="max-w-6xl mx-auto">
+      {property.status === "approved" && !freshness.isHidden && (
+        <TrackEvent
+          name="view_property"
+          parameters={{
+            property_id: id,
+            city: property.city || "Ashta",
+            property_type: property.propertyType,
+          }}
+        />
+      )}
       {/* ═══ Pending status banner (owner/admin only) ═══ */}
       {property.status !== "approved" && (
         <div className="mb-4 bg-warning-50 dark:bg-warning-900/20 border border-accent-400 text-accent-700 dark:text-warning-300 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
@@ -165,6 +224,35 @@ export default async function PropertyDetail({
           {property.title}
         </span>
       </nav>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <p className="text-gray-500 dark:text-slate-400">
+          Listed{" "}
+          {formatDistanceToNow(new Date(property.createdAt), {
+            addSuffix: true,
+          })}
+        </p>
+        <Link
+          href={`/properties?city=${encodeURIComponent(property.city || "Ashta")}&area=${encodeURIComponent(property.area)}`}
+          className="font-semibold text-brand-600 hover:underline dark:text-brand-400"
+        >
+          More rentals in {property.area}
+        </Link>
+      </div>
+
+      <div className="mb-4 rounded-xl border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-700 dark:bg-warning-900/20 dark:text-warning-200">
+        {freshness.isStale
+          ? "This listing has not had its availability reconfirmed recently. Please check with the owner before visiting or paying."
+          : "Confirm availability and all charges with the owner before visiting or paying."}
+        {canManage && freshness.isStale && (
+          <div className="mt-2">
+            <AvailabilityConfirmationButton
+              propertyId={id}
+              isStale={freshness.isStale}
+            />
+          </div>
+        )}
+      </div>
 
       {/* ═══ SCAM WARNINGS ═══ */}
       {scamWarnings.length > 0 && (
@@ -487,6 +575,37 @@ export default async function PropertyDetail({
             </div>
           )}
 
+          <div className="card p-6">
+            <h2 className="text-xl font-bold mb-2 text-gray-900 dark:text-slate-100">
+              Explore this locality
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
+              Check nearby places on Google Maps. Results and distances are
+              provided by Google and should be verified before planning.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ["Schools", "schools"],
+                ["Hospitals", "hospitals"],
+                ["Public transport", "bus stops and public transport"],
+                ["Markets", "markets and grocery stores"],
+              ].map(([label, search]) => {
+                const query = `${search} near ${property.area}, ${property.city || "Ashta"}`;
+                return (
+                  <a
+                    key={label}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl border border-gray-200 p-3 text-sm font-semibold text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-300 dark:hover:bg-slate-800"
+                  >
+                    {label}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
           {/* ═══ Reviews ═══ */}
           <Reviews propertyId={id} ownerId={ownerId} />
         </div>
@@ -511,6 +630,22 @@ export default async function PropertyDetail({
                   + ₹{property.deposit.toLocaleString("en-IN")} deposit
                 </p>
               )}
+              {property.maintenanceCharge > 0 && (
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  + ₹{property.maintenanceCharge.toLocaleString("en-IN")} monthly maintenance
+                </p>
+              )}
+              <div className="mt-3 rounded-xl bg-brand-50 p-3 dark:bg-brand-900/20">
+                <p className="text-xs text-gray-600 dark:text-slate-300">
+                  Estimated first payment
+                </p>
+                <p className="text-lg font-bold text-brand-700 dark:text-brand-300">
+                  ₹{estimatedFirstPayment.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                  Rent + deposit + monthly maintenance; confirm charges with the owner.
+                </p>
+              </div>
             </div>
 
             {/* Owner info */}
@@ -560,18 +695,23 @@ export default async function PropertyDetail({
                   propertyId={id}
                   hasChatted={hasChatted}
                 />
-                <a
-                  href={`https://wa.me/91${
-                    property.owner?.phone?.replace(/\D/g, "") || ""
-                  }?text=${encodeURIComponent(
-                    `Hi! Interested in "${property.title}"`,
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-whatsapp w-full"
-                >
-                  <Phone size={16} /> Contact on WhatsApp
-                </a>
+                <VisitRequestButton
+                  ownerId={ownerId || ""}
+                  propertyId={id}
+                  propertyTitle={property.title}
+                />
+                {whatsappPhone && (
+                  <a
+                    href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+                      `Hi! Interested in "${property.title}"`,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-whatsapp w-full"
+                  >
+                    <Phone size={16} /> Contact on WhatsApp
+                  </a>
+                )}
               </div>
             ) : (
               <div className="space-y-2">

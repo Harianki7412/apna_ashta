@@ -1,9 +1,10 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Disclaimer — Flatova",
+export const metadata = createPageMetadata({
+  title: "Legal Disclaimer",
   description: "Legal disclaimer for use of Flatova rental platform.",
-};
+  path: "/disclaimer",
+});
 
 export default function DisclaimerPage() {
   return (

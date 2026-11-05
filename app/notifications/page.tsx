@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { api } from "@/lib/api-client";
+import { api, getErrorMessage } from "@/lib/api-client";
 import { EmptyState } from "@/components/EmptyState";
 import {
   Bell,
@@ -17,8 +17,12 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { PageShell } from "@/components/PageShell";
+import { SectionHeader } from "@/components/SectionHeader";
+import type { LucideIcon } from "lucide-react";
+import type { NotificationItem, NotificationListResponse } from "@/types";
 
-const TYPE_ICONS: Record<string, any> = {
+const TYPE_ICONS: Record<string, LucideIcon> = {
   message: MessageCircle,
   property_approved: CheckCircle2,
   property_rejected: XCircle,
@@ -41,7 +45,7 @@ const TYPE_COLORS: Record<string, string> = {
 export default function NotificationsPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
@@ -54,10 +58,12 @@ export default function NotificationsPage() {
   async function load() {
     setLoading(true);
     try {
-      const { items } = await api.get<{ items: any[] }>("/api/notifications");
+      const { items } = await api.get<NotificationListResponse>(
+        "/api/notifications",
+      );
       setItems(items);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not load notifications"));
     } finally {
       setLoading(false);
     }
@@ -72,8 +78,8 @@ export default function NotificationsPage() {
       await api.patch("/api/notifications");
       setItems((p) => p.map((n) => ({ ...n, read: true })));
       toast.success("Marked all");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not update notifications"));
     }
   }
 
@@ -81,51 +87,51 @@ export default function NotificationsPage() {
     try {
       await api.delete("/api/notifications", { id });
       setItems((p) => p.filter((n) => n._id !== id));
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not delete notification"));
     }
   }
 
   if (status === "loading" || loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-2">
+      <PageShell className="max-w-3xl mx-auto space-y-2">
         <div className="skeleton h-8 w-48 rounded" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="skeleton h-20 rounded-xl" />
         ))}
-      </div>
+      </PageShell>
     );
   }
 
   const filtered = filter === "unread" ? items.filter((n) => !n.read) : items;
   const unreadCount = items.filter((n) => !n.read).length;
+  const tabs: { key: "all" | "unread"; label: string }[] = [
+    { key: "all", label: `All (${items.length})` },
+    { key: "unread", label: `Unread (${unreadCount})` },
+  ];
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Bell className="text-brand-600" size={28} /> Notifications
-          </h1>
-          <p className="text-gray-500 mt-1">
-            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
-          </p>
-        </div>
-        {unreadCount > 0 && (
-          <button onClick={markAllRead} className="btn btn-secondary btn-sm">
-            <CheckCheck size={14} /> Mark all read
-          </button>
-        )}
-      </div>
+    <PageShell className="max-w-3xl mx-auto">
+      <SectionHeader
+        icon={Bell}
+        title="Notifications"
+        description={
+          unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"
+        }
+        action={
+          unreadCount > 0 ? (
+            <button onClick={markAllRead} className="btn btn-secondary btn-sm">
+              <CheckCheck size={14} /> Mark all read
+            </button>
+          ) : undefined
+        }
+      />
 
       <div className="flex gap-1 mb-4">
-        {[
-          { key: "all", label: `All (${items.length})` },
-          { key: "unread", label: `Unread (${unreadCount})` },
-        ].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setFilter(tab.key as any)}
+            onClick={() => setFilter(tab.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${
               filter === tab.key
                 ? "bg-brand-600 text-white"
@@ -204,6 +210,6 @@ export default function NotificationsPage() {
           })}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

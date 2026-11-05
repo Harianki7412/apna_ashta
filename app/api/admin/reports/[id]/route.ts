@@ -5,6 +5,7 @@ import { Report } from "@/models/Report";
 import { Property } from "@/models/Property";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasAdminAccess } from "@/lib/role-access";
 
 export async function PATCH(
   req: Request,
@@ -12,7 +13,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== "admin") {
+    if (!session || !hasAdminAccess(session.user?.role)) {
       return fail("Forbidden", 403);
     }
 

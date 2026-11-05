@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { City } from "@/models/City";
 import { clearCityCache } from "@/lib/cities-server";
 import { ok, fail, handleError } from "@/lib/api-helpers";
+import { hasOwnerAccess } from "@/lib/role-access";
 
 function slugify(s: string) {
   return s
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
     if (!session) return fail("Unauthorized", 401);
 
     const role = session.user.role;
-    if (!["owner", "admin"].includes(role)) {
+    if (!hasOwnerAccess(role)) {
       return fail("Only owners can add areas", 403);
     }
 

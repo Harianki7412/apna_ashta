@@ -1,10 +1,11 @@
-import { Metadata } from "next";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Refund Policy — Flatova",
+export const metadata = createPageMetadata({
+  title: "Refund and Cancellation Policy",
   description:
     "Refund policy for featured listings, subscriptions, and paid services on Flatova.",
-};
+  path: "/refund-policy",
+});
 
 export default function RefundPolicyPage() {
   return (

@@ -26,6 +26,7 @@ import {
 import NotificationBell from "./NotificationBell";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeToggle from "./ThemeToggle";
+import { hasAdminAccess } from "@/lib/role-access";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -36,7 +37,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const role = (session?.user as any)?.role;
-  const isAdmin = role === "admin";
+  const isAdmin = hasAdminAccess(role);
 
   useEffect(() => {
     setOpen(false);
@@ -99,10 +100,11 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+      aria-label={t("primaryNavigation")}
+      className={`site-nav sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-md border-b border-gray-100 dark:border-slate-800"
-          : "bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800"
+          ? "site-nav--scrolled backdrop-blur-xl"
+          : ""
       }`}
     >
       <div
@@ -117,6 +119,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link
             href="/"
+            aria-label={`Flatova - ${t("home")}`}
             className="flex items-center gap-2.5 font-extrabold text-lg text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-all group"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all">
@@ -138,6 +141,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  aria-current={active ? "page" : undefined}
                   className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                     active
                       ? "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300"
@@ -158,6 +162,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setInfoOpen(!infoOpen)}
+                aria-expanded={infoOpen}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   infoLinks.some((l) => isActive(l.href))
                     ? "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300"
@@ -187,6 +192,7 @@ export default function Navbar() {
                         <Link
                           key={link.href}
                           href={link.href}
+                          aria-current={isActive(link.href) ? "page" : undefined}
                           onClick={() => setInfoOpen(false)}
                           className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
                             isActive(link.href)
@@ -258,7 +264,9 @@ export default function Navbar() {
           <button
             className="lg:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-200"
             onClick={() => setOpen(!open)}
-            aria-label="Toggle menu"
+            aria-label={open ? t("closeMenu") : t("openMenu")}
+            aria-expanded={open}
+            aria-controls={open ? "mobile-navigation" : undefined}
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -266,7 +274,10 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 animate-fade-in max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div
+          id="mobile-navigation"
+          className="lg:hidden border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 animate-fade-in max-h-[calc(100vh-4rem)] overflow-y-auto"
+        >
           <div className="container mx-auto p-4 space-y-1">
             {mainLinks.map((link) => {
               const Icon = link.icon;
@@ -275,6 +286,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  aria-current={active ? "page" : undefined}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
                     active

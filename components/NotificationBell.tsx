@@ -4,18 +4,17 @@ import { Bell, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
 import { formatDistanceToNow } from "date-fns";
+import type { NotificationItem, NotificationListResponse } from "@/types";
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
   async function load() {
     try {
-      const d = await api.get<{ items: any[]; unread: number }>(
-        "/api/notifications",
-      );
+      const d = await api.get<NotificationListResponse>("/api/notifications");
       setItems(d.items);
       setUnread(d.unread);
     } catch {}

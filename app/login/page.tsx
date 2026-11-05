@@ -5,15 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import {
-  Eye,
-  EyeOff,
   Home,
   Shield,
   Zap,
   LogIn,
   Mail,
   Phone,
+  Loader2,
 } from "lucide-react";
+import PasswordInput from "@/components/PasswordInput";
 
 function LoginForm() {
   const router = useRouter();
@@ -28,25 +28,59 @@ function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [identifierError, setIdentifierError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   const isEmail = identifier.includes("@");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedIdentifier = identifier.trim();
+    const nextIdentifierError =
+      !trimmedIdentifier
+        ? "Enter the email address or phone number on your account."
+        : trimmedIdentifier.includes("@") &&
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedIdentifier)
+          ? "Enter a valid email address."
+          : "";
+    const nextPasswordError = password ? "" : "Enter your password.";
+
+    setIdentifierError(nextIdentifierError);
+    setPasswordError(nextPasswordError);
+    setSubmitError("");
+    if (nextIdentifierError || nextPasswordError) return;
+
     setLoading(true);
-    const res = await signIn("credentials", {
-      identifier,
-      password,
-      redirect: false,
-    });
-    setLoading(false);
-    if (res?.error) {
-      toast.error(res.error);
-    } else {
-      toast.success("Welcome back!");
-      router.push(callbackUrl);
-      router.refresh();
+    try {
+      const res = await signIn("credentials", {
+        identifier: trimmedIdentifier,
+        password,
+        redirect: false,
+      });
+      if (res?.error) {
+        const message =
+          res.error === "CredentialsSignin"
+            ? "Email/phone or password is incorrect."
+            : res.error;
+        setSubmitError(message);
+        toast.error(message);
+      } else if (res?.ok) {
+        toast.success("Welcome back!");
+        router.push(callbackUrl);
+        router.refresh();
+      } else {
+        const message = "Unable to sign in. Please try again.";
+        setSubmitError(message);
+        toast.error(message);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to sign in. Please try again.";
+      setSubmitError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -73,9 +107,19 @@ function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} noValidate className="space-y-4">
+            {submitError && (
+              <p
+                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                role="alert"
+              >
+                {submitError}
+              </p>
+            )}
             <div>
-              <label className="label">Email or Phone</label>
+              <label className="label" htmlFor="login-identifier">
+                Email or phone
+              </label>
               <div className="relative">
                 {isEmail ? (
                   <Mail
@@ -89,23 +133,38 @@ function LoginForm() {
                   />
                 )}
                 <input
+                  id="login-identifier"
                   required
                   type="text"
                   autoComplete="username"
                   placeholder="you@example.com or 9876543210"
-                  className="input pl-10"
+                  className={`input pl-10${identifierError ? " input-error" : ""}`}
                   value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value.trim())}
+                  onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    setIdentifierError("");
+                    setSubmitError("");
+                  }}
+                  aria-invalid={Boolean(identifierError)}
+                  aria-describedby={
+                    identifierError ? "login-identifier-error" : "login-identifier-hint"
+                  }
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              {identifierError ? (
+                <p id="login-identifier-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {identifierError}
+                </p>
+              ) : (
+                <p id="login-identifier-hint" className="text-xs text-gray-500 mt-1">
                 Use email or phone you registered with
-              </p>
+                </p>
+              )}
             </div>
 
             <div>
               <div className="flex justify-between mb-1.5">
-                <label className="label mb-0">Password</label>
+                <label className="label mb-0" htmlFor="login-password">Password</label>
                 <Link
                   href="/forgot-password"
                   className="text-xs text-brand-600 hover:underline"
@@ -113,25 +172,26 @@ function LoginForm() {
                   Forgot?
                 </Link>
               </div>
-              <div className="relative">
-                <input
+              <PasswordInput
+                  id="login-password"
                   required
-                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="Enter your password"
-                  className="input pr-10"
+                  className="input"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError("");
+                    setSubmitError("");
+                  }}
+                  invalid={Boolean(passwordError)}
+                  describedBy={passwordError ? "login-password-error" : undefined}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+              {passwordError && (
+                <p id="login-password-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {passwordError}
+                </p>
+              )}
             </div>
 
             <button
@@ -140,7 +200,10 @@ function LoginForm() {
               className="btn btn-primary btn-lg w-full mt-2"
             >
               {loading ? (
-                "Signing in..."
+                <>
+                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                  Signing in...
+                </>
               ) : (
                 <>
                   <LogIn size={18} /> Sign in

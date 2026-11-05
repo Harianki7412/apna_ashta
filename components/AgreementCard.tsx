@@ -10,32 +10,37 @@ import {
   XCircle as CancelIcon,
   Download,
 } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { AgreementStatus, RentAgreementSummary } from "@/types";
 
 export default function AgreementCard({
   agreement,
   role,
 }: {
-  agreement: any;
+  agreement: RentAgreementSummary;
   role: "owner" | "tenant";
 }) {
   const other = role === "owner" ? agreement.tenant : agreement.owner;
   const property = agreement.property;
 
   const statusConfig: Record<
-    string,
-    { label: string; cls: string; icon: any }
+    AgreementStatus,
+    { label: string; tone: "warning" | "success" | "danger"; icon: typeof Clock }
   > = {
     pending: {
       label: "Awaiting Confirmation",
-      cls: "badge-warning",
+      tone: "warning",
       icon: Clock,
     },
-    confirmed: { label: "Confirmed", cls: "badge-success", icon: CheckCircle2 },
-    rejected: { label: "Rejected", cls: "badge-danger", icon: XCircle },
-    cancelled: { label: "Cancelled", cls: "badge-danger", icon: CancelIcon },
+    confirmed: { label: "Confirmed", tone: "success", icon: CheckCircle2 },
+    rejected: { label: "Rejected", tone: "danger", icon: XCircle },
+    cancelled: { label: "Cancelled", tone: "danger", icon: CancelIcon },
   };
-  const status = statusConfig[agreement.status] || statusConfig.pending;
+  const status = statusConfig[agreement.status];
   const StatusIcon = status.icon;
+  const propertyDetails =
+    typeof property === "object" && property !== null ? property : undefined;
+  const participant = typeof other === "object" ? other : undefined;
 
   return (
     <Link
@@ -44,10 +49,10 @@ export default function AgreementCard({
     >
       <div className="flex items-start gap-3">
         {/* Property thumb */}
-        {property?.images?.[0] ? (
+        {propertyDetails?.images?.[0] ? (
           <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
             <Image
-              src={property.images[0]}
+              src={propertyDetails.images[0]}
               alt=""
               fill
               className="object-cover"
@@ -64,16 +69,20 @@ export default function AgreementCard({
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0">
               <h3 className="font-bold truncate">
-                {property?.title || "Property"}
+                {propertyDetails?.title || "Property"}
               </h3>
               <p className="text-sm text-gray-500 truncate">
                 {role === "owner" ? "To: " : "From: "}
-                {other?.name}
+                {participant?.name || "User"}
               </p>
             </div>
-            <span className={`badge ${status.cls} flex-shrink-0`}>
-              <StatusIcon size={10} /> {status.label}
-            </span>
+            <StatusBadge
+              tone={status.tone}
+              icon={StatusIcon}
+              className="flex-shrink-0"
+            >
+              {status.label}
+            </StatusBadge>
           </div>
 
           <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">

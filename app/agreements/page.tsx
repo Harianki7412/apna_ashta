@@ -3,16 +3,19 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { api } from "@/lib/api-client";
+import { api, getErrorMessage } from "@/lib/api-client";
 import AgreementCard from "@/components/AgreementCard";
 import { EmptyState } from "@/components/EmptyState";
+import { PageShell } from "@/components/PageShell";
+import { SectionHeader } from "@/components/SectionHeader";
 import { FileText } from "lucide-react";
+import type { AgreementListResponse } from "@/types";
 
 export default function AgreementsPage() {
   const { status } = useSession();
   const router = useRouter();
   const [tab, setTab] = useState<"received" | "sent">("received");
-  const [data, setData] = useState<{ asOwner: any[]; asTenant: any[] }>({
+  const [data, setData] = useState<AgreementListResponse>({
     asOwner: [],
     asTenant: [],
   });
@@ -27,22 +30,24 @@ export default function AgreementsPage() {
   useEffect(() => {
     if (status !== "authenticated") return;
     api
-      .get<any>("/api/agreements")
+      .get<AgreementListResponse>("/api/agreements")
       .then(setData)
-      .catch((e) => toast.error(e.message))
+      .catch((error: unknown) =>
+        toast.error(getErrorMessage(error, "Could not load agreements")),
+      )
       .finally(() => setLoading(false));
   }, [status]);
 
   if (status === "loading" || loading) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <PageShell className="max-w-4xl mx-auto">
         <div className="skeleton h-8 w-48 rounded mb-4" />
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="skeleton h-24 rounded-2xl" />
           ))}
         </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -51,17 +56,16 @@ export default function AgreementsPage() {
   const current = tab === "received" ? received : sent;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileText className="text-brand-600" size={28} /> Rent Agreements
-        </h1>
-        <p className="text-gray-500 mt-1">
-          {tab === "received"
+    <PageShell className="max-w-4xl mx-auto">
+      <SectionHeader
+        icon={FileText}
+        title="Rent Agreements"
+        description={
+          tab === "received"
             ? "Agreements sent to you — review and confirm"
-            : "Agreements you sent to tenants"}
-        </p>
-      </div>
+            : "Agreements you sent to tenants"
+        }
+      />
 
       <div className="flex gap-2 mb-4">
         <button
@@ -115,6 +119,6 @@ export default function AgreementsPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

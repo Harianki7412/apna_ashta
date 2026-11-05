@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
@@ -9,6 +10,7 @@ import { useTranslations } from "next-intl";
 import PropertyCard from "@/components/PropertyCard";
 import { PropertyGridSkeleton } from "@/components/PropertyCardSkeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { trackEvent } from "@/components/GoogleAnalytics";
 import {
   SearchX,
   MapPin,
@@ -16,7 +18,8 @@ import {
   X,
   Loader2,
   Shield,
-  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   BHK_OPTIONS,
@@ -47,6 +50,52 @@ interface CityData {
   areas: CityArea[];
 }
 
+interface PropertyListing {
+  _id: string;
+  title: string;
+  area?: string;
+  city?: string;
+  rent?: number;
+  deposit?: number;
+  maintenanceCharge?: number;
+  bhk?: string;
+  propertyType?: string;
+  furnishing?: string;
+  bathrooms?: number;
+  parking?: string;
+  verified?: boolean;
+  amenities?: string[];
+}
+
+interface PropertiesResponse {
+  items: PropertyListing[];
+  total: number;
+  hasMore: boolean;
+}
+
+interface PropertyFilters {
+  city: string;
+  area: string;
+  type: string;
+  bhk: string;
+  min: string;
+  max: string;
+  q: string;
+  sort: string;
+  verified: string;
+  furnishing: string;
+  parking: string;
+  bathrooms: string;
+  preferred: string;
+}
+
+const BUDGETS = [
+  { label: "Up to ₹5,000", min: "", max: "5000" },
+  { label: "₹5,000–₹10,000", min: "5000", max: "10000" },
+  { label: "₹10,000–₹20,000", min: "10000", max: "20000" },
+  { label: "₹20,000+", min: "20000", max: "" },
+];
+
 function PropertiesPage() {
   const t = useTranslations("search");
   const tCommon = useTranslations("common");
@@ -54,53 +103,87 @@ function PropertiesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialCity = searchParams.get("city") || "";
-
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<PropertyListing[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [cities, setCities] = useState<CityData[]>([]);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const loadRequestId = useRef(0);
 
-  const [filters, setFilters] = useState({
-    city: initialCity,
-    area: "",
-    type: "",
-    bhk: "",
-    min: "",
-    max: "",
-    q: "",
-    sort: "newest",
-    verified: "",
-    furnishing: "",
-    parking: "",
-    bathrooms: "",
-    preferred: "",
-  });
+  const [filters, setFilters] = useState<PropertyFilters>(() => ({
+    city: searchParams.get("city") || "",
+    area: searchParams.get("area") || "",
+    type: searchParams.get("type") || "",
+    bhk: searchParams.get("bhk") || "",
+    min: searchParams.get("min") || "",
+    max: searchParams.get("max") || "",
+    q: searchParams.get("q") || "",
+    sort: searchParams.get("sort") || "newest",
+    verified: searchParams.get("verified") || "",
+    furnishing: searchParams.get("furnishing") || "",
+    parking: searchParams.get("parking") || "",
+    bathrooms: searchParams.get("bathrooms") || "",
+    preferred: searchParams.get("preferred") || "",
+  }));
 
   /* ═══ Load cities ═══ */
   useEffect(() => {
     api
       .get<CityData[]>("/api/cities")
       .then(setCities)
-      .catch(() => {});
+      .catch((error: Error) => {
+        toast.error(error.message || "Unable to load cities.");
+      });
   }, []);
 
   /* ═══ Load properties ═══ */
-  async function load(reset = true) {
+  async function load(reset = true, selectedFilters = filters) {
+    const requestId = ++loadRequestId.current;
+    setLoadError(null);
+    if (reset) {
+      setItems([]);
+      setTotal(0);
+      setPage(1);
+      setHasMore(true);
+    }
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(reset ? 1 : page),
         limit: "12",
       });
-      Object.entries(filters).forEach(([k, v]) => {
+      Object.entries(selectedFilters).forEach(([k, v]) => {
         if (v) params.set(k, String(v));
       });
-      const d = await api.get<any>(`/api/properties?${params}`);
+      if (reset) {
+        const query = new URLSearchParams();
+        Object.entries(selectedFilters).forEach(([key, value]) => {
+          if (value && !(key === "sort" && value === "newest")) {
+            query.set(key, value);
+          }
+        });
+        const queryString = query.toString();
+        router.replace(
+          queryString ? `/properties?${queryString}` : "/properties",
+          { scroll: false },
+        );
+      }
+      const d = await api.get<PropertiesResponse>(
+        `/api/properties?${params}`,
+      );
+      if (requestId !== loadRequestId.current) return;
+      if (reset) {
+        trackEvent("search_results", {
+          result_count: d.total || 0,
+          filters_applied: Object.values(selectedFilters).filter(Boolean).length,
+        });
+      }
       if (reset) {
         setItems(d.items);
         setPage(2);
@@ -110,16 +193,27 @@ function PropertiesPage() {
       }
       setTotal(d.total || 0);
       setHasMore(d.hasMore);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error) {
+      if (requestId === loadRequestId.current) {
+        const message =
+          error instanceof Error ? error.message : "Unable to load properties.";
+        setLoadError(message);
+        toast.error(message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }
 
   useEffect(() => {
     load(true);
   }, []);
+
+  function applyFilters(nextFilters: PropertyFilters) {
+    setFilters(nextFilters);
+    setCompareIds([]);
+    void load(true, nextFilters);
+  }
 
   /* ═══ Save search ═══ */
   async function saveSearch() {
@@ -130,14 +224,16 @@ function PropertiesPage() {
         filters,
       });
       toast.success(t("searchSaved"));
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save this search.",
+      );
     }
   }
 
   /* ═══ Clear all filters ═══ */
   function clearFilters() {
-    setFilters({
+    applyFilters({
       city: "",
       area: "",
       type: "",
@@ -152,7 +248,19 @@ function PropertiesPage() {
       bathrooms: "",
       preferred: "",
     });
-    setTimeout(() => load(true), 0);
+  }
+
+  function toggleCompare(propertyId: string) {
+    setCompareIds((current) => {
+      if (current.includes(propertyId)) {
+        return current.filter((id) => id !== propertyId);
+      }
+      if (current.length >= 3) {
+        toast.error("Compare up to 3 properties at a time.");
+        return current;
+      }
+      return [...current, propertyId];
+    });
   }
 
   /* ═══ Count active filters ═══ */
@@ -161,25 +269,90 @@ function PropertiesPage() {
   ).length;
 
   const activeCityData = cities.find((c) => c.name === filters.city);
+  const compareItems = items.filter((property) =>
+    compareIds.includes(property._id),
+  );
+  const compareRows: {
+    label: string;
+    value: (property: PropertyListing) => string;
+  }[] = [
+    {
+      label: "Monthly rent",
+      value: (property) => `₹${(property.rent || 0).toLocaleString("en-IN")}`,
+    },
+    {
+      label: "Deposit",
+      value: (property) =>
+        `₹${(property.deposit || 0).toLocaleString("en-IN")}`,
+    },
+    {
+      label: "Monthly maintenance",
+      value: (property) =>
+        `₹${(property.maintenanceCharge || 0).toLocaleString("en-IN")}`,
+    },
+    {
+      label: "Estimated first payment",
+      value: (property) =>
+        `₹${(
+          (property.rent || 0) +
+          (property.deposit || 0) +
+          (property.maintenanceCharge || 0)
+        ).toLocaleString("en-IN")}`,
+    },
+    {
+      label: "Location",
+      value: (property) =>
+        [property.area, property.city].filter(Boolean).join(", "),
+    },
+    {
+      label: "Property",
+      value: (property) =>
+        [property.bhk, property.propertyType].filter(Boolean).join(" · "),
+    },
+    {
+      label: "Furnishing",
+      value: (property) => property.furnishing || "Not specified",
+    },
+    {
+      label: "Bathrooms",
+      value: (property) => String(property.bathrooms || 1),
+    },
+    {
+      label: "Parking",
+      value: (property) => property.parking || "Not specified",
+    },
+    {
+      label: "Facilities",
+      value: (property) => property.amenities?.join(", ") || "Not specified",
+    },
+    {
+      label: "Verification",
+      value: (property) => (property.verified ? "Physically verified" : "Not verified"),
+    },
+  ];
 
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Browse Properties</h1>
+      <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+        <h1 className="text-2xl font-bold md:text-3xl">{t("browseProperties")}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
           {total > 0
-            ? `${total} verified properties available`
-            : "Find your next home"}
+            ? t("verifiedPropertiesAvailable", { count: total })
+            : t("findYourNextHome")}
         </p>
+        </div>
+        <Link href="/properties/new" className="btn btn-primary w-full sm:w-auto">
+          + {tCommon("listPropertyFree")}
+        </Link>
       </div>
 
       {/* ═══ CITY TABS ═══ */}
       <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
         <button
           onClick={() => {
-            setFilters({ ...filters, city: "", area: "" });
-            setTimeout(() => load(true), 0);
+            applyFilters({ ...filters, city: "", area: "" });
           }}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
             !filters.city
@@ -194,8 +367,7 @@ function PropertiesPage() {
           <button
             key={c.slug}
             onClick={() => {
-              setFilters({ ...filters, city: c.name, area: "" });
-              setTimeout(() => load(true), 0);
+              applyFilters({ ...filters, city: c.name, area: "" });
             }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
               filters.city === c.name
@@ -212,8 +384,7 @@ function PropertiesPage() {
       <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
         <button
           onClick={() => {
-            setFilters({ ...filters, bhk: "" });
-            setTimeout(() => load(true), 0);
+            applyFilters({ ...filters, bhk: "" });
           }}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
             !filters.bhk
@@ -227,8 +398,7 @@ function PropertiesPage() {
           <button
             key={b.value}
             onClick={() => {
-              setFilters({ ...filters, bhk: b.value });
-              setTimeout(() => load(true), 0);
+              applyFilters({ ...filters, bhk: b.value });
             }}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               filters.bhk === b.value
@@ -241,15 +411,44 @@ function PropertiesPage() {
         ))}
       </div>
 
+      {/* ═══ QUICK BUDGET FILTERS ═══ */}
+      <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
+        {BUDGETS.map((budget) => {
+          const active =
+            filters.min === budget.min && filters.max === budget.max;
+          return (
+            <button
+              key={budget.label}
+              onClick={() =>
+                applyFilters({
+                  ...filters,
+                  min: active ? "" : budget.min,
+                  max: active ? "" : budget.max,
+                })
+              }
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                active
+                  ? "bg-brand-600 text-white"
+                  : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400"
+              }`}
+            >
+              {budget.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ═══ MAIN SEARCH BAR ═══ */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-48">
+      <div className="card mb-4 space-y-3 p-3 sm:p-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
+        <div className="relative min-w-0 sm:col-span-2 lg:col-span-4">
           <SearchX
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
           />
           <input
             placeholder={t("placeholder")}
+            aria-label={t("placeholder")}
             value={filters.q}
             onChange={(e) => setFilters({ ...filters, q: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && load(true)}
@@ -259,10 +458,11 @@ function PropertiesPage() {
 
         <input
           placeholder={t("areaColony") || tCommon("areaColony")}
+          aria-label={t("areaColony") || tCommon("areaColony")}
           list="area-filter-options"
           value={filters.area}
           onChange={(e) => setFilters({ ...filters, area: e.target.value })}
-          className="input w-40"
+          className="input w-full lg:col-span-2"
         />
         <datalist id="area-filter-options">
           {(activeCityData?.areas || [])
@@ -275,7 +475,7 @@ function PropertiesPage() {
         <select
           value={filters.type}
           onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-          className="input w-40"
+          className="input w-full lg:col-span-2"
         >
           <option value="">{tCommon("allTypes")}</option>
           <option value="Room">Room</option>
@@ -290,34 +490,40 @@ function PropertiesPage() {
         </select>
 
         <input
-          placeholder="Min ₹"
+          placeholder={t("minPrice")}
+          aria-label={t("minPrice")}
           type="number"
           value={filters.min}
           onChange={(e) => setFilters({ ...filters, min: e.target.value })}
-          className="input w-24"
+          className="input w-full lg:col-span-1"
         />
         <input
-          placeholder="Max ₹"
+          placeholder={t("maxPrice")}
+          aria-label={t("maxPrice")}
           type="number"
           value={filters.max}
           onChange={(e) => setFilters({ ...filters, max: e.target.value })}
-          className="input w-24"
+          className="input w-full lg:col-span-1"
         />
 
         <select
           value={filters.sort}
           onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
-          className="input w-40"
+          aria-label="Sort properties"
+          className="input w-full lg:col-span-2"
         >
           <option value="newest">{t("newest")}</option>
           <option value="price_asc">{t("priceLow")}</option>
           <option value="price_desc">{t("priceHigh")}</option>
         </select>
 
-        <button onClick={() => load(true)} className="btn btn-primary">
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+        <button onClick={() => load(true)} disabled={loading} className="btn btn-primary min-w-28 flex-1 sm:flex-none">
+          {loading ? <Loader2 size={16} className="animate-spin" /> : null}
           {t("search")}
         </button>
-
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
           className={`btn ${showAdvanced ? "btn-primary" : "btn-ghost"} flex items-center gap-1`}
@@ -331,13 +537,14 @@ function PropertiesPage() {
           )}
         </button>
 
-        <button onClick={saveSearch} className="btn btn-secondary">
+        <button onClick={saveSearch} className="btn btn-secondary flex-1 sm:flex-none">
           🔔 {t("saveSearch")}
         </button>
 
-        <button onClick={() => setShowMap(!showMap)} className="btn btn-ghost">
+        <button onClick={() => setShowMap(!showMap)} className="btn btn-ghost flex-1 sm:flex-none">
           {showMap ? t("listView") : t("mapView")}
         </button>
+        </div>
       </div>
 
       {/* ═══ ADVANCED FILTERS ═══ */}
@@ -359,11 +566,10 @@ function PropertiesPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  setFilters({
+                  applyFilters({
                     ...filters,
                     verified: filters.verified === "true" ? "" : "true",
                   });
-                  setTimeout(() => load(true), 0);
                 }}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-1 ${
                   filters.verified === "true"
@@ -384,11 +590,11 @@ function PropertiesPage() {
                 <button
                   key={o.value}
                   onClick={() => {
-                    setFilters({
+                    applyFilters({
                       ...filters,
-                      furnishing: filters.furnishing === o.value ? "" : o.value,
+                      furnishing:
+                        filters.furnishing === o.value ? "" : o.value,
                     });
-                    setTimeout(() => load(true), 0);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                     filters.furnishing === o.value
@@ -410,11 +616,10 @@ function PropertiesPage() {
                 <button
                   key={o.value}
                   onClick={() => {
-                    setFilters({
+                    applyFilters({
                       ...filters,
                       parking: filters.parking === o.value ? "" : o.value,
                     });
-                    setTimeout(() => load(true), 0);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                     filters.parking === o.value
@@ -436,12 +641,11 @@ function PropertiesPage() {
                 <button
                   key={n}
                   onClick={() => {
-                    setFilters({
+                    applyFilters({
                       ...filters,
                       bathrooms:
                         filters.bathrooms === String(n) ? "" : String(n),
                     });
-                    setTimeout(() => load(true), 0);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                     filters.bathrooms === String(n)
@@ -463,11 +667,11 @@ function PropertiesPage() {
                 <button
                   key={o.value}
                   onClick={() => {
-                    setFilters({
+                    applyFilters({
                       ...filters,
-                      preferred: filters.preferred === o.value ? "" : o.value,
+                      preferred:
+                        filters.preferred === o.value ? "" : o.value,
                     });
-                    setTimeout(() => load(true), 0);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                     filters.preferred === o.value
@@ -484,6 +688,29 @@ function PropertiesPage() {
       )}
 
       {/* ═══ RESULTS ═══ */}
+      {loadError && (
+        <div
+          role="alert"
+          className="mb-4 flex flex-col gap-3 rounded-2xl border border-danger-200 bg-danger-50 p-4 text-danger-800 dark:border-danger-800 dark:bg-danger-900/20 dark:text-danger-200 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Could not load properties</p>
+              <p className="text-sm">{loadError}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => load(!items.length)}
+            disabled={loading}
+            className="btn btn-secondary shrink-0"
+          >
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+            Try again
+          </button>
+        </div>
+      )}
       {showMap ? (
         <div className="h-[70vh] rounded overflow-hidden">
           <MapView properties={items} />
@@ -493,7 +720,7 @@ function PropertiesPage() {
           {loading && !items.length && <PropertyGridSkeleton count={6} />}
 
           {items.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((p, i) => (
                 <div
                   key={p._id}
@@ -501,23 +728,50 @@ function PropertiesPage() {
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
                   <PropertyCard property={p} />
+                  <button
+                    type="button"
+                    onClick={() => toggleCompare(p._id)}
+                    aria-pressed={compareIds.includes(p._id)}
+                    className={`mt-2 w-full btn ${
+                      compareIds.includes(p._id)
+                        ? "btn-primary"
+                        : "btn-secondary"
+                    }`}
+                  >
+                    {compareIds.includes(p._id)
+                      ? "Remove from comparison"
+                      : "Add to comparison"}
+                  </button>
                 </div>
               ))}
             </div>
           )}
 
           {!items.length && !loading && (
-            <EmptyState
-              icon={SearchX}
-              title="No properties found"
-              description={
-                activeFilterCount > 0
-                  ? "Try removing some filters or search a different area."
-                  : "No properties available right now."
-              }
-              actionLabel={activeFilterCount > 0 ? "Clear Filters" : undefined}
-              actionHref={activeFilterCount > 0 ? "/properties" : undefined}
-            />
+            !loadError && (
+              <div>
+                <EmptyState
+                  icon={SearchX}
+                  title="No properties found"
+                  description={
+                    activeFilterCount > 0
+                      ? "Try removing some filters or search a different area."
+                      : "No properties available right now."
+                  }
+                />
+                <div className="-mt-8 pb-8 text-center">
+                  {activeFilterCount > 0 ? (
+                    <button type="button" onClick={clearFilters} className="btn btn-secondary">
+                      {t("resetAll") || tCommon("resetAll")}
+                    </button>
+                  ) : (
+                    <Link href="/properties/new" className="btn btn-primary">
+                      {tCommon("listPropertyFree")}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )
           )}
 
           {hasMore && items.length > 0 && (
@@ -538,6 +792,104 @@ function PropertiesPage() {
             </div>
           )}
         </>
+      )}
+
+      {compareIds.length > 0 && !showMap && (
+        <div className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <span className="text-sm font-semibold">
+            {compareItems.length} selected
+          </span>
+          <button
+            type="button"
+            disabled={compareItems.length < 2}
+            onClick={() => setShowCompare(true)}
+            className="btn btn-primary disabled:opacity-50"
+          >
+            Compare
+          </button>
+          <button
+            type="button"
+            onClick={() => setCompareIds([])}
+            className="btn btn-ghost"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {showCompare && compareItems.length >= 2 && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-3 md:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compare-title"
+        >
+          <div className="w-full max-w-5xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900 md:p-7">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h2 id="compare-title" className="text-xl font-bold">
+                  Compare properties
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Check costs and details side by side.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCompare(false)}
+                aria-label="Close comparison"
+                className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-slate-800"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                <thead>
+                  <tr>
+                    <th className="w-40 p-3" />
+                    {compareItems.map((property) => (
+                      <th
+                        key={property._id}
+                        className="min-w-48 border-b border-gray-200 p-3 dark:border-slate-700"
+                      >
+                        <Link
+                          href={`/properties/${property._id}`}
+                          className="font-bold text-brand-700 hover:underline dark:text-brand-300"
+                        >
+                          {property.title}
+                        </Link>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {compareRows.map((row) => (
+                    <tr key={row.label} className="border-b border-gray-100 dark:border-slate-800">
+                      <th className="p-3 font-semibold text-gray-600 dark:text-slate-300">
+                        {row.label}
+                      </th>
+                      {compareItems.map((property) => (
+                        <td key={property._id} className="p-3">
+                          {row.value(property) || "Not specified"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCompare(false)}
+                className="btn btn-primary"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
