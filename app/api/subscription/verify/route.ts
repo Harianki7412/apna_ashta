@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     await notifyUser(sub.user.toString(), {
       type: "system",
       title: `🎉 ${plan.name} plan activated!`,
-      body: `Your ${plan.name} plan is active until ${expiresAt.toLocaleDateString("en-IN")}. Enjoy ${plan.listingLimit} listings and ${plan.leadsPerProperty} leads.`,
+      body: `Your ${plan.name} plan is active until ${expiresAt.toLocaleDateString("en-IN")}. You can now post up to ${plan.listingLimit} listings with ${plan.photosPerListing} photos each.`,
       link: "/dashboard/subscription",
       email: true,
     });

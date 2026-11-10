@@ -5,7 +5,6 @@ export interface Plan {
   yearlyPrice?: number; // ₹ per year (10 months discount)
   listingLimit: number;
   photosPerListing: number;
-  leadsPerProperty: number;
   features: string[];
   recommended?: boolean;
   icon: string;
@@ -19,13 +18,11 @@ export const SUBSCRIPTION_PLANS: Plan[] = [
     price: 0,
     listingLimit: 2,
     photosPerListing: 5,
-    leadsPerProperty: 10,
     icon: "🎁",
     color: "gray",
     features: [
       "2 active listings",
       "5 photos per property",
-      "10 free leads/month",
       "Basic chat support",
       "Standard search visibility",
     ],
@@ -37,69 +34,17 @@ export const SUBSCRIPTION_PLANS: Plan[] = [
     yearlyPrice: 2990,
     listingLimit: 10,
     photosPerListing: 15,
-    leadsPerProperty: 50,
     icon: "⭐",
     color: "brand",
     recommended: true,
     features: [
       "10 active listings",
       "15 photos per property",
-      "50 free leads/month",
       "Priority support",
       "Boosted search visibility",
       "Analytics dashboard",
       "Verified owner badge",
     ],
-  },
-  {
-    id: "business",
-    name: "Business",
-    price: 999,
-    yearlyPrice: 9990,
-    listingLimit: 999,
-    photosPerListing: 25,
-    leadsPerProperty: 200,
-    icon: "👑",
-    color: "accent",
-    features: [
-      "Unlimited listings",
-      "25 photos per property",
-      "200 free leads/month",
-      "Dedicated account manager",
-      "Top search placement",
-      "Bulk upload tools",
-      "Priority KYC verification",
-      "Advanced analytics",
-      "Custom branded microsite",
-    ],
-  },
-];
-
-export interface LeadPack {
-  id: string;
-  name: string;
-  price: number;
-  leads: number;
-  validityDays: number;
-  bestValue?: boolean;
-}
-
-export const LEAD_PACKS: LeadPack[] = [
-  { id: "starter", name: "Starter", price: 199, leads: 20, validityDays: 30 },
-  {
-    id: "popular",
-    name: "Popular",
-    price: 499,
-    leads: 100,
-    validityDays: 60,
-    bestValue: true,
-  },
-  {
-    id: "unlimited",
-    name: "Unlimited",
-    price: 999,
-    leads: 999999,
-    validityDays: 30,
   },
 ];
 
@@ -156,7 +101,11 @@ interface UserWithSubscription {
 export function isPlanActive(
   user: UserWithSubscription | null | undefined,
 ): boolean {
-  if (!user?.subscription?.planId || user.subscription.planId === "free")
+  if (
+    !user?.subscription?.planId ||
+    user.subscription.planId === "free" ||
+    !getPlan(user.subscription.planId)
+  )
     return false;
   if (!user.subscription.expiresAt) return false;
   return new Date(user.subscription.expiresAt) > new Date();

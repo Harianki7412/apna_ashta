@@ -24,11 +24,9 @@ const SEED_PLANS = [
     isFree: true,
     listingLimit: 2,
     photosPerListing: 5,
-    leadsPerProperty: 10,
     features: [
       "2 active listings",
       "5 photos per property",
-      "10 free leads/month",
       "Basic chat support",
     ],
     displayOrder: 1,
@@ -44,78 +42,14 @@ const SEED_PLANS = [
     recommended: true,
     listingLimit: 10,
     photosPerListing: 15,
-    leadsPerProperty: 50,
     features: [
       "10 active listings",
       "15 photos per property",
-      "50 free leads/month",
       "Priority support",
       "Analytics dashboard",
       "Verified badge",
     ],
     displayOrder: 2,
-  },
-  {
-    type: "subscription",
-    planId: "business",
-    name: "Business",
-    icon: "👑",
-    price: 999,
-    yearlyPrice: 9990,
-    billingCycle: "monthly",
-    listingLimit: 999,
-    photosPerListing: 25,
-    leadsPerProperty: 200,
-    features: [
-      "Unlimited listings",
-      "25 photos per property",
-      "200 free leads/month",
-      "Dedicated account manager",
-      "Top placement",
-      "Bulk tools",
-    ],
-    displayOrder: 3,
-  },
-  // LEAD PACKS
-  {
-    type: "lead_pack",
-    planId: "starter",
-    name: "Starter",
-    icon: "⚡",
-    price: 199,
-    leadsIncluded: 20,
-    validityDays: 30,
-    features: ["20 extra leads", "Valid 30 days", "Any property"],
-    displayOrder: 1,
-  },
-  {
-    type: "lead_pack",
-    planId: "popular",
-    name: "Popular",
-    icon: "🔥",
-    price: 499,
-    leadsIncluded: 100,
-    validityDays: 60,
-    recommended: true,
-    badge: "BEST VALUE",
-    features: [
-      "100 extra leads",
-      "Valid 60 days",
-      "Any property",
-      "Priority support",
-    ],
-    displayOrder: 2,
-  },
-  {
-    type: "lead_pack",
-    planId: "unlimited",
-    name: "Unlimited",
-    icon: "💎",
-    price: 999,
-    leadsIncluded: 999999,
-    validityDays: 30,
-    features: ["Unlimited leads", "Valid 30 days", "All properties"],
-    displayOrder: 3,
   },
   // FEATURED
   {
@@ -182,6 +116,23 @@ export async function POST() {
       await Plan.create({ ...p, active: true, hidden: false });
       created++;
     }
+
+    await Plan.updateMany(
+      {
+        $or: [
+          { type: "lead_pack" },
+          { type: "subscription", planId: { $nin: ["free", "pro"] } },
+        ],
+      },
+      { $set: { active: false, hidden: true } },
+    );
+    await Plan.updateMany(
+      { type: "subscription" },
+      { $pull: { features: /lead/i }, $unset: { leadsPerProperty: "" } },
+    );
+    await AppSetting.deleteMany({
+      key: { $in: ["enableLeadPacks", "freeLeadsPerProperty"] },
+    });
 
     // Seed default settings
     for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {

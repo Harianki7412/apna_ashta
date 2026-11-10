@@ -4,7 +4,6 @@ import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import { User } from "@/models/User";
 import { Subscription } from "@/models/Subscription";
-import { LeadPack } from "@/models/LeadPack";
 import { RentAgreementOrder } from "@/models/RentAgreementOrder";
 import { ok, fail, handleError } from "@/lib/api-helpers";
 import { hasFullAdminAccess } from "@/lib/role-access";
@@ -41,7 +40,7 @@ export async function GET(req: Request) {
 
     await connectDB();
 
-    const [properties, users, subs, packs, agreements] = await Promise.all([
+    const [properties, users, subs, agreements] = await Promise.all([
       Property.find({ createdAt: { $gte: since } })
         .select("status createdAt city rent")
         .lean<AnalyticsProperty[]>(),
@@ -49,9 +48,6 @@ export async function GET(req: Request) {
         .select("role createdAt")
         .lean<AnalyticsUser[]>(),
       Subscription.find({ status: "active", createdAt: { $gte: since } })
-        .select("amount createdAt")
-        .lean<AnalyticsPayment[]>(),
-      LeadPack.find({ status: "active", createdAt: { $gte: since } })
         .select("amount createdAt")
         .lean<AnalyticsPayment[]>(),
       RentAgreementOrder.find({ status: "paid", createdAt: { $gte: since } })
@@ -64,7 +60,6 @@ export async function GET(req: Request) {
       string,
       {
         subscription: number;
-        leadPack: number;
         agreement: number;
         total: number;
       }
@@ -73,7 +68,6 @@ export async function GET(req: Request) {
       if (!revenueMap[d])
         revenueMap[d] = {
           subscription: 0,
-          leadPack: 0,
           agreement: 0,
           total: 0,
         };
@@ -84,11 +78,6 @@ export async function GET(req: Request) {
       const d = new Date(s.createdAt).toISOString().slice(0, 10);
       initDay(d).subscription += s.amount;
       initDay(d).total += s.amount;
-    });
-    packs.forEach((p) => {
-      const d = new Date(p.createdAt).toISOString().slice(0, 10);
-      initDay(d).leadPack += p.amount;
-      initDay(d).total += p.amount;
     });
     agreements.forEach((a) => {
       const d = new Date(a.createdAt).toISOString().slice(0, 10);

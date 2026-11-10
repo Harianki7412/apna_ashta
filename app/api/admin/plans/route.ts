@@ -18,12 +18,20 @@ export async function GET(req: Request) {
     const type = new URL(req.url).searchParams.get("type");
     await connectDB();
 
-    const query: any = {};
-    if (type) query.type = type;
+    if (type && !["subscription", "featured"].includes(type)) {
+      return fail("Invalid type");
+    }
+    const query: any = type
+      ? { type }
+      : { type: { $in: ["subscription", "featured"] } };
 
-    const plans = await Plan.find(query)
+    const plans = (await Plan.find(query)
       .sort({ type: 1, displayOrder: 1 })
-      .lean();
+      .lean()).filter(
+      (plan) =>
+        plan.type !== "subscription" ||
+        ["free", "pro"].includes(plan.planId),
+    );
     return ok(plans);
   } catch (e) {
     return handleError(e);
@@ -51,21 +59,24 @@ export async function POST(req: Request) {
       features,
       listingLimit,
       photosPerListing,
-      leadsPerProperty,
       isFree,
-      leadsIncluded,
-      validityDays,
       featuredDays,
       featuredTier,
       displayOrder,
       hidden,
     } = body;
 
-    if (!type || !["subscription", "lead_pack", "featured"].includes(type)) {
+    if (!type || !["subscription", "featured"].includes(type)) {
       return fail("Invalid type");
     }
     if (!planId || !name) return fail("planId and name required");
     if (typeof price !== "number" || price < 0) return fail("Invalid price");
+    if (
+      type === "subscription" &&
+      !["free", "pro"].includes(String(planId).toLowerCase())
+    ) {
+      return fail("Only Free and Pro subscriptions are supported");
+    }
 
     await connectDB();
 
@@ -89,10 +100,7 @@ export async function POST(req: Request) {
       features: Array.isArray(features) ? features : [],
       listingLimit,
       photosPerListing,
-      leadsPerProperty,
       isFree: !!isFree || price === 0,
-      leadsIncluded,
-      validityDays,
       featuredDays,
       featuredTier,
       displayOrder: displayOrder || 0,

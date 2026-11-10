@@ -34,8 +34,6 @@ import {
   X,
   Clock,
   MessageCircle,
-  Zap,
-  Package,
   TrendingUp,
   Calendar,
   CreditCard,
@@ -72,7 +70,6 @@ function ProfileContent() {
     referralCount: 0,
   });
   const [subscription, setSubscription] = useState<any>(null);
-  const [leadPacks, setLeadPacks] = useState<any[]>([]);
   const [pwdForm, setPwdForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -87,10 +84,9 @@ function ProfileContent() {
   async function loadAll() {
     if (status !== "authenticated") return;
     try {
-      const [profileData, subData, leadData, stateData] = await Promise.all([
+      const [profileData, subData, stateData] = await Promise.all([
         api.get<any>("/api/profile").catch(() => null),
         api.get<any>("/api/subscription").catch(() => null),
-        api.get<any>("/api/lead-pack").catch(() => []),
         api.get<StateOption[]>("/api/states").catch((error: Error) => {
           toast.error(error.message || "Could not load states.");
           return [];
@@ -118,11 +114,6 @@ function ProfileContent() {
         setSubscription(subData);
       }
 
-      if (Array.isArray(leadData)) {
-        setLeadPacks(leadData);
-      } else if (leadData?.data && Array.isArray(leadData.data)) {
-        setLeadPacks(leadData.data);
-      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -209,7 +200,6 @@ function ProfileContent() {
         icon: "🎁",
         listingLimit: 2,
         photosPerListing: 5,
-        leadsPerProperty: 10,
       };
     const planId = subscription.current.planId || "free";
     if (planId === "free")
@@ -219,7 +209,6 @@ function ProfileContent() {
         icon: "🎁",
         listingLimit: 2,
         photosPerListing: 5,
-        leadsPerProperty: 10,
       };
     if (planId === "pro")
       return {
@@ -228,29 +217,19 @@ function ProfileContent() {
         icon: "⭐",
         listingLimit: 10,
         photosPerListing: 15,
-        leadsPerProperty: 50,
-      };
-    if (planId === "business")
-      return {
-        id: "business",
-        name: "Business",
-        icon: "👑",
-        listingLimit: 999,
-        photosPerListing: 25,
-        leadsPerProperty: 200,
       };
     return {
-      id: planId,
-      name: planId,
-      icon: "📦",
-      listingLimit: 0,
-      photosPerListing: 0,
-      leadsPerProperty: 0,
+      id: "free",
+      name: "Free",
+      icon: "🎁",
+      listingLimit: 2,
+      photosPerListing: 5,
     };
   }
 
   const currentPlan = getCurrentPlan();
   const subActive =
+    subscription?.current?.planId === "pro" &&
     subscription?.current?.expiresAt &&
     new Date(subscription.current.expiresAt) > new Date();
   const daysLeft = subscription?.current?.expiresAt
@@ -259,16 +238,6 @@ function ProfileContent() {
         differenceInDays(new Date(subscription.current.expiresAt), new Date()),
       )
     : 0;
-
-  // ═══ Active lead packs ═══
-  const activeLeadPacks = leadPacks.filter(
-    (p: any) => p.status === "active" && new Date(p.expiresAt) > new Date(),
-  );
-  const totalLeadsRemaining = activeLeadPacks.reduce(
-    (sum: number, p: any) =>
-      sum + Math.max(0, (p.totalLeads || 0) - (p.usedLeads || 0)),
-    0,
-  );
 
   if (status === "loading" || loading) {
     return (
@@ -358,7 +327,7 @@ function ProfileContent() {
         </div>
 
         {isOwner && (
-          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 mt-6 pt-5 border-t border-white/20">
+          <div className="relative grid grid-cols-3 gap-2 mt-6 pt-5 border-t border-white/20">
             {[
               {
                 label: "Plan",
@@ -370,7 +339,6 @@ function ProfileContent() {
                 value: `₹${profile.credits || 0}`,
                 icon: Wallet,
               },
-              { label: "Lead Balance", value: totalLeadsRemaining, icon: Zap },
               {
                 label: "Referrals",
                 value: profile.referralCount || 0,
@@ -456,7 +424,7 @@ function ProfileContent() {
           </div>
 
           {/* Plan benefits grid */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             {[
               {
                 label: "Listings",
@@ -466,7 +434,6 @@ function ProfileContent() {
                     : currentPlan.listingLimit,
               },
               { label: "Photos/listing", value: currentPlan.photosPerListing },
-              { label: "Leads/month", value: currentPlan.leadsPerProperty },
             ].map((b) => (
               <div
                 key={b.label}
@@ -497,106 +464,6 @@ function ProfileContent() {
               </Link>
             )}
           </div>
-        </div>
-      )}
-
-      {/* ═══ ⭐ LEAD PACKS CARD (Owner only) ═══ */}
-      {isOwner && (
-        <div className="card p-6">
-          <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white flex items-center justify-center shadow-md shadow-accent-500/30 flex-shrink-0">
-                <Zap size={24} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">
-                  Lead Packs
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
-                  {totalLeadsRemaining > 0
-                    ? `${totalLeadsRemaining} leads remaining`
-                    : "No active lead packs"}
-                </p>
-              </div>
-            </div>
-            <Link href="/pricing" className="btn btn-sm btn-secondary">
-              <Package size={14} /> Buy More
-            </Link>
-          </div>
-
-          {/* Active packs */}
-          {activeLeadPacks.length > 0 ? (
-            <div className="space-y-2">
-              {activeLeadPacks.map((pack: any) => {
-                const remaining = Math.max(
-                  0,
-                  (pack.totalLeads || 0) - (pack.usedLeads || 0),
-                );
-                const usedPercent =
-                  pack.totalLeads > 0
-                    ? ((pack.usedLeads || 0) / pack.totalLeads) * 100
-                    : 0;
-                const packDaysLeft = pack.expiresAt
-                  ? Math.max(
-                      0,
-                      differenceInDays(new Date(pack.expiresAt), new Date()),
-                    )
-                  : 0;
-
-                return (
-                  <div
-                    key={pack._id}
-                    className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-slate-100 capitalize">
-                          {pack.packId} Pack
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 flex items-center gap-1">
-                          <Calendar size={10} />
-                          Expires{" "}
-                          {format(new Date(pack.expiresAt), "MMM d, yyyy")}
-                          <span className="ml-1 text-brand-600 dark:text-brand-400 font-semibold">
-                            ({packDaysLeft}d left)
-                          </span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">
-                          {pack.totalLeads >= 999999 ? "∞" : remaining}
-                        </p>
-                        <p className="text-[10px] text-gray-500 dark:text-slate-400">
-                          remaining
-                        </p>
-                      </div>
-                    </div>
-                    {pack.totalLeads < 999999 && (
-                      <div className="h-2 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-accent-500 to-accent-600 transition-all"
-                          style={{ width: `${Math.min(100, usedPercent)}%` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-6 bg-accent-50 dark:bg-accent-900/20 rounded-xl text-center">
-              <Zap size={32} className="text-accent-500 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                No active lead packs
-              </p>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">
-                Buy leads to get more tenant inquiries
-              </p>
-              <Link href="/pricing" className="btn btn-primary btn-sm">
-                <Zap size={14} /> Buy Leads
-              </Link>
-            </div>
-          )}
         </div>
       )}
 

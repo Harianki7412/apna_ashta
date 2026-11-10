@@ -4,7 +4,7 @@ import { AppSetting } from "@/models/AppSetting";
 
 export interface PlanData {
   _id: string;
-  type: "subscription" | "lead_pack" | "featured";
+  type: "subscription" | "featured";
   planId: string;
   name: string;
   description?: string;
@@ -18,10 +18,7 @@ export interface PlanData {
   features: string[];
   listingLimit?: number;
   photosPerListing?: number;
-  leadsPerProperty?: number;
   isFree?: boolean;
-  leadsIncluded?: number;
-  validityDays?: number;
   featuredDays?: number;
   featuredTier?: string;
   active: boolean;
@@ -35,14 +32,20 @@ type LeanPlanData = Omit<PlanData, "_id"> & {
 
 /* ═══ Fetch all plans by type (public) ═══ */
 export async function getPlansByType(
-  type: "subscription" | "lead_pack" | "featured",
+  type: "subscription" | "featured",
   options: { includeHidden?: boolean } = {},
 ): Promise<PlanData[]> {
   await connectDB();
-  const query: { type: PlanData["type"]; active: true; hidden?: boolean } = {
+  const query: {
+    type: PlanData["type"];
+    active: true;
+    hidden?: boolean;
+    planId?: { $in: string[] };
+  } = {
     type,
     active: true,
   };
+  if (type === "subscription") query.planId = { $in: ["free", "pro"] };
   if (!options.includeHidden) query.hidden = false;
 
   const plans = await Plan.find(query)
@@ -59,6 +62,7 @@ export async function getPlanByPlanId(
   const plan = await Plan.findOne({
     planId,
     active: true,
+    type: { $in: ["subscription", "featured"] },
   }).lean<LeanPlanData>();
   return plan ? { ...plan, _id: plan._id.toString() } : null;
 }
@@ -97,6 +101,8 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
   const settings = await AppSetting.find({})
     .lean<{ key: string; value: unknown }[]>();
   const values = Object.fromEntries(settings.map(({ key, value }) => [key, value]));
+  delete values.enableLeadPacks;
+  delete values.freeLeadsPerProperty;
 
   if (values.supportEmail?.toString().toLowerCase() === "hello@flatova.in") {
     values.supportEmail = "";
@@ -112,12 +118,10 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
 export const DEFAULT_SETTINGS = {
   agreementPrice: 199,
   agreementSplitPrice: 99,
-  freeLeadsPerProperty: 10,
   siteName: "Flatova",
   supportEmail: "",
   supportPhone: "",
   enableSubscriptions: true,
-  enableLeadPacks: true,
   enableFeaturedListings: true,
   enableRentAgreement: true,
 };

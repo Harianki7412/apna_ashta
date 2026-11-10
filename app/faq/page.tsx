@@ -68,7 +68,7 @@ const FAQS: Record<string, { q: string; a: string }[]> = {
     },
     {
       q: "How many properties can I list?",
-      a: "The free plan includes 2 active listings. Pro (₹499/month) includes 10 listings, and Business (₹1,499/month) includes unlimited listings.",
+      a: "The free plan includes 2 active listings. Pro (₹299/month) includes up to 10 listings.",
     },
     {
       q: "What is a Featured Listing?",

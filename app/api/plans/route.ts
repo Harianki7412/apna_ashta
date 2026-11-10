@@ -9,22 +9,20 @@ export async function GET(req: Request) {
   try {
     const type = new URL(req.url).searchParams.get("type");
 
-    if (type && ["subscription", "lead_pack", "featured"].includes(type)) {
-      const plans = await getPlansByType(type as any);
+    if (type && ["subscription", "featured"].includes(type)) {
+      const plans = await getPlansByType(type as "subscription" | "featured");
       return ok({ plans });
     }
 
     // Return all types + settings
-    const [subscriptions, leadPacks, featured, settings] = await Promise.all([
+    const [subscriptions, featured, settings] = await Promise.all([
       getPlansByType("subscription"),
-      getPlansByType("lead_pack"),
       getPlansByType("featured"),
       getAllSettings(),
     ]);
 
     return ok({
       subscriptions,
-      leadPacks,
       featured,
       settings: { ...DEFAULT_SETTINGS, ...settings },
     });

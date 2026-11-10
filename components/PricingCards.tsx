@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Check, Sparkles, Zap } from "lucide-react";
-import { SUBSCRIPTION_PLANS, formatINR, type Plan } from "@/lib/pricing";
+import { Check, Sparkles } from "lucide-react";
+import { SUBSCRIPTION_PLANS, formatINR } from "@/lib/pricing";
 import toast from "react-hot-toast";
 
 export default function PricingCards({
@@ -43,9 +43,10 @@ export default function PricingCards({
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {SUBSCRIPTION_PLANS.map((plan) => {
           const isCurrent = currentPlanId === plan.id;
+          const isDisabled = isCurrent || plan.price === 0;
           const price =
             cycle === "yearly" && plan.yearlyPrice
               ? plan.yearlyPrice
@@ -92,10 +93,10 @@ export default function PricingCards({
               </div>
 
               <button
-                onClick={() => !isCurrent && onSelect(plan.id, cycle)}
-                disabled={isCurrent}
+                onClick={() => !isDisabled && onSelect(plan.id, cycle)}
+                disabled={isDisabled}
                 className={`w-full py-3 rounded-xl font-bold mb-6 transition-all ${
-                  isCurrent
+                  isDisabled
                     ? "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-not-allowed"
                     : isRecommended
                       ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white hover:shadow-lg"

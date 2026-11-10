@@ -7,7 +7,7 @@ const SubscriptionSchema = new Schema({
     required: true,
     index: true,
   },
-  planId: { type: String, enum: ["pro", "business"], required: true },
+  planId: { type: String, enum: ["pro"], required: true },
   billingCycle: {
     type: String,
     enum: ["monthly", "yearly"],

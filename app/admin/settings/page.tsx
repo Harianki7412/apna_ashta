@@ -11,7 +11,6 @@ import {
   Settings,
   Globe,
   FileText,
-  Zap,
   Star,
 } from "lucide-react";
 
@@ -29,13 +28,6 @@ const FIELDS = [
     type: "number",
     icon: FileText,
     group: "Services",
-  },
-  {
-    key: "freeLeadsPerProperty",
-    label: "Free Leads per Property",
-    type: "number",
-    icon: Zap,
-    group: "Limits",
   },
   {
     key: "siteName",
@@ -62,7 +54,6 @@ const FIELDS = [
 
 const TOGGLES = [
   { key: "enableSubscriptions", label: "Enable Subscriptions", icon: Settings },
-  { key: "enableLeadPacks", label: "Enable Lead Packs", icon: Zap },
   {
     key: "enableFeaturedListings",
     label: "Enable Featured Listings",

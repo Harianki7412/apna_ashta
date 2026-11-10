@@ -38,13 +38,6 @@ const UserSchema = new Schema({
     autoRenew: { type: Boolean, default: false },
   },
 
-  // ✅ NEW: Lead pack tracking (denormalized)
-  activeLeadPack: {
-    packId: String,
-    remainingLeads: { type: Number, default: 0 },
-    expiresAt: Date,
-  },
-
   resetToken: { type: String, select: false },
   resetTokenExpiry: { type: Date, select: false },
   lastLoginAt: Date,

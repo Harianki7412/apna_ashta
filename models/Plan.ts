@@ -4,7 +4,7 @@ const PlanSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["subscription", "lead_pack", "featured"],
+      enum: ["subscription", "featured"],
       required: true,
       index: true,
     },
@@ -29,12 +29,7 @@ const PlanSchema = new Schema(
     // Subscription-specific
     listingLimit: { type: Number, default: 2 },
     photosPerListing: { type: Number, default: 5 },
-    leadsPerProperty: { type: Number, default: 10 },
     isFree: { type: Boolean, default: false },
-
-    // Lead pack-specific
-    leadsIncluded: Number,
-    validityDays: Number,
 
     // Featured-specific
     featuredDays: Number,

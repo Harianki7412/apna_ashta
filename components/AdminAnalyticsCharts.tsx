@@ -18,7 +18,6 @@ interface AdminAnalyticsChartsProps {
   revenueChart: {
     date: string;
     subscription: number;
-    leadPack: number;
     agreement: number;
     total: number;
   }[];
@@ -71,14 +70,6 @@ export default function AdminAnalyticsCharts({
                 dataKey="subscription"
                 name="Subscription"
                 stroke="#2563eb"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="leadPack"
-                name="Lead Pack"
-                stroke="#f59e0b"
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />

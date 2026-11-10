@@ -13,7 +13,6 @@ import {
   X,
   Package,
   Crown,
-  Zap,
   Star,
   RefreshCw,
   Eye,
@@ -37,13 +36,6 @@ const TYPES = [
     desc: "Recurring plans",
   },
   {
-    key: "lead_pack",
-    label: "Lead Packs",
-    icon: Zap,
-    color: "accent",
-    desc: "Pay-per-lead bundles",
-  },
-  {
     key: "featured",
     label: "Featured Tiers",
     icon: Star,
@@ -65,10 +57,7 @@ const EMPTY_PLAN: any = {
   features: [],
   listingLimit: 2,
   photosPerListing: 5,
-  leadsPerProperty: 10,
   isFree: false,
-  leadsIncluded: 0,
-  validityDays: 30,
   featuredDays: 30,
   featuredTier: "basic",
   displayOrder: 0,
@@ -79,9 +68,7 @@ const EMPTY_PLAN: any = {
 export default function AdminPlansPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [tab, setTab] = useState<"subscription" | "lead_pack" | "featured">(
-    "subscription",
-  );
+  const [tab, setTab] = useState<"subscription" | "featured">("subscription");
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
@@ -119,7 +106,11 @@ export default function AdminPlansPage() {
   }, [status, session]);
 
   async function seed() {
-    if (!confirm("Seed default plans? Existing plans won't be touched."))
+    if (
+      !confirm(
+        "Seed Free and Pro plans? Legacy Business and lead-pack plans will be deactivated.",
+      )
+    )
       return;
     setSeeding(true);
     try {
@@ -247,7 +238,7 @@ export default function AdminPlansPage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-2 gap-3 mt-6">
           {TYPES.map((t) => {
             const Icon = t.icon;
             const count = plans.filter((p) => p.type === t.key).length;
@@ -608,7 +599,7 @@ export default function AdminPlansPage() {
                 <h3 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Sparkles size={14} /> Appearance
                 </h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">Icon</label>
                     <input
@@ -683,53 +674,6 @@ export default function AdminPlansPage() {
                         }
                       />
                     </div>
-                    <div>
-                      <label className="label">Leads/Property</label>
-                      <input
-                        type="number"
-                        className="input"
-                        value={editing.leadsPerProperty}
-                        onChange={(e) =>
-                          setEditing({
-                            ...editing,
-                            leadsPerProperty: Number(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {tab === "lead_pack" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="label">Leads Included</label>
-                    <input
-                      type="number"
-                      className="input"
-                      value={editing.leadsIncluded}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing,
-                          leadsIncluded: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Validity (days)</label>
-                    <input
-                      type="number"
-                      className="input"
-                      value={editing.validityDays}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing,
-                          validityDays: Number(e.target.value),
-                        })
-                      }
-                    />
                   </div>
                 </div>
               )}

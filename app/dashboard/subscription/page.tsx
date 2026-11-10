@@ -17,7 +17,6 @@ import {
   Crown,
   Calendar,
   TrendingUp,
-  Zap,
   ArrowRight,
   Loader2,
   AlertCircle,
@@ -289,7 +288,7 @@ export default function SubscriptionPage() {
 
             {/* Usage Stats */}
             <div
-              className={`grid grid-cols-3 gap-3 mt-8 pt-6 border-t ${
+              className={`grid grid-cols-2 gap-3 mt-8 pt-6 border-t ${
                 active
                   ? "border-white/20"
                   : "border-gray-100 dark:border-slate-700"
@@ -308,11 +307,6 @@ export default function SubscriptionPage() {
                   label: "Photos/listing",
                   value: currentPlan.photosPerListing,
                   icon: Sparkles,
-                },
-                {
-                  label: "Leads/month",
-                  value: currentPlan.leadsPerProperty,
-                  icon: Zap,
                 },
               ].map((stat) => {
                 const Icon = stat.icon;

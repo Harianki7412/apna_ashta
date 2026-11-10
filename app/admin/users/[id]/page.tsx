@@ -92,7 +92,7 @@ export default function UserDetailPage({
     );
   }
 
-  const { user, properties, subscriptions, leadPacks, notes } = data;
+  const { user, properties, subscriptions, notes } = data;
 
   return (
     <div className="space-y-6">

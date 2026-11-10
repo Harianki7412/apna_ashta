@@ -7,7 +7,6 @@ import { User } from "@/models/User";
 import { Property } from "@/models/Property";
 import { RentAgreement } from "@/models/RentAgreement";
 import { Subscription } from "@/models/Subscription";
-import { LeadPack } from "@/models/LeadPack";
 import { AdminNote } from "@/models/AdminNote";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
@@ -33,8 +32,7 @@ export async function GET(
       .lean();
     if (!user) return fail("Not found", 404);
 
-    const [properties, agreements, subscriptions, leadPacks, notes] =
-      await Promise.all([
+    const [properties, agreements, subscriptions, notes] = await Promise.all([
         Property.find({ owner: id }).sort({ createdAt: -1 }).limit(20).lean(),
         RentAgreement.find({
           $or: [{ owner: id }, { tenant: id }],
@@ -46,7 +44,6 @@ export async function GET(
           .sort({ createdAt: -1 })
           .limit(10)
           .lean(),
-        LeadPack.find({ user: id }).sort({ createdAt: -1 }).limit(10).lean(),
         AdminNote.find({ targetType: "user", targetId: id })
           .sort({ createdAt: -1 })
           .lean(),
@@ -57,7 +54,6 @@ export async function GET(
       properties,
       agreements,
       subscriptions,
-      leadPacks,
       notes,
     });
   } catch (e) {

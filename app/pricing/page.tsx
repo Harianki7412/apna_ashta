@@ -9,7 +9,6 @@ import { api } from "@/lib/api-client";
 import PricingCards from "@/components/PricingCards";
 import {
   Sparkles,
-  Zap,
   FileText,
   Check,
   Loader2,
@@ -84,41 +83,6 @@ export default function PricingPage() {
     }
   }
 
-  async function buyLeadPack(packId: string): Promise<void> {
-    if (!session) {
-      router.push("/login?callbackUrl=/pricing");
-      return;
-    }
-    try {
-      const order = await api.post<any>("/api/lead-pack", { packId });
-      const options = {
-        key: order.keyId,
-        amount: order.amount,
-        currency: "INR",
-        name: "Flatova",
-        description: "Lead Pack",
-        order_id: order.orderId,
-        handler: async (response: any) => {
-          try {
-            await api.post("/api/lead-pack/verify", {
-              ...response,
-              leadPackId: order.leadPackId,
-            });
-            toast.success("✅ Lead pack activated!");
-            router.push("/dashboard");
-            router.refresh();
-          } catch (e: any) {
-            toast.error(e.message);
-          }
-        },
-        theme: { color: "#f59e0b" },
-      };
-      new (window as any).Razorpay(options).open();
-    } catch (e: any) {
-      toast.error(e.message);
-    }
-  }
-
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
@@ -139,7 +103,7 @@ export default function PricingPage() {
       </div>
     );
 
-  const { subscriptions, leadPacks, featured, settings } = data;
+  const { featured, settings } = data;
 
   return (
     <>
@@ -188,7 +152,7 @@ export default function PricingPage() {
         </div>
 
         {/* SUBSCRIPTIONS */}
-        {settings.enableSubscriptions && subscriptions.length > 0 && (
+        {settings.enableSubscriptions && (
           <section className="mb-20">
             <div className="text-center mb-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 text-xs font-semibold mb-3">
@@ -198,75 +162,10 @@ export default function PricingPage() {
                 Choose your plan
               </h2>
               <p className="text-gray-500 dark:text-slate-400">
-                Upgrade, downgrade, or cancel anytime
+                Choose the plan that fits your needs. Manage or cancel Pro anytime.
               </p>
             </div>
             <PricingCards currentPlanId={currentPlanId} onSelect={subscribe} />
-          </section>
-        )}
-
-        {/* LEAD PACKS */}
-        {settings.enableLeadPacks && leadPacks.length > 0 && (
-          <section className="mb-20">
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-400/20 text-accent-700 dark:text-accent-300 text-xs font-semibold mb-3">
-                <Zap size={12} /> LEAD PACKS
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-slate-100">
-                Need more leads?
-              </h2>
-              <p className="text-gray-500 dark:text-slate-400">
-                Buy extra tenant inquiries anytime — no subscription required
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-              {leadPacks.map((pack: any) => (
-                <div
-                  key={pack._id}
-                  className={`relative rounded-2xl p-6 transition-all hover-lift ${
-                    pack.recommended
-                      ? "border-2 border-accent-500 bg-gradient-to-b from-accent-50/50 to-white dark:from-accent-900/10 dark:to-slate-800 shadow-xl shadow-accent-500/10 scale-[1.02]"
-                      : "border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  }`}
-                >
-                  {pack.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-accent-500 to-accent-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md whitespace-nowrap">
-                      {pack.badge}
-                    </div>
-                  )}
-                  <div className="w-14 h-14 rounded-2xl bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center text-3xl mb-4">
-                    {pack.icon}
-                  </div>
-                  <h3 className="font-bold text-xl mb-1 text-gray-900 dark:text-slate-100">
-                    {pack.name}
-                  </h3>
-                  <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-extrabold text-accent-600 dark:text-accent-400">
-                      ₹{pack.price.toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
-                    {pack.leadsIncluded >= 999999
-                      ? "♾️ Unlimited leads"
-                      : `${pack.leadsIncluded} leads`}
-                    <span className="text-xs text-gray-500">
-                      {" "}
-                      · Valid {pack.validityDays} days
-                    </span>
-                  </p>
-                  <button
-                    onClick={() => buyLeadPack(pack.planId)}
-                    className={`w-full py-3 rounded-xl font-bold transition-all ${
-                      pack.recommended
-                        ? "bg-gradient-to-r from-accent-500 to-accent-600 text-white hover:from-accent-600 hover:to-accent-700 shadow-lg shadow-accent-500/25"
-                        : "bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-gray-800"
-                    }`}
-                  >
-                    Buy Now
-                  </button>
-                </div>
-              ))}
-            </div>
           </section>
         )}
 
