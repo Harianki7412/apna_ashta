@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 import {
   Plus,
   Edit,
@@ -94,7 +94,7 @@ export default function AdminPlansPage() {
       router.push("/login?callbackUrl=/admin/plans");
     else if (
       status === "authenticated" &&
-      !hasAdminAccess(session?.user?.role)
+      !hasFullAdminAccess(session?.user?.role)
     ) {
       toast.error("Admin access required");
       router.push("/");
@@ -114,7 +114,7 @@ export default function AdminPlansPage() {
   }
 
   useEffect(() => {
-    if (status === "authenticated" && hasAdminAccess(session?.user?.role))
+    if (status === "authenticated" && hasFullAdminAccess(session?.user?.role))
       load();
   }, [status, session]);
 

@@ -5,11 +5,11 @@ import { Plan } from "@/models/Plan";
 import { AppSetting } from "@/models/AppSetting";
 import { DEFAULT_SETTINGS } from "@/lib/plan-helpers";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasAdminAccess(s?.user?.role) ? s : null;
+  return hasFullAdminAccess(s?.user?.role) ? s : null;
 }
 
 const SEED_PLANS = [

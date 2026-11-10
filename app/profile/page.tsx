@@ -43,18 +43,26 @@ import {
 import { format, differenceInDays } from "date-fns";
 import { Suspense } from "react";
 
+interface StateOption {
+  _id: string;
+  name: string;
+  code?: string;
+}
+
 function ProfileContent() {
   const { data: session, update: updateSession, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [states, setStates] = useState<StateOption[]>([]);
   const [changingPwd, setChangingPwd] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [profile, setProfile] = useState<any>({
     name: "",
     email: "",
     phone: "",
+    state: "",
     phoneVerified: false,
     kycStatus: "none",
     role: "tenant",
@@ -79,17 +87,23 @@ function ProfileContent() {
   async function loadAll() {
     if (status !== "authenticated") return;
     try {
-      const [profileData, subData, leadData] = await Promise.all([
+      const [profileData, subData, leadData, stateData] = await Promise.all([
         api.get<any>("/api/profile").catch(() => null),
         api.get<any>("/api/subscription").catch(() => null),
         api.get<any>("/api/lead-pack").catch(() => []),
+        api.get<StateOption[]>("/api/states").catch((error: Error) => {
+          toast.error(error.message || "Could not load states.");
+          return [];
+        }),
       ]);
 
+      setStates(stateData || []);
       if (profileData) {
         setProfile({
           name: profileData.name || "",
           email: profileData.email || "",
           phone: profileData.phone || "",
+          state: profileData.state || "",
           phoneVerified: profileData.phoneVerified,
           kycStatus: profileData.kycStatus,
           role: profileData.role,
@@ -142,6 +156,7 @@ function ProfileContent() {
       await api.patch("/api/profile", {
         name: profile.name,
         phone: profile.phone,
+        state: profile.state,
       });
       await updateSession();
       toast.success("Profile updated");
@@ -731,6 +746,23 @@ function ProfileContent() {
               </Link>
             </p>
           )}
+        </div>
+
+        <div>
+          <label className="label">State</label>
+          <select
+            className="input"
+            value={profile.state}
+            onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+          >
+            <option value="">Select State</option>
+            {states.map((state) => (
+              <option key={state._id} value={state._id}>
+                {state.name}
+                {state.code ? ` (${state.code})` : ""}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex justify-end pt-2">

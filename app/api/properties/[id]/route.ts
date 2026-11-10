@@ -2,11 +2,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { Property } from '@/models/Property';
+import { City } from '@/models/City';
 import { propertySchema } from '@/lib/validators';
 import { ok, fail, handleError } from '@/lib/api-helpers';
 import { z } from 'zod';
 import { getListingFreshness } from '@/lib/property-freshness';
-import { hasAdminAccess } from '@/lib/role-access';
+import { hasAdminAccess, hasFullAdminAccess } from '@/lib/role-access';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -66,13 +67,38 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
     const me = session.user.id;
     const role = session.user.role;
-    if (property.owner.toString() !== me && !hasAdminAccess(role)) return fail('Forbidden', 403);
+    if (property.owner.toString() !== me && !hasFullAdminAccess(role)) return fail('Forbidden', 403);
 
     const parsed = updateSchema.parse(await req.json());
+    const locationChanged =
+      (parsed.state !== undefined && parsed.state !== property.state) ||
+      (parsed.district !== undefined &&
+        parsed.district !== property.district) ||
+      (parsed.city !== undefined && parsed.city !== property.city);
+    if (!hasFullAdminAccess(role) && locationChanged) {
+      const state = parsed.state ?? property.state;
+      const district = parsed.district ?? property.district;
+      const city = parsed.city ?? property.city;
+      if (!state || !district) {
+        return fail('Select an approved state, district, and city', 400);
+      }
+      const approvedCity = await City.findOne({
+        name: city,
+        district,
+        stateName: state,
+        active: true,
+      }).select('_id');
+      if (!approvedCity) {
+        return fail('This city is not approved for listings yet', 400);
+      }
+    }
+
     const fields = [
       'title',
       'description',
       'propertyType',
+      'state',
+      'district',
       'city',
       'rent',
       'deposit',
@@ -87,7 +113,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (parsed.lat !== undefined && parsed.lng !== undefined) {
       property.location = { type: 'Point', coordinates: [parsed.lng, parsed.lat] };
     }
-    if (!hasAdminAccess(role) && property.status === 'approved') property.status = 'pending';
+    if (!hasFullAdminAccess(role) && property.status === 'approved') property.status = 'pending';
     await property.save();
 
     const updated = await Property.findById(id)
@@ -112,7 +138,7 @@ export async function DELETE(_: Request, ctx: Ctx) {
 
     const me = session.user.id;
     const role = session.user.role;
-    if (property.owner.toString() !== me && !hasAdminAccess(role)) return fail('Forbidden', 403);
+    if (property.owner.toString() !== me && !hasFullAdminAccess(role)) return fail('Forbidden', 403);
 
     await property.deleteOne();
     return ok({ deleted: true, id });

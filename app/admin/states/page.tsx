@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 import {
   MapPin,
   Plus,
@@ -46,7 +46,7 @@ export default function AdminStatesPage() {
       router.push("/login?callbackUrl=/admin/states");
     else if (
       status === "authenticated" &&
-      !hasAdminAccess(session?.user?.role)
+      !hasFullAdminAccess(session?.user?.role)
     )
       router.push("/");
   }, [status, session, router]);
@@ -64,16 +64,25 @@ export default function AdminStatesPage() {
   }
 
   useEffect(() => {
-    if (status === "authenticated" && hasAdminAccess(session?.user?.role))
+    if (status === "authenticated" && hasFullAdminAccess(session?.user?.role))
       load();
   }, [status, session]);
 
   async function seed() {
-    if (!confirm("Seed default states (MP, MH, RJ, UP, GJ)?")) return;
+    if (
+      !confirm(
+        "Seed all 28 states and 8 union territories? This also removes the old globally unique city-name index so cities can be added in different districts.",
+      )
+    )
+      return;
     setSeeding(true);
     try {
       const r = await api.post<any>("/api/admin/seed-states", {});
-      toast.success(`Created ${r.created}, skipped ${r.skipped}`);
+      toast.success(
+        `Created ${r.created}, skipped ${r.skipped}, migrated ${r.migratedCities} cities${
+          r.removedGlobalNameIndex ? ", updated city index" : ""
+        }`,
+      );
       await load();
     } catch (e: any) {
       toast.error(e.message);
@@ -148,8 +157,8 @@ export default function AdminStatesPage() {
             States
           </h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-            Top-level geographic hierarchy. Owners add cities & areas under
-            states.
+            Admin-managed states and union territories. Owners can suggest
+            districts and cities for approval.
           </p>
         </div>
         <div className="flex gap-2">

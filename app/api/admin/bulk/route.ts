@@ -5,12 +5,12 @@ import { Property } from "@/models/Property";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !hasAdminAccess(session.user?.role)) {
+    if (!session || !hasFullAdminAccess(session.user?.role)) {
       return fail("Forbidden", 403);
     }
 

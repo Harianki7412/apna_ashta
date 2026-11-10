@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Download, X } from "lucide-react";
+import { X } from "lucide-react";
 import toast from "react-hot-toast";
 import { trackEvent } from "@/components/GoogleAnalytics";
 
@@ -94,8 +95,8 @@ export default function InstallPrompt() {
         <X size={16} />
       </button>
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
-          <Download className="text-white" size={22} />
+        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <Image src="/icons/icon.svg" alt="" width={48} height={48} />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-sm text-gray-900 dark:text-slate-100">

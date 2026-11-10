@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 import {
   MapPin,
   Plus,
@@ -29,6 +29,7 @@ interface StateOption {
   _id: string;
   name: string;
   slug: string;
+  district?: string;
   code?: string;
 }
 
@@ -36,7 +37,8 @@ interface City {
   _id: string;
   name: string;
   slug: string;
-  state: any; // populated object
+  district?: string;
+  state: string | { _id: string; name: string; code?: string };
   stateName: string;
   lat: number;
   lng: number;
@@ -44,6 +46,7 @@ interface City {
   areas: any[];
   active: boolean;
   isOwnerAdded?: boolean;
+  createdBy?: { name?: string; email?: string };
   propertyCount?: number;
   displayOrder?: number;
   createdAt?: string;
@@ -58,6 +61,7 @@ export default function AdminCitiesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [modal, setModal] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -67,7 +71,7 @@ export default function AdminCitiesPage() {
       router.push("/login?callbackUrl=/admin/cities");
     } else if (
       status === "authenticated" &&
-      !hasAdminAccess(session?.user?.role)
+      !hasFullAdminAccess(session?.user?.role)
     ) {
       toast.error("Admin access required");
       router.push("/");
@@ -78,7 +82,9 @@ export default function AdminCitiesPage() {
     try {
       const d = await api.get<StateOption[]>("/api/admin/states");
       setStates(d || []);
-    } catch {}
+    } catch (e: any) {
+      toast.error(e.message || "Unable to load states.");
+    }
   }
 
   async function loadCities() {
@@ -87,6 +93,7 @@ export default function AdminCitiesPage() {
       const params = new URLSearchParams();
       if (stateFilter) params.set("state", stateFilter);
       if (search) params.set("q", search);
+      if (statusFilter !== "all") params.set("status", statusFilter);
       const d = await api.get<City[]>(`/api/admin/cities?${params.toString()}`);
       setCities(d || []);
     } catch (e: any) {
@@ -99,7 +106,7 @@ export default function AdminCitiesPage() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      hasAdminAccess(session?.user?.role)
+      hasFullAdminAccess(session?.user?.role)
     ) {
       loadStates();
     }
@@ -108,15 +115,16 @@ export default function AdminCitiesPage() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      hasAdminAccess(session?.user?.role)
+      hasFullAdminAccess(session?.user?.role)
     ) {
       loadCities();
     }
-  }, [stateFilter, status, session]);
+  }, [stateFilter, statusFilter, status, session]);
 
   async function save() {
     if (!modal) return;
     if (!modal.name?.trim()) return toast.error("City name required");
+    if (!modal.district?.trim()) return toast.error("District name required");
     if (!modal.stateId && !modal._id) return toast.error("Select a state");
 
     setSaving(true);
@@ -130,6 +138,7 @@ export default function AdminCitiesPage() {
         // Create
         await api.post("/api/admin/cities", {
           name: modal.name,
+          district: modal.district,
           stateId: modal.stateId,
           lat: Number(modal.lat) || undefined,
           lng: Number(modal.lng) || undefined,
@@ -147,9 +156,10 @@ export default function AdminCitiesPage() {
   }
 
   async function remove(city: City) {
+    const isPendingSuggestion = city.isOwnerAdded && !city.active;
     if (
       !confirm(
-        `Delete "${city.name}"? ${
+        `${isPendingSuggestion ? "Reject suggestion" : "Delete"} "${city.name}"? ${
           city.propertyCount
             ? `${city.propertyCount} properties exist — deletion will fail.`
             : ""
@@ -160,7 +170,9 @@ export default function AdminCitiesPage() {
 
     try {
       await api.delete(`/api/admin/cities/${city._id}`);
-      toast.success("City deleted");
+      toast.success(
+        isPendingSuggestion ? "Suggestion rejected" : "City deleted",
+      );
       await loadCities();
     } catch (e: any) {
       toast.error(e.message);
@@ -172,6 +184,13 @@ export default function AdminCitiesPage() {
       await api.patch(`/api/admin/cities/${city._id}`, {
         active: !city.active,
       });
+      toast.success(
+        city.active
+          ? "City deactivated"
+          : city.isOwnerAdded
+            ? "Suggestion approved"
+            : "City activated",
+      );
       await loadCities();
     } catch (e: any) {
       toast.error(e.message);
@@ -183,6 +202,7 @@ export default function AdminCitiesPage() {
     return cities.filter(
       (c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.district?.toLowerCase().includes(search.toLowerCase()) ||
         c.slug.toLowerCase().includes(search.toLowerCase()),
     );
   }, [cities, search]);
@@ -191,7 +211,7 @@ export default function AdminCitiesPage() {
     () => ({
       total: cities.length,
       active: cities.filter((c) => c.active).length,
-      ownerAdded: cities.filter((c) => c.isOwnerAdded).length,
+      pending: cities.filter((c) => c.isOwnerAdded && !c.active).length,
       totalProps: cities.reduce((s, c) => s + (c.propertyCount || 0), 0),
     }),
     [cities],
@@ -274,8 +294,8 @@ export default function AdminCitiesPage() {
           },
           { label: "Active", value: stats.active, icon: Eye, color: "success" },
           {
-            label: "Owner-added",
-            value: stats.ownerAdded,
+            label: "Pending review",
+            value: stats.pending,
             icon: MapPin,
             color: "accent",
           },
@@ -342,11 +362,23 @@ export default function AdminCitiesPage() {
               </option>
             ))}
           </select>
-          {(stateFilter || search) && (
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input w-48"
+            aria-label="Filter cities by status"
+          >
+            <option value="all">All cities</option>
+            <option value="pending">Pending review</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          {(stateFilter || search || statusFilter !== "all") && (
             <button
               onClick={() => {
                 setStateFilter("");
                 setSearch("");
+                setStatusFilter("all");
               }}
               className="btn btn-ghost btn-sm"
             >
@@ -364,11 +396,11 @@ export default function AdminCitiesPage() {
             className="text-gray-300 dark:text-slate-600 mx-auto mb-3"
           />
           <p className="text-gray-500 dark:text-slate-400 mb-4">
-            {search || stateFilter
+            {search || stateFilter || statusFilter !== "all"
               ? "No cities match your filters"
               : "No cities yet"}
           </p>
-          {states.length > 0 && (
+          {states.length > 0 && statusFilter === "all" && (
             <button
               onClick={() =>
                 setModal({
@@ -419,7 +451,7 @@ export default function AdminCitiesPage() {
                       </h3>
                       {!city.active && (
                         <span className="badge badge-warning text-[10px]">
-                          Inactive
+                          {city.isOwnerAdded ? "Pending review" : "Inactive"}
                         </span>
                       )}
                       {city.isOwnerAdded && (
@@ -429,9 +461,16 @@ export default function AdminCitiesPage() {
                       )}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
+                      {city.district ? `${city.district} · ` : ""}
                       {stateName}
                       {stateCode ? ` · ${stateCode}` : ""}
                     </p>
+                    {city.isOwnerAdded && city.createdBy && (
+                      <p className="mt-1 text-[11px] text-gray-500 dark:text-slate-400">
+                        Suggested by{" "}
+                        {city.createdBy.name || city.createdBy.email || "owner"}
+                      </p>
+                    )}
                     <p className="text-[10px] text-gray-400 dark:text-slate-500 font-mono mt-0.5">
                       {city.slug}
                     </p>
@@ -452,14 +491,30 @@ export default function AdminCitiesPage() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => toggleActive(city)}
+                    aria-label={
+                      city.active
+                        ? `Deactivate ${city.name}`
+                        : city.isOwnerAdded
+                          ? `Approve ${city.name}`
+                          : `Activate ${city.name}`
+                    }
                     className={`p-2 rounded-lg transition-colors ${
                       city.active
                         ? "text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                         : "text-warning-600 dark:text-warning-400 hover:bg-warning-50 dark:hover:bg-warning-900/20"
                     }`}
-                    title={city.active ? "Deactivate" : "Activate"}
+                    title={
+                      city.active
+                        ? "Deactivate"
+                        : city.isOwnerAdded
+                          ? "Approve suggestion"
+                          : "Activate"
+                    }
                   >
                     {city.active ? <Eye size={14} /> : <EyeOff size={14} />}
+                    {!city.active && city.isOwnerAdded && (
+                      <span className="ml-1 text-xs font-semibold">Approve</span>
+                    )}
                   </button>
                   <button
                     onClick={() =>
@@ -478,8 +533,17 @@ export default function AdminCitiesPage() {
                   </button>
                   <button
                     onClick={() => remove(city)}
+                    aria-label={
+                      city.isOwnerAdded && !city.active
+                        ? `Reject ${city.name}`
+                        : `Delete ${city.name}`
+                    }
                     className="p-2 rounded-lg text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 ml-auto"
-                    title="Delete"
+                    title={
+                      city.isOwnerAdded && !city.active
+                        ? "Reject suggestion"
+                        : "Delete"
+                    }
                   >
                     <Trash2 size={14} />
                   </button>
@@ -529,6 +593,20 @@ export default function AdminCitiesPage() {
                     Name is immutable after creation
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="label">
+                  District <span className="text-danger-500">*</span>
+                </label>
+                <input
+                  className="input"
+                  value={modal.district || ""}
+                  onChange={(e) =>
+                    setModal({ ...modal, district: e.target.value })
+                  }
+                  placeholder="e.g. Sehore"
+                />
               </div>
 
               <div>

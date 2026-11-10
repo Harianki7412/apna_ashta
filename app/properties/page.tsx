@@ -47,7 +47,15 @@ interface CityData {
   _id: string;
   name: string;
   slug: string;
+  district?: string;
+  stateName: string;
   areas: CityArea[];
+}
+
+interface StateOption {
+  _id: string;
+  name: string;
+  slug: string;
 }
 
 interface PropertyListing {
@@ -55,6 +63,8 @@ interface PropertyListing {
   title: string;
   area?: string;
   city?: string;
+  district?: string;
+  state?: string;
   rent?: number;
   deposit?: number;
   maintenanceCharge?: number;
@@ -74,6 +84,8 @@ interface PropertiesResponse {
 }
 
 interface PropertyFilters {
+  state: string;
+  district: string;
   city: string;
   area: string;
   type: string;
@@ -99,7 +111,7 @@ const BUDGETS = [
 function PropertiesPage() {
   const t = useTranslations("search");
   const tCommon = useTranslations("common");
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -112,11 +124,16 @@ function PropertiesPage() {
   const [showMap, setShowMap] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [cities, setCities] = useState<CityData[]>([]);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [preferredStateId, setPreferredStateId] = useState("");
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const loadRequestId = useRef(0);
+  const preferredStateApplied = useRef(false);
 
   const [filters, setFilters] = useState<PropertyFilters>(() => ({
+    state: searchParams.get("state") || "",
+    district: searchParams.get("district") || "",
     city: searchParams.get("city") || "",
     area: searchParams.get("area") || "",
     type: searchParams.get("type") || "",
@@ -134,13 +151,65 @@ function PropertiesPage() {
 
   /* ═══ Load cities ═══ */
   useEffect(() => {
-    api
-      .get<CityData[]>("/api/cities")
-      .then(setCities)
+    Promise.all([
+      api.get<StateOption[]>("/api/states"),
+      api.get<CityData[]>("/api/cities"),
+    ])
+      .then(([stateData, cityData]) => {
+        setStates(stateData);
+        setCities(cityData);
+      })
       .catch((error: Error) => {
-        toast.error(error.message || "Unable to load cities.");
+        toast.error(error.message || "Unable to load location data.");
       });
   }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let cancelled = false;
+
+    api
+      .get<{ state?: string }>("/api/profile")
+      .then(({ state }) => {
+        if (!cancelled) setPreferredStateId(state || "");
+      })
+      .catch((error: Error) => {
+        if (!cancelled) {
+          toast.error(error.message || "Could not load your saved state.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  useEffect(() => {
+    if (preferredStateApplied.current || !preferredStateId || !states.length) {
+      return;
+    }
+
+    if (filters.state || searchParams.get("state")) {
+      preferredStateApplied.current = true;
+      return;
+    }
+
+    const preferredState = states.find(
+      (state) => state._id === preferredStateId,
+    );
+    preferredStateApplied.current = true;
+    if (!preferredState) return;
+
+    const nextFilters = {
+      ...filters,
+      state: preferredState.name,
+      district: "",
+      city: "",
+      area: "",
+    };
+    setFilters(nextFilters);
+    void load(true, nextFilters);
+  }, [filters, preferredStateId, searchParams, states]);
 
   /* ═══ Load properties ═══ */
   async function load(reset = true, selectedFilters = filters) {
@@ -234,6 +303,8 @@ function PropertiesPage() {
   /* ═══ Clear all filters ═══ */
   function clearFilters() {
     applyFilters({
+      state: "",
+      district: "",
       city: "",
       area: "",
       type: "",
@@ -268,7 +339,25 @@ function PropertiesPage() {
     ([k, v]) => v && k !== "sort",
   ).length;
 
-  const activeCityData = cities.find((c) => c.name === filters.city);
+  const activeCityData = cities.find(
+    (c) =>
+      c.name === filters.city &&
+      (!filters.state || c.stateName === filters.state) &&
+      (!filters.district || c.district === filters.district),
+  );
+  const filteredDistricts = [
+    ...new Set(
+      cities
+        .filter((city) => !filters.state || city.stateName === filters.state)
+        .map((city) => city.district)
+        .filter((district): district is string => Boolean(district)),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+  const filteredCities = cities.filter(
+    (city) =>
+      (!filters.state || city.stateName === filters.state) &&
+      (!filters.district || city.district === filters.district),
+  );
   const compareItems = items.filter((property) =>
     compareIds.includes(property._id),
   );
@@ -302,7 +391,14 @@ function PropertiesPage() {
     {
       label: "Location",
       value: (property) =>
-        [property.area, property.city].filter(Boolean).join(", "),
+        [
+          property.area,
+          property.city,
+          property.district,
+          property.state,
+        ]
+          .filter(Boolean)
+          .join(", "),
     },
     {
       label: "Property",
@@ -348,34 +444,47 @@ function PropertiesPage() {
         </Link>
       </div>
 
-      {/* ═══ CITY TABS ═══ */}
+      {/* ═══ STATE TABS ═══ */}
       <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
         <button
           onClick={() => {
-            applyFilters({ ...filters, city: "", area: "" });
+            applyFilters({
+              ...filters,
+              state: "",
+              district: "",
+              city: "",
+              area: "",
+            });
           }}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-            !filters.city
+            !filters.state
               ? "bg-brand-600 text-white shadow-button"
               : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-brand-300"
           }`}
         >
-          <MapPin size={14} /> {tCommon("allCities")}
+          <MapPin size={14} /> All India
         </button>
 
-        {cities.map((c) => (
+        {states.map((state) => (
           <button
-            key={c.slug}
+            key={state._id}
             onClick={() => {
-              applyFilters({ ...filters, city: c.name, area: "" });
+              applyFilters({
+                ...filters,
+                state:
+                  filters.state === state.name ? "" : state.name,
+                district: "",
+                city: "",
+                area: "",
+              });
             }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-              filters.city === c.name
+              filters.state === state.name
                 ? "bg-brand-600 text-white shadow-button"
                 : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-brand-300"
             }`}
           >
-            <MapPin size={14} /> {c.name}
+            <MapPin size={14} /> {state.name}
           </button>
         ))}
       </div>
@@ -440,8 +549,47 @@ function PropertiesPage() {
 
       {/* ═══ MAIN SEARCH BAR ═══ */}
       <div className="card mb-4 space-y-3 p-3 sm:p-4">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
-        <div className="relative min-w-0 sm:col-span-2 lg:col-span-4">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-12">
+        <select
+          value={filters.district}
+          onChange={(e) =>
+            setFilters({
+              ...filters,
+              district: e.target.value,
+              city: "",
+              area: "",
+            })
+          }
+          aria-label="Filter by district"
+          disabled={!filters.state}
+          className="input w-full text-base sm:text-sm lg:col-span-2"
+        >
+          <option value="">All districts</option>
+          {filteredDistricts.map((district) => (
+            <option key={district} value={district}>
+              {district}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={filters.city}
+          onChange={(e) =>
+            setFilters({ ...filters, city: e.target.value, area: "" })
+          }
+          aria-label="Filter by city"
+          disabled={!filters.state}
+          className="input w-full text-base sm:text-sm lg:col-span-2"
+        >
+          <option value="">{tCommon("allCities")}</option>
+          {filteredCities.map((city) => (
+            <option key={city.slug} value={city.name}>
+              {city.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="relative col-span-2 min-w-0 lg:col-span-4">
           <SearchX
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -452,7 +600,7 @@ function PropertiesPage() {
             value={filters.q}
             onChange={(e) => setFilters({ ...filters, q: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && load(true)}
-            className="input pl-9"
+            className="input pl-9 text-base sm:text-sm"
           />
         </div>
 
@@ -462,7 +610,7 @@ function PropertiesPage() {
           list="area-filter-options"
           value={filters.area}
           onChange={(e) => setFilters({ ...filters, area: e.target.value })}
-          className="input w-full lg:col-span-2"
+          className="input w-full text-base sm:text-sm lg:col-span-2"
         />
         <datalist id="area-filter-options">
           {(activeCityData?.areas || [])
@@ -475,7 +623,7 @@ function PropertiesPage() {
         <select
           value={filters.type}
           onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-          className="input w-full lg:col-span-2"
+          className="input w-full text-base sm:text-sm lg:col-span-2"
         >
           <option value="">{tCommon("allTypes")}</option>
           <option value="Room">Room</option>
@@ -495,7 +643,7 @@ function PropertiesPage() {
           type="number"
           value={filters.min}
           onChange={(e) => setFilters({ ...filters, min: e.target.value })}
-          className="input w-full lg:col-span-1"
+          className="input w-full text-base sm:text-sm lg:col-span-1"
         />
         <input
           placeholder={t("maxPrice")}
@@ -503,14 +651,14 @@ function PropertiesPage() {
           type="number"
           value={filters.max}
           onChange={(e) => setFilters({ ...filters, max: e.target.value })}
-          className="input w-full lg:col-span-1"
+          className="input w-full text-base sm:text-sm lg:col-span-1"
         />
 
         <select
           value={filters.sort}
           onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
           aria-label="Sort properties"
-          className="input w-full lg:col-span-2"
+          className="input col-span-2 w-full text-base sm:col-span-2 sm:text-sm lg:col-span-2"
         >
           <option value="newest">{t("newest")}</option>
           <option value="price_asc">{t("priceLow")}</option>
@@ -519,14 +667,14 @@ function PropertiesPage() {
 
         </div>
 
-        <div className="flex flex-wrap gap-2">
-        <button onClick={() => load(true)} disabled={loading} className="btn btn-primary min-w-28 flex-1 sm:flex-none">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <button onClick={() => load(true)} disabled={loading} className="btn btn-primary min-w-0 sm:min-w-28">
           {loading ? <Loader2 size={16} className="animate-spin" /> : null}
           {t("search")}
         </button>
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className={`btn ${showAdvanced ? "btn-primary" : "btn-ghost"} flex items-center gap-1`}
+          className={`btn ${showAdvanced ? "btn-primary" : "btn-ghost"} flex items-center justify-center gap-1`}
         >
           <SlidersHorizontal size={16} />
           {t("filters") || tCommon("filters")}
@@ -537,11 +685,11 @@ function PropertiesPage() {
           )}
         </button>
 
-        <button onClick={saveSearch} className="btn btn-secondary flex-1 sm:flex-none">
+        <button onClick={saveSearch} className="btn btn-secondary min-w-0 px-2 sm:px-5">
           🔔 {t("saveSearch")}
         </button>
 
-        <button onClick={() => setShowMap(!showMap)} className="btn btn-ghost flex-1 sm:flex-none">
+        <button onClick={() => setShowMap(!showMap)} className="btn btn-ghost min-w-0">
           {showMap ? t("listView") : t("mapView")}
         </button>
         </div>

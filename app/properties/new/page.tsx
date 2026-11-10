@@ -55,6 +55,7 @@ interface City {
   _id: string;
   name: string;
   slug: string;
+  district?: string;
   state: string;
   stateName: string;
   lat: number;
@@ -99,6 +100,7 @@ export default function NewPropertyPage() {
     amenities: [] as string[],
     availableFrom: "",
     stateId: "",
+    district: "",
     city: "",
     rent: "",
     deposit: "",
@@ -113,6 +115,7 @@ export default function NewPropertyPage() {
   const [addCityOpen, setAddCityOpen] = useState(false);
   const [addAreaOpen, setAddAreaOpen] = useState(false);
   const [newCityName, setNewCityName] = useState("");
+  const [newDistrictName, setNewDistrictName] = useState("");
   const [newAreaName, setNewAreaName] = useState("");
 
   useEffect(() => {
@@ -159,6 +162,29 @@ export default function NewPropertyPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let cancelled = false;
+
+    api
+      .get<{ state?: string }>("/api/profile")
+      .then(({ state }) => {
+        if (cancelled || !state) return;
+        setForm((current) =>
+          current.stateId ? current : { ...current, stateId: state },
+        );
+      })
+      .catch((error: Error) => {
+        if (!cancelled) {
+          toast.error(error.message || "Could not load your saved state.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
   /* ═══ Derived state ═══ */
   const selectedState = useMemo(
     () => states.find((s) => s._id === form.stateId),
@@ -166,13 +192,37 @@ export default function NewPropertyPage() {
   );
 
   const cityData = useMemo(
-    () => cities.find((c) => c.name === form.city && c.state === form.stateId),
-    [form.city, form.stateId, cities],
+    () =>
+      cities.find(
+        (c) =>
+          c.name === form.city &&
+          c.state === form.stateId &&
+          (c.district || "") === form.district,
+      ),
+    [form.city, form.district, form.stateId, cities],
+  );
+
+  const filteredDistricts = useMemo(
+    () =>
+      [
+        ...new Set(
+          cities
+            .filter((c) => c.state === form.stateId && c.district)
+            .map((c) => c.district as string),
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [cities, form.stateId],
   );
 
   const filteredCities = useMemo(
-    () => (form.stateId ? cities.filter((c) => c.state === form.stateId) : []),
-    [cities, form.stateId],
+    () =>
+      form.stateId && form.district
+        ? cities.filter(
+            (c) =>
+              c.state === form.stateId && c.district === form.district,
+          )
+        : [],
+    [cities, form.district, form.stateId],
   );
 
   const showBhk = needsBhk(form.propertyType);
@@ -186,6 +236,7 @@ export default function NewPropertyPage() {
     descValid &&
     images.length > 0 &&
     !!form.stateId &&
+    !!form.district &&
     !!form.city &&
     !!form.area.trim() &&
     !!form.address.trim() &&
@@ -200,6 +251,7 @@ export default function NewPropertyPage() {
     setForm({
       ...form,
       stateId,
+      district: "",
       city: "",
       area: "",
       lat: state?.lat ? String(state.lat) : "23.5",
@@ -207,9 +259,16 @@ export default function NewPropertyPage() {
     });
   }
 
+  function handleDistrictChange(district: string) {
+    setForm({ ...form, district, city: "", area: "" });
+  }
+
   function handleCityChange(cityName: string) {
     const c = cities.find(
-      (x) => x.name === cityName && x.state === form.stateId,
+      (x) =>
+        x.name === cityName &&
+        x.state === form.stateId &&
+        x.district === form.district,
     );
     setForm({
       ...form,
@@ -223,25 +282,22 @@ export default function NewPropertyPage() {
   /* ═══ Inline add city ═══ */
   async function handleAddCity() {
     if (!newCityName.trim()) return toast.error("City name required");
+    if (!newDistrictName.trim()) return toast.error("District name required");
     if (!form.stateId) return toast.error("Select a state first");
 
     setAdding(true);
     try {
       const newCity = await api.post<any>("/api/owner/cities", {
         name: newCityName.trim(),
+        district: newDistrictName.trim(),
         stateId: form.stateId,
       });
-      toast.success(`City "${newCity.name}" added!`);
-      await loadData();
-      setForm({
-        ...form,
-        city: newCity.name,
-        area: "",
-        lat: newCity.lat ? String(newCity.lat) : form.lat,
-        lng: newCity.lng ? String(newCity.lng) : form.lng,
-      });
+      toast.success(
+        `Suggestion for ${newCity.name}, ${newCity.district} sent for admin approval.`,
+      );
       setAddCityOpen(false);
       setNewCityName("");
+      setNewDistrictName("");
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -320,6 +376,7 @@ export default function NewPropertyPage() {
     }
     if (!images.length) return toast.error("Upload at least 1 photo");
     if (!form.stateId) return toast.error("Select a state");
+    if (!form.district) return toast.error("Select or suggest a district");
     if (!form.city) return toast.error("Select a city");
     if (!form.area.trim()) return toast.error("Enter area / colony");
     if (!form.address.trim()) return toast.error("Enter full address");
@@ -340,6 +397,8 @@ export default function NewPropertyPage() {
         preferredTenants: form.preferredTenants,
         amenities: form.amenities,
         availableFrom: form.availableFrom,
+        state: selectedState?.name,
+        district: form.district,
         city: form.city,
         rent: Number(form.rent),
         deposit: Number(form.deposit) || 0,
@@ -638,6 +697,35 @@ export default function NewPropertyPage() {
           )}
         </div>
 
+        {/* District */}
+        <div>
+          <label className="label">
+            District <span className="text-danger-500">*</span>
+          </label>
+          <select
+            required
+            className="input"
+            value={form.district}
+            disabled={!form.stateId}
+            onChange={(e) => handleDistrictChange(e.target.value)}
+          >
+            <option value="">
+              {form.stateId ? "Select District" : "Select state first"}
+            </option>
+            {filteredDistricts.map((district) => (
+              <option key={district} value={district}>
+                {district}
+              </option>
+            ))}
+          </select>
+          {form.stateId && filteredDistricts.length === 0 && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+              No districts are available yet. Use “Add new city” to suggest a
+              district and city for admin approval.
+            </p>
+          )}
+        </div>
+
         {/* City */}
         <div>
           <div className="flex items-center justify-between mb-1">
@@ -647,7 +735,10 @@ export default function NewPropertyPage() {
             {form.stateId && (
               <button
                 type="button"
-                onClick={() => setAddCityOpen(true)}
+                onClick={() => {
+                  setNewDistrictName(form.district);
+                  setAddCityOpen(true);
+                }}
                 className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
               >
                 <Plus size={12} /> Add new city
@@ -663,11 +754,15 @@ export default function NewPropertyPage() {
               required
               className="input pl-9"
               value={form.city}
-              disabled={!form.stateId}
+              disabled={!form.stateId || !form.district}
               onChange={(e) => handleCityChange(e.target.value)}
             >
               <option value="">
-                {form.stateId ? "Select City" : "Select state first"}
+                {!form.stateId
+                  ? "Select state first"
+                  : !form.district
+                    ? "Select district first"
+                    : "Select City"}
               </option>
               {filteredCities.map((c) => (
                 <option key={c._id} value={c.name}>
@@ -1051,6 +1146,13 @@ export default function NewPropertyPage() {
             </p>
             <input
               className="input mb-3"
+              placeholder="District name (e.g. Sehore)"
+              value={newDistrictName}
+              onChange={(e) => setNewDistrictName(e.target.value)}
+              autoFocus
+            />
+            <input
+              className="input mb-3"
               placeholder="City name (e.g. Bhopal)"
               value={newCityName}
               onChange={(e) => setNewCityName(e.target.value)}
@@ -1066,7 +1168,9 @@ export default function NewPropertyPage() {
               </button>
               <button
                 onClick={handleAddCity}
-                disabled={adding || !newCityName.trim()}
+                disabled={
+                  adding || !newCityName.trim() || !newDistrictName.trim()
+                }
                 className="flex-1 btn btn-primary disabled:opacity-50"
               >
                 {adding ? (
@@ -1074,7 +1178,7 @@ export default function NewPropertyPage() {
                 ) : (
                   <Plus size={14} />
                 )}{" "}
-                Add City
+                Suggest
               </button>
             </div>
           </div>

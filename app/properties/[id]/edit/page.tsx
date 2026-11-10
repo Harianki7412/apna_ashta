@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { CITIES } from "@/lib/cities";
 import { PROPERTY_TYPES, BHK_OPTIONS, needsBhk } from "@/lib/property-types";
 import DeletePropertyButton from "@/components/DeletePropertyButton";
 import {
@@ -19,6 +18,21 @@ import {
   Video,
 } from "lucide-react";
 
+interface StateOption {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
+interface CityOption {
+  _id: string;
+  name: string;
+  slug: string;
+  district?: string;
+  stateName: string;
+  areas: { name: string; slug: string; active?: boolean }[];
+}
+
 export default function EditPropertyPage({
   params,
 }: {
@@ -31,11 +45,15 @@ export default function EditPropertyPage({
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
     propertyType: "Flat",
     bhk: "2BHK",
+    state: "",
+    district: "",
     city: "Ashta",
     rent: "",
     deposit: "",
@@ -46,20 +64,45 @@ export default function EditPropertyPage({
   });
 
   const cityData = useMemo(
-    () => CITIES.find((c) => c.name === form.city),
-    [form.city],
+    () =>
+      cities.find(
+        (city) =>
+          city.name === form.city &&
+          city.stateName === form.state &&
+          city.district === form.district,
+      ),
+    [cities, form.city, form.district, form.state],
+  );
+  const filteredDistricts = [
+    ...new Set(
+      cities
+        .filter((city) => city.stateName === form.state)
+        .map((city) => city.district)
+        .filter((district): district is string => Boolean(district)),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+  const filteredCities = cities.filter(
+    (city) =>
+      city.stateName === form.state && city.district === form.district,
   );
   const showBhk = needsBhk(form.propertyType);
 
   useEffect(() => {
-    api
-      .get<any>(`/api/properties/${id}`)
-      .then((data) => {
+    Promise.all([
+      api.get<any>(`/api/properties/${id}`),
+      api.get<StateOption[]>("/api/states"),
+      api.get<CityOption[]>("/api/cities"),
+    ])
+      .then(([data, stateData, cityData]) => {
+        setStates(stateData);
+        setCities(cityData);
         setForm({
           title: data.title || "",
           description: data.description || "",
           propertyType: data.propertyType || "Flat",
           bhk: data.bhk || "2BHK",
+          state: data.state || "",
+          district: data.district || "",
           city: data.city || "Ashta",
           rent: String(data.rent || ""),
           deposit: String(data.deposit || ""),
@@ -107,7 +150,14 @@ export default function EditPropertyPage({
     if (!images.length) return toast.error("At least 1 image required");
     setSaving(true);
     try {
-      const payload: any = { ...form, images, videos };
+      const { state, district, ...propertyFields } = form;
+      const payload: Record<string, unknown> = {
+        ...propertyFields,
+        ...(state ? { state } : {}),
+        ...(district ? { district } : {}),
+        images,
+        videos,
+      };
       if (!showBhk) delete payload.bhk;
       await api.patch(`/api/properties/${id}`, payload);
       toast.success("Updated! Pending re-approval.");
@@ -205,18 +255,81 @@ export default function EditPropertyPage({
           <h2 className="text-lg font-bold flex items-center gap-2">
             <MapPin size={18} className="text-brand-600" /> Location
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label">State</label>
+              <select
+                className="input"
+                value={form.state}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    state: e.target.value,
+                    district: "",
+                    city: "",
+                    area: "",
+                  })
+                }
+              >
+                <option value="">Select state</option>
+                {form.state && !states.some((state) => state.name === form.state) && (
+                  <option value={form.state}>{form.state} (current listing)</option>
+                )}
+                {states.map((state) => (
+                  <option key={state._id} value={state.name}>
+                    {state.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">District</label>
+              <select
+                className="input"
+                value={form.district}
+                disabled={!form.state}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    district: e.target.value,
+                    city: "",
+                    area: "",
+                  })
+                }
+              >
+                <option value="">Select district</option>
+                {form.district && !filteredDistricts.includes(form.district) && (
+                  <option value={form.district}>
+                    {form.district} (current listing)
+                  </option>
+                )}
+                {filteredDistricts.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="label">City</label>
               <select
                 required
                 className="input"
                 value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                disabled={!form.district}
+                onChange={(e) =>
+                  setForm({ ...form, city: e.target.value, area: "" })
+                }
               >
-                {CITIES.map((c) => (
-                  <option key={c.slug} value={c.name}>
-                    {c.name}
+                {form.city &&
+                  !filteredCities.some((city) => city.name === form.city) && (
+                    <option value={form.city}>
+                      {form.city} (current listing)
+                    </option>
+                  )}
+                {filteredCities.map((city) => (
+                  <option key={city.slug} value={city.name}>
+                    {city.name}
                   </option>
                 ))}
               </select>

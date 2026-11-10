@@ -6,14 +6,19 @@ import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import PropertyCard from "@/components/PropertyCard";
 import { EmptyState } from "@/components/EmptyState";
-import { getCityBySlug, getAreaBySlug } from "@/lib/cities";
+import { getCityBySlug, getAllCities, CityData } from "@/lib/cities-server";
+import { CITIES as LEGACY_CITIES } from "@/lib/cities";
 import { MapPin, Home as HomeIcon } from "lucide-react";
 import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
 import { createPageMetadata } from "@/lib/metadata";
 
 export async function generateStaticParams() {
-  const { CITIES } = await import("@/lib/cities");
-  return CITIES.flatMap((c) =>
+  const cities = await getAllCities();
+  const allCities = [...LEGACY_CITIES, ...cities].filter(
+    (city, index, all) =>
+      all.findIndex((candidate) => candidate.slug === city.slug) === index,
+  );
+  return allCities.flatMap((c) =>
     c.areas.map((a) => ({ city: c.slug, area: a.slug })),
   );
 }
@@ -24,8 +29,10 @@ export async function generateMetadata({
   params: Promise<{ city: string; area: string }>;
 }): Promise<Metadata> {
   const { city: citySlug, area: areaSlug } = await params;
-  const city = getCityBySlug(citySlug);
-  const area = getAreaBySlug(citySlug, areaSlug);
+  const city = await getCityBySlug(citySlug);
+  const area = city?.areas.find(
+    (candidate) => candidate.slug === areaSlug && candidate.active !== false,
+  );
   if (!city || !area) return { title: "Not Found" };
 
   const title = `Rent in ${area.name}, ${city.name} — Rooms & Flats`;
@@ -37,19 +44,27 @@ export async function generateMetadata({
   });
 }
 
-async function getProperties(cityName: string, areaName: string) {
+async function getProperties(city: CityData, areaName: string) {
   await connectDB();
   const query: any = {
     status: "approved",
-    area: new RegExp(areaName, "i"),
+    area: new RegExp(areaName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
     $and: [getPublicListingFreshnessFilter()],
   };
-  if (cityName === "Ashta") {
+  if (city.name === "Ashta") {
     query.$and.push({
       $or: [{ city: "Ashta" }, { city: { $exists: false } }],
     });
   } else {
-    query.city = cityName;
+    query.city = city.name;
+  }
+  if (city.district && city.stateName) {
+    query.$and.push({
+      $or: [
+        { state: city.stateName, district: city.district },
+        { state: { $in: [null, ""] } },
+      ],
+    });
   }
   return Property.find(query)
     .populate("owner", "name")
@@ -64,11 +79,13 @@ export default async function AreaPage({
   params: Promise<{ city: string; area: string }>;
 }) {
   const { city: citySlug, area: areaSlug } = await params;
-  const city = getCityBySlug(citySlug);
-  const area = getAreaBySlug(citySlug, areaSlug);
+  const city = await getCityBySlug(citySlug);
+  const area = city?.areas.find(
+    (candidate) => candidate.slug === areaSlug && candidate.active !== false,
+  );
   if (!city || !area) notFound();
 
-  const properties = await getProperties(city.name, area.name);
+  const properties = await getProperties(city, area.name);
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   const jsonLd = {

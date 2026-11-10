@@ -8,7 +8,7 @@ import { Conversation } from "@/models/Conversation";
 import { notifyUser } from "@/lib/notify";
 import { ok, fail, handleError } from "@/lib/api-helpers";
 import { agreementSchema } from "@/lib/validators";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 /* ─── GET: list agreements for current user ─── */
 export async function GET() {
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     const property = await Property.findById(data.propertyId).lean();
     if (!property) return fail("Property not found", 404);
 
-    if (property.owner.toString() !== me && !hasAdminAccess(role)) {
+    if (property.owner.toString() !== me && !hasFullAdminAccess(role)) {
       return fail("You can only send agreements for your properties", 403);
     }
 

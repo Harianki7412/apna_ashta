@@ -1,10 +1,10 @@
 "use client";
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
 import AdminCommandPalette from "@/components/AdminCommandPalette";
-import { hasAdminAccess } from "@/lib/role-access";
+import { canAccessManagementRoute } from "@/lib/role-access";
 
 export default function AdminLayout({
   children,
@@ -13,17 +13,20 @@ export default function AdminLayout({
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login?callbackUrl=/admin");
     } else if (
       status === "authenticated" &&
-      !hasAdminAccess(session?.user?.role)
+      !canAccessManagementRoute(session?.user?.role, pathname)
     ) {
-      router.push("/");
+      router.push(
+        session?.user?.role === "management_team" ? "/admin" : "/",
+      );
     }
-  }, [status, session, router]);
+  }, [status, session, router, pathname]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -35,7 +38,7 @@ export default function AdminLayout({
   if (
     status === "loading" ||
     !session ||
-    !hasAdminAccess(session?.user?.role)
+    !canAccessManagementRoute(session?.user?.role, pathname)
   ) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gray-50 dark:bg-slate-950">

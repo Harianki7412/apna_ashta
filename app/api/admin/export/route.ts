@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { Property } from "@/models/Property";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 function escapeCSV(v: any): string {
   if (v === null || v === undefined) return "";
@@ -17,7 +17,7 @@ function escapeCSV(v: any): string {
 export async function GET(req: Request) {
   try {
     const s = await getServerSession(authOptions);
-    if (!hasAdminAccess(s?.user?.role)) {
+    if (!hasFullAdminAccess(s?.user?.role)) {
       return new Response("Forbidden", { status: 403 });
     }
 

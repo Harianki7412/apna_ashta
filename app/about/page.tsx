@@ -10,17 +10,19 @@ import {
   Target,
   ArrowRight,
 } from "lucide-react";
-import { CITIES } from "@/lib/cities";
+import { getAllCities } from "@/lib/cities-server";
 import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "About Us",
   description:
-    "Flatova is Ashta's own rental platform connecting verified property owners with tenants across Ashta, Kothri, and Sehore.",
+    "Flatova helps renters and property owners connect through verified rental listings across India.",
   path: "/about",
 });
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const cities = await getAllCities();
+
   return (
     <div className="max-w-5xl mx-auto">
       {/* Hero */}
@@ -37,11 +39,12 @@ export default function AboutPage() {
             className="text-4xl md:text-5xl font-extrabold mb-4"
             style={{ color: "white" }}
           >
-            Ashta ka Apna Rental Platform
+            India ka Apna Rental Platform
           </h1>
           <p className="text-lg text-brand-100 max-w-2xl mx-auto">
-            Hum Ashta, Kothri aur Sehore ke logon ko verified, direct-from-owner
-            properties se jodte hain — bina brokers, bina hidden charges.
+            Hum India bhar ke renters aur property owners ko verified,
+            direct-from-owner rentals se jodte hain — bina brokers, bina hidden
+            charges.
           </p>
         </div>
       </section>
@@ -102,10 +105,9 @@ export default function AboutPage() {
               <strong>bilkul bina brokerage</strong> ke ghar mil jaye?
             </p>
             <p>
-              Aaj Flatova pe <strong>Ashta, Kothri, aur Sehore</strong> ke 3
-              shehron mein verified listings hain. Har property admin review ke
-              baad hi live hoti hai. Har owner verified ho sakta hai. Har tenant
-              ghar visit karne se pehle complete details dekh sakta hai.
+              Flatova India ke liye bana hai. Har property admin review ke baad
+              hi live hoti hai. Har owner verified ho sakta hai. Har tenant ghar
+              visit karne se pehle complete details dekh sakta hai.
             </p>
             <p>
               Yeh sirf shuruaat hai. Hum apne shehron ko digital bana rahe hain
@@ -127,8 +129,10 @@ export default function AboutPage() {
             <p className="text-sm text-gray-500">Happy Tenants</p>
           </div>
           <div className="card p-6 text-center">
-            <p className="text-4xl font-extrabold text-brand-600 mb-1">3</p>
-            <p className="text-sm text-gray-500">Cities</p>
+            <p className="text-4xl font-extrabold text-brand-600 mb-1">
+              {cities.length}
+            </p>
+            <p className="text-sm text-gray-500">Active cities</p>
           </div>
           <div className="card p-6 text-center">
             <p className="text-4xl font-extrabold text-brand-600 mb-1">0%</p>
@@ -198,7 +202,7 @@ export default function AboutPage() {
       <section className="mb-12">
         <h2 className="text-2xl md:text-3xl font-bold mb-6">Hum kahan hain?</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {CITIES.map((city) => (
+          {cities.slice(0, 12).map((city) => (
             <Link
               key={city.slug}
               href={`/rent-in/${city.slug}`}

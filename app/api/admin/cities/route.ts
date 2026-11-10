@@ -7,20 +7,24 @@ import { Property } from "@/models/Property";
 import { clearCityCache } from "@/lib/cities-server";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasAdminAccess(s?.user?.role) ? s : null;
+  return hasFullAdminAccess(s?.user?.role) ? s : null;
 }
 
 function slugify(s: string) {
   return s
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -34,37 +38,66 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams;
     const stateId = sp.get("state");
     const search = sp.get("q");
+    const status = sp.get("status");
 
     await connectDB();
 
     const query: any = {};
     if (stateId) query.state = stateId;
+    if (status === "pending") {
+      query.active = false;
+      query.isOwnerAdded = true;
+    } else if (status === "active") {
+      query.active = true;
+    } else if (status === "inactive") {
+      query.active = false;
+    }
     if (search) {
       query.$or = [
-        { name: new RegExp(search, "i") },
-        { slug: new RegExp(search, "i") },
+        { name: new RegExp(escapeRegex(search), "i") },
+        { district: new RegExp(escapeRegex(search), "i") },
+        { slug: new RegExp(escapeRegex(search), "i") },
       ];
     }
 
-    const cities = await City.find(query)
-      .populate("state", "name slug code lat lng")
-      .sort({ displayOrder: 1, name: 1 })
-      .lean();
+    const [cities, states] = await Promise.all([
+      City.find(query)
+        .populate("createdBy", "name email")
+        .sort({ displayOrder: 1, name: 1 })
+        .lean(),
+      State.find({ active: true }).select("name slug code lat lng").lean(),
+    ]);
+    const stateMap = new Map(
+      states.map((state: any) => [state._id.toString(), state]),
+    );
 
     // Property counts per city
     const counts = await Property.aggregate([
       { $match: { status: "approved" } },
-      { $group: { _id: "$city", count: { $sum: 1 } } },
+      {
+        $group: {
+          _id: { city: "$city", state: "$state", district: "$district" },
+          count: { $sum: 1 },
+        },
+      },
     ]);
-    const countMap: Record<string, number> = {};
+    const countMap = new Map<string, number>();
     counts.forEach((c: any) => {
-      countMap[c._id] = c.count;
+      const { city, state, district } = c._id;
+      countMap.set(`${city}\0${state || ""}\0${district || ""}`, c.count);
     });
 
-    const enriched = cities.map((c: any) => ({
-      ...c,
-      propertyCount: countMap[c.name] || 0,
-    }));
+    const enriched = cities.map((c: any) => {
+      const state = stateMap.get(c.state?.toString());
+      const stateName = c.stateName || state?.name || "";
+      return {
+        ...c,
+        state: state || c.state,
+        stateName,
+        propertyCount:
+          countMap.get(`${c.name}\0${stateName}\0${c.district || ""}`) || 0,
+      };
+    });
 
     return ok(enriched);
   } catch (e) {
@@ -82,39 +115,75 @@ export async function POST(req: Request) {
     if (!session) return fail("Forbidden", 403);
 
     const body = await req.json();
-    const { name, stateId, lat, lng, description } = body;
+    const { name, district, stateId, lat, lng, description } = body;
 
-    if (!name?.trim() || name.length < 2) {
+    if (typeof name !== "string" || name.trim().length < 2) {
       return fail("City name required (min 2 chars)", 400);
+    }
+    if (typeof district !== "string" || district.trim().length < 2) {
+      return fail("District name required (min 2 chars)", 400);
     }
     if (!stateId) return fail("State is required", 400);
 
     await connectDB();
 
-    const state = await State.findById(stateId);
+    const state = await State.findOne({ _id: stateId, active: true });
     if (!state) return fail("State not found", 404);
 
-    const slug = slugify(name);
+    const cityName = name.trim();
+    const districtName = district.trim();
 
-    // Unique per state (allows "Main Market" in both Ashta and Bhopal)
-    const existing = await City.findOne({ state: stateId, slug });
-    if (existing) {
-      return fail("City with this name already exists in this state", 409);
+    const existing = await City.findOne({
+      state: stateId,
+      district: new RegExp(`^${escapeRegex(districtName)}$`, "i"),
+      name: new RegExp(`^${escapeRegex(cityName)}$`, "i"),
+    });
+    if (existing && !(existing.isOwnerAdded && !existing.active)) {
+      return fail("City already exists in this district", 409);
     }
 
-    const city = await City.create({
-      name: name.trim(),
-      slug,
-      state: stateId,
-      stateName: state.name,
-      lat: lat || state.lat || 23.5,
-      lng: lng || state.lng || 78.5,
-      description: description?.trim() || undefined,
-      active: true,
-      createdBy: session.user.id,
-      isOwnerAdded: false,
-      areas: [],
-    });
+    const baseSlug = slugify(cityName);
+    let slug = existing?.slug || baseSlug;
+    if (!existing && (await City.exists({ slug }))) {
+      slug = `${baseSlug}-${slugify(districtName)}`;
+    }
+    if (!existing && (await City.exists({ slug }))) {
+      slug = `${slug}-${state.code?.toLowerCase() || state.slug}`;
+    }
+    let suffix = 2;
+    while (!existing && (await City.exists({ slug }))) {
+      slug = `${baseSlug}-${slugify(districtName)}-${suffix++}`;
+    }
+    if (!slug) return fail("City name must contain letters or numbers", 400);
+
+    const city = existing
+      ? await City.findByIdAndUpdate(
+          existing._id,
+          {
+            $set: {
+              active: true,
+              lat: lat || existing.lat,
+              lng: lng || existing.lng,
+              description: description?.trim() || existing.description,
+              stateName: state.name,
+            },
+          },
+          { new: true },
+        )
+      : await City.create({
+          name: cityName,
+          district: districtName,
+          slug,
+          state: stateId,
+          stateName: state.name,
+          lat: lat || state.lat || 23.5,
+          lng: lng || state.lng || 78.5,
+          description: description?.trim() || undefined,
+          active: true,
+          createdBy: session.user.id,
+          isOwnerAdded: false,
+          areas: [],
+        });
 
     clearCityCache();
 
@@ -122,13 +191,13 @@ export async function POST(req: Request) {
       actor: session.user.id,
       action: "plan_create",
       targetType: "setting",
-      targetId: city._id.toString(),
-      targetLabel: `City: ${city.name} (${state.name})`,
+      targetId: city!._id.toString(),
+      targetLabel: `City: ${city!.name}, ${districtName} (${state.name})`,
       ip: req.headers.get("x-forwarded-for") || "unknown",
       userAgent: req.headers.get("user-agent") || "",
     });
 
-    return ok(city, 201);
+    return ok(city, existing ? 200 : 201);
   } catch (e) {
     return handleError(e);
   }

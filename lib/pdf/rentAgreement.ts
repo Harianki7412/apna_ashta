@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from "pdf-lib";
 
 export interface RentAgreementData {
   // Place & Date
@@ -146,7 +146,7 @@ function drawText(
     indent?: number;
     color?: { r: number; g: number; b: number };
     lineGap?: number;
-  } = {}
+  } = {},
 ): void {
   const size = opts.size ?? 10;
   const isBold = opts.bold ?? false;
@@ -158,15 +158,21 @@ function drawText(
     : rgb(0.15, 0.15, 0.15);
 
   const maxWidth = ctx.maxW - indent;
-  const words = text.split(' ');
-  let line = '';
+  const words = text.split(" ");
+  let line = "";
 
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;
     const width = font.widthOfTextAtSize(test, size);
     if (width > maxWidth) {
       ensureSpace(ctx, size + lineGap);
-      ctx.page.drawText(line, { x: MARGIN + indent, y: ctx.y, size, font, color });
+      ctx.page.drawText(line, {
+        x: MARGIN + indent,
+        y: ctx.y,
+        size,
+        font,
+        color,
+      });
       ctx.y -= size + lineGap;
       line = word;
     } else {
@@ -175,12 +181,22 @@ function drawText(
   }
   if (line) {
     ensureSpace(ctx, size + lineGap);
-    ctx.page.drawText(line, { x: MARGIN + indent, y: ctx.y, size, font, color });
+    ctx.page.drawText(line, {
+      x: MARGIN + indent,
+      y: ctx.y,
+      size,
+      font,
+      color,
+    });
     ctx.y -= size + lineGap;
   }
 }
 
-function drawNumberedClause(ctx: PDFContext, number: number, text: string): void {
+function drawNumberedClause(
+  ctx: PDFContext,
+  number: number,
+  text: string,
+): void {
   ensureSpace(ctx, 20);
   // Number
   ctx.page.drawText(`${number}.`, {
@@ -199,8 +215,8 @@ function drawNumberedClause(ctx: PDFContext, number: number, text: string): void
   const font = ctx.font;
   const color = rgb(0.15, 0.15, 0.15);
   const maxWidth = originalMaxW - 20;
-  const words = text.split(' ');
-  let line = '';
+  const words = text.split(" ");
+  let line = "";
 
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;
@@ -245,7 +261,7 @@ function drawSignatureBox(
   ctx: PDFContext,
   label: string,
   name: string,
-  x: number
+  x: number,
 ): void {
   const boxW = 200;
   const boxY = ctx.y;
@@ -275,22 +291,28 @@ function drawSignatureBox(
   });
 }
 
-function formatDate(isoDate: string): { day: string; month: string; year: string } {
+function formatDate(isoDate: string): {
+  day: string;
+  month: string;
+  year: string;
+} {
   try {
     const d = new Date(isoDate);
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = d.toLocaleDateString('en-IN', { month: 'long' });
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = d.toLocaleDateString("en-IN", { month: "long" });
     const year = d.getFullYear().toString();
     return { day, month, year };
   } catch {
-    return { day: '____', month: '____', year: '____' };
+    return { day: "____", month: "____", year: "____" };
   }
 }
 
 /* ══════════════════════════════════════════════════════════════════
    MAIN PDF GENERATOR
    ══════════════════════════════════════════════════════════════════ */
-export async function generateRentAgreement(data: RentAgreementData): Promise<Uint8Array> {
+export async function generateRentAgreement(
+  data: RentAgreementData,
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const ctx = await createContext(doc);
 
@@ -298,35 +320,41 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
 
   /* ─────────────── TITLE ─────────────── */
   drawHeader(ctx);
-  drawTitle(ctx, 'RENTAL AGREEMENT');
+  drawTitle(ctx, "RENTAL AGREEMENT");
   drawBlankLine(ctx, 8);
 
   /* ─────────────── PREAMBLE ─────────────── */
   drawText(
     ctx,
     `This RENTAL AGREEMENT is executed at ${data.place} on this ${date.day} day of ${date.month}, ${date.year} by and between:`,
-    { size: 10 }
+    { size: 10 },
   );
   drawBlankLine(ctx, 6);
 
   // OWNER
-  drawHeading(ctx, 'THE OWNER:');
+  drawHeading(ctx, "THE OWNER:");
   drawText(ctx, data.ownerName, { size: 10, bold: true, indent: 20 });
-  drawText(ctx, `S/o or D/o. ${data.ownerFatherName}`, { size: 10, indent: 20 });
+  drawText(ctx, `S/o or D/o. ${data.ownerFatherName}`, {
+    size: 10,
+    indent: 20,
+  });
   drawText(ctx, data.ownerAddress, { size: 10, indent: 20 });
   drawText(
     ctx,
     `(hereinafter jointly and severally called the "OWNER", which expression shall include their heirs, legal representatives, successors and assigns) of the ONE PART:`,
-    { size: 10, indent: 20 }
+    { size: 10, indent: 20 },
   );
 
   drawBlankLine(ctx, 8);
 
   // TENANT
-  drawHeading(ctx, 'AND, in favour of:');
-  drawText(ctx, 'THE TENANT:', { size: 10, bold: true, indent: 20 });
+  drawHeading(ctx, "AND, in favour of:");
+  drawText(ctx, "THE TENANT:", { size: 10, bold: true, indent: 20 });
   drawText(ctx, data.tenantName, { size: 10, bold: true, indent: 20 });
-  drawText(ctx, `S/o or D/o. ${data.tenantFatherName}`, { size: 10, indent: 20 });
+  drawText(ctx, `S/o or D/o. ${data.tenantFatherName}`, {
+    size: 10,
+    indent: 20,
+  });
   drawText(ctx, `Working/Studying at ${data.tenantOfficeOrInstitution}`, {
     size: 10,
     indent: 20,
@@ -338,7 +366,7 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
   drawText(
     ctx,
     `(hereinafter called the "TENANT", which expression shall include its legal representatives, successors and assigns) of the OTHER PART.`,
-    { size: 10, indent: 20 }
+    { size: 10, indent: 20 },
   );
 
   drawBlankLine(ctx, 10);
@@ -347,33 +375,36 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
   drawText(
     ctx,
     `WHEREAS the Owner is the absolute owner of the property situated at ${data.propertyAddress} as detailed in Annexure-I, hereinafter referred to as "Demised Premises".`,
-    { size: 10 }
+    { size: 10 },
   );
   drawBlankLine(ctx, 6);
   drawText(
     ctx,
     `WHEREAS the Tenant has requested the Owner to grant Rent with respect to the Schedule Premises and the Owner has agreed to rent out to the Tenant the Property with two-wheeler and four-wheeler parking space in the ground floor for residential purposes only, on the following terms and conditions:`,
-    { size: 10 }
+    { size: 10 },
   );
   drawBlankLine(ctx, 8);
 
-  drawText(ctx, 'NOW THIS DEED WITNESSETH AS FOLLOWS:', { size: 11, bold: true });
+  drawText(ctx, "NOW THIS DEED WITNESSETH AS FOLLOWS:", {
+    size: 11,
+    bold: true,
+  });
   drawBlankLine(ctx, 8);
 
   /* ─────────────── CLAUSES 1-21 ─────────────── */
   const clauses: string[] = [
     // 1
-    `The rent in respect of the "Demised Premises" shall commence from ${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })} and shall be valid till ${new Date(data.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}. Thereafter, the same may be extended further on mutual consent of both the parties.`,
+    `The rent in respect of the "Demised Premises" shall commence from ${new Date(data.startDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })} and shall be valid till ${new Date(data.expiryDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}. Thereafter, the same may be extended further on mutual consent of both the parties.`,
     // 2
-    `That the Tenant shall pay to the Owner a monthly rent of Rs. ${data.rentAmount.toLocaleString('en-IN')}/- (Rupees ${numberToWords(data.rentAmount)} only), excluding electricity and water bill. The rent shall be paid on or before 7th day of each month without fail.`,
+    `That the Tenant shall pay to the Owner a monthly rent of Rs. ${data.rentAmount.toLocaleString("en-IN")}/- (Rupees ${numberToWords(data.rentAmount)} only), excluding electricity and water bill. The rent shall be paid on or before 7th day of each month without fail.`,
     // 3
-    `That the Tenant shall pay to the Owner a monthly maintenance charge of Rs. ${data.maintenanceCharge.toLocaleString('en-IN')}/- towards the maintenance of Generator & Elevator, Salaries towards guards, Charges for Electricity Maintenance for Common Areas, Charges towards cleaning of Common Areas and towards maintaining the lawn.`,
+    `That the Tenant shall pay to the Owner a monthly maintenance charge of Rs. ${data.maintenanceCharge.toLocaleString("en-IN")}/- towards the maintenance of Generator & Elevator, Salaries towards guards, Charges for Electricity Maintenance for Common Areas, Charges towards cleaning of Common Areas and towards maintaining the lawn.`,
     // 4
     `That the Tenant shall pay for the running cost of elevator and generator separately to the Owner.`,
     // 5
     `That during the Rent period, in addition to the rental amount payable to the Owner, the Tenant shall pay for the use of electricity and water as per bills received from the authorities concerned directly. For all the dues of electricity bills and water bills till the date the possession of the premises is handed over by the Owner to the Tenant it is the responsibility of the Owner to pay and clear them according to the readings on the respective meters. At the time of handing over possession of the premises back to the Owner by Tenant, it is the responsibility of the Tenant to pay electricity & water bills, as presented by the Departments concerned according to the readings on the respective meters up to the date of vacation of the property.`,
     // 6
-    `The Tenant will pay to the Owner an interest-free refundable security deposit of Rs. ${data.securityDeposit.toLocaleString('en-IN')}/- vide cheque no. ${data.chequeNumber} dated ${data.chequeDate ? new Date(data.chequeDate).toLocaleDateString('en-IN') : '____'} at the time of signing the Rent Agreement. The said amount of the Security deposit shall be refunded by the Owner to the Tenant at the time of handing over possession of the demised premises by the Tenant upon expiry or sooner termination of this Rent after adjusting any dues (if any) or cost towards damages caused by the negligence of the Tenant or the person he is responsible for, normal wear & tear and damages due to act of god exempted. In case the Owner fails to refund the security deposit to the Tenant on early termination or expiry of the Rent agreement, the Tenant is entitled to hold possession of the Rented premises, without payment of rent and/or any other charges whatsoever, till such time the Owner refunds the security deposit to the Tenant. This is without prejudice and in addition to the other remedies available to the Tenant to recover the amount from the Owner.`,
+    `The Tenant will pay to the Owner an interest-free refundable security deposit of Rs. ${data.securityDeposit.toLocaleString("en-IN")}/- vide cheque no. ${data.chequeNumber} dated ${data.chequeDate ? new Date(data.chequeDate).toLocaleDateString("en-IN") : "____"} at the time of signing the Rent Agreement. The said amount of the Security deposit shall be refunded by the Owner to the Tenant at the time of handing over possession of the demised premises by the Tenant upon expiry or sooner termination of this Rent after adjusting any dues (if any) or cost towards damages caused by the negligence of the Tenant or the person he is responsible for, normal wear & tear and damages due to act of god exempted. In case the Owner fails to refund the security deposit to the Tenant on early termination or expiry of the Rent agreement, the Tenant is entitled to hold possession of the Rented premises, without payment of rent and/or any other charges whatsoever, till such time the Owner refunds the security deposit to the Tenant. This is without prejudice and in addition to the other remedies available to the Tenant to recover the amount from the Owner.`,
     // 7
     `That all the sanitary, electrical and other fittings and fixtures and appliances in the premises shall be handed over from the Owner to the Tenant in good working condition.`,
     // 8
@@ -411,37 +442,37 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
   /* ─────────────── ANNEXURE-I ─────────────── */
   newPage(ctx);
   drawHeader(ctx);
-  drawTitle(ctx, 'ANNEXURE-I');
+  drawTitle(ctx, "ANNEXURE-I");
   drawBlankLine(ctx, 8);
 
-  drawHeading(ctx, 'DETAILS OF THE DEMISED PREMISES:');
+  drawHeading(ctx, "DETAILS OF THE DEMISED PREMISES:");
   drawText(ctx, data.propertyAddress, { size: 10, indent: 20 });
   drawBlankLine(ctx, 6);
 
   drawText(
     ctx,
     `The property consists of ${data.bedrooms} bedroom(s), living room, family lounge, kitchen, servant room and inbuilt fittings & fixtures, along with the following inventory:`,
-    { size: 10 }
+    { size: 10 },
   );
   drawBlankLine(ctx, 8);
 
   // Inventory table
   const invY = ctx.y;
   const items = [
-    { label: 'Fans', count: data.fans },
-    { label: 'CFL Lights', count: data.cflLights },
-    { label: 'Geysers', count: data.geysers },
-    { label: 'Mirrors', count: data.mirrors },
+    { label: "Fans", count: data.fans },
+    { label: "CFL Lights", count: data.cflLights },
+    { label: "Geysers", count: data.geysers },
+    { label: "Mirrors", count: data.mirrors },
   ];
 
-  ctx.page.drawText('Item', {
+  ctx.page.drawText("Item", {
     x: MARGIN + 20,
     y: invY,
     size: 10,
     font: ctx.bold,
     color: rgb(0.15, 0.15, 0.15),
   });
-  ctx.page.drawText('Quantity', {
+  ctx.page.drawText("Quantity", {
     x: MARGIN + 250,
     y: invY,
     size: 10,
@@ -484,36 +515,36 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
 
   drawText(
     ctx,
-    'IN WITNESS WHEREOF BOTH PARTIES AGREE AND SIGN THIS AGREEMENT ON THIS DAY AND YEAR.',
-    { size: 10, bold: true }
+    "IN WITNESS WHEREOF BOTH PARTIES AGREE AND SIGN THIS AGREEMENT ON THIS DAY AND YEAR.",
+    { size: 10, bold: true },
   );
   drawBlankLine(ctx, 30);
 
   // Witnesses
-  drawHeading(ctx, 'WITNESSES:');
+  drawHeading(ctx, "WITNESSES:");
   drawBlankLine(ctx, 12);
 
   // Witness 1
-  drawText(ctx, '1.', { size: 10, bold: true });
+  drawText(ctx, "1.", { size: 10, bold: true });
   drawText(ctx, `Name: ${data.witness1Name}`, { size: 10, indent: 20 });
   drawText(ctx, `Address: ${data.witness1Address}`, { size: 10, indent: 20 });
-  drawText(ctx, 'Signature: _______________________', { size: 10, indent: 20 });
+  drawText(ctx, "Signature: _______________________", { size: 10, indent: 20 });
   drawBlankLine(ctx, 20);
 
   // Witness 2
-  drawText(ctx, '2.', { size: 10, bold: true });
+  drawText(ctx, "2.", { size: 10, bold: true });
   drawText(ctx, `Name: ${data.witness2Name}`, { size: 10, indent: 20 });
   drawText(ctx, `Address: ${data.witness2Address}`, { size: 10, indent: 20 });
-  drawText(ctx, 'Signature: _______________________', { size: 10, indent: 20 });
+  drawText(ctx, "Signature: _______________________", { size: 10, indent: 20 });
   drawBlankLine(ctx, 40);
 
   // Signature blocks — owner + tenant
   const sigY = ctx.y;
   ctx.y = sigY;
-  drawSignatureBox(ctx, 'OWNER', data.ownerName, MARGIN);
+  drawSignatureBox(ctx, "OWNER", data.ownerName, MARGIN);
 
   ctx.y = sigY;
-  drawSignatureBox(ctx, 'TENANT', data.tenantName, PAGE_W / 2 + 20);
+  drawSignatureBox(ctx, "TENANT", data.tenantName, PAGE_W / 2 + 20);
 
   ctx.y -= 60;
 
@@ -521,7 +552,7 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
   drawText(
     ctx,
     `Signed at ${data.place} on ${date.day}/${date.month}/${date.year}`,
-    { size: 9, color: { r: 0.4, g: 0.4, b: 0.4 } }
+    { size: 9, color: { r: 0.4, g: 0.4, b: 0.4 } },
   );
 
   return await doc.save();
@@ -531,20 +562,70 @@ export async function generateRentAgreement(data: RentAgreementData): Promise<Ui
    Number to Words (Indian format) — for rent amount
    ───────────────────────────────────────────── */
 function numberToWords(num: number): string {
-  if (num === 0) return 'Zero';
+  if (num === 0) return "Zero";
 
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen'];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const ones = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const tens = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
 
   function convert(n: number): string {
     if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
-    if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
-    if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '');
-    return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + convert(n % 10000000) : '');
+    if (n < 100)
+      return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
+    if (n < 1000)
+      return (
+        ones[Math.floor(n / 100)] +
+        " Hundred" +
+        (n % 100 ? " " + convert(n % 100) : "")
+      );
+    if (n < 100000)
+      return (
+        convert(Math.floor(n / 1000)) +
+        " Thousand" +
+        (n % 1000 ? " " + convert(n % 1000) : "")
+      );
+    if (n < 10000000)
+      return (
+        convert(Math.floor(n / 100000)) +
+        " Lakh" +
+        (n % 100000 ? " " + convert(n % 100000) : "")
+      );
+    return (
+      convert(Math.floor(n / 10000000)) +
+      " Crore" +
+      (n % 10000000 ? " " + convert(n % 10000000) : "")
+    );
   }
 
   return convert(num);

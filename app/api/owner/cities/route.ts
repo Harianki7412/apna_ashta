@@ -11,14 +11,14 @@ function slugify(s: string) {
   return s
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
 /* ═══════════════════════════════════════════════════════════
    POST: Owner adds a new city
-   Body: { name, stateId, lat?, lng? }
+   Body: { name, district, stateId, lat?, lng? }
    ═══════════════════════════════════════════════════════════ */
 export async function POST(req: Request) {
   try {
@@ -31,41 +31,66 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, stateId, lat, lng } = body;
+    const { name, district, stateId, lat, lng } = body;
 
-    if (!name?.trim() || name.length < 2) {
+    if (typeof name !== "string" || name.trim().length < 2) {
       return fail("City name required (min 2 chars)", 400);
     }
-    if (!stateId) {
+    if (typeof stateId !== "string" || !stateId) {
       return fail("State is required", 400);
+    }
+    if (typeof district !== "string" || district.trim().length < 2) {
+      return fail("District name required (min 2 chars)", 400);
     }
 
     await connectDB();
 
     // Verify state exists
-    const state = await State.findById(stateId);
+    const state = await State.findOne({ _id: stateId, active: true });
     if (!state) {
       return fail("State not found", 404);
     }
 
-    const slug = slugify(name);
+    const cityName = name.trim();
+    const districtName = district.trim();
+    const escapeRegex = (value: string) =>
+      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    // Check if city already exists in this state
-    const existing = await City.findOne({ state: stateId, slug });
+    const existing = await City.findOne({
+      state: stateId,
+      district: new RegExp(`^${escapeRegex(districtName)}$`, "i"),
+      name: new RegExp(`^${escapeRegex(cityName)}$`, "i"),
+    });
     if (existing) {
-      // Return existing — no error (idempotent)
-      return ok(existing);
+      // Repeated submissions return the existing request instead of creating duplicates.
+      if (existing.isOwnerAdded && !existing.active) return ok(existing);
+      return fail(
+        existing.active
+          ? "This city is already approved"
+          : "This city already exists and can be reactivated by an admin",
+        409,
+      );
     }
 
-    // Create city
+    const baseSlug = slugify(cityName);
+    if (!baseSlug) return fail("City name must contain letters or numbers", 400);
+    let slug = baseSlug;
+    if (await City.exists({ slug })) slug = `${baseSlug}-${slugify(districtName)}`;
+    if (await City.exists({ slug })) slug = `${slug}-${state.code?.toLowerCase() || state.slug}`;
+    let suffix = 2;
+    while (await City.exists({ slug })) {
+      slug = `${baseSlug}-${slugify(districtName)}-${suffix++}`;
+    }
+
     const city = await City.create({
-      name: name.trim(),
+      name: cityName,
+      district: districtName,
       slug,
       state: stateId,
       stateName: state.name,
       lat: lat || state.lat || 23.5,
       lng: lng || state.lng || 78.5,
-      active: true,
+      active: false,
       createdBy: session.user.id,
       isOwnerAdded: true,
       areas: [],
@@ -86,9 +111,15 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return fail("Unauthorized", 401);
+    if (!hasOwnerAccess(session.user.role)) {
+      return fail("Only owners can view their suggestions", 403);
+    }
 
     await connectDB();
-    const cities = await City.find({ isOwnerAdded: true })
+    const cities = await City.find({
+      isOwnerAdded: true,
+      createdBy: session.user.id,
+    })
       .populate("state", "name slug")
       .sort({ createdAt: -1 })
       .limit(100)

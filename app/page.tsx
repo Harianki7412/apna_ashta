@@ -1,11 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import { Review } from "@/models/Review";
 import PropertyCard from "@/components/PropertyCard";
 import { EmptyState } from "@/components/EmptyState";
 import { CountUp } from "@/components/CountUp";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   Home as HomeIcon,
   MapPin,
@@ -23,14 +24,15 @@ import {
   UserPlus,
   MessageCircle,
 } from "lucide-react";
-import { CITIES, getAllAreas } from "@/lib/cities";
+import { getAllAreas, getAllCities } from "@/lib/cities-server";
 import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
 import { createPageMetadata } from "@/lib/metadata";
+import { PROPERTY_TYPES, getPropertyTypeLabel } from "@/lib/property-types";
 
 export const metadata = createPageMetadata({
-  title: "Verified Rooms, Flats & Homes for Rent in Ashta",
+  title: "Verified Rooms, Flats & Homes for Rent Across India",
   description:
-    "Find verified rooms, flats, and houses for rent in Ashta. Browse current listings, compare rents, and connect directly with property owners on Flatova.",
+    "Find verified rooms, flats, and houses for rent across India. Browse current listings, compare rents, and connect directly with property owners on Flatova.",
   path: "/",
 });
 
@@ -55,7 +57,7 @@ type DisplayableHomepageReview = HomepageReview & {
 async function getStats() {
   await connectDB();
   const freshnessFilter = getPublicListingFreshnessFilter();
-  const [latest, totalCount, verifiedCount, latestReviews, cityCounts] =
+  const [latest, totalCount, verifiedCount, latestReviews, cityStats, cities] =
     await Promise.all([
     Property.find({
       status: "approved",
@@ -80,130 +82,231 @@ async function getStats() {
       .sort({ createdAt: -1 })
       .limit(6)
       .lean<HomepageReview[]>(),
-    Promise.all(
-      CITIES.map(async (c) => {
-        const count =
-          c.name === "Ashta"
-            ? await Property.countDocuments({
-                status: "approved",
-              $and: [
-                freshnessFilter,
-                { $or: [{ city: "Ashta" }, { city: { $exists: false } }] },
-              ],
-            })
-            : await Property.countDocuments({
-              status: "approved",
-              city: c.name,
-              $and: [freshnessFilter],
-            });
-        return { city: c, count };
-      }),
-    ),
+    Property.aggregate([
+      { $match: { status: "approved", $and: [freshnessFilter] } },
+      {
+        $group: {
+          _id: { city: "$city", state: "$state", district: "$district" },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    getAllCities(),
   ]);
+  const locationCounts = new Map<string, number>();
+  const legacyCounts = new Map<string, number>();
+  for (const row of cityStats) {
+    const cityName = row._id.city || "Ashta";
+    const stateName = row._id.state || "";
+    const districtName = row._id.district || "";
+    const key = `${cityName}\0${stateName}\0${districtName}`;
+    locationCounts.set(key, (locationCounts.get(key) || 0) + row.count);
+    if (!stateName && !districtName) {
+      legacyCounts.set(
+        cityName,
+        (legacyCounts.get(cityName) || 0) + row.count,
+      );
+    }
+  }
+  const cityNameCounts = new Map<string, number>();
+  cities.forEach((city) =>
+    cityNameCounts.set(city.name, (cityNameCounts.get(city.name) || 0) + 1),
+  );
+  const cityCounts = cities.map((city) => ({
+    city,
+    count:
+      (locationCounts.get(
+        `${city.name}\0${city.stateName}\0${city.district || ""}`,
+      ) || 0) +
+      (cityNameCounts.get(city.name) === 1
+        ? legacyCounts.get(city.name) || 0
+        : 0),
+  }));
   const reviews = latestReviews
     .filter(
       (review): review is DisplayableHomepageReview =>
         review.property?.status === "approved" && Boolean(review.author?.name),
     )
     .slice(0, 3);
-  return { latest, totalCount, verifiedCount, reviews, cityCounts };
+  return { latest, totalCount, verifiedCount, reviews, cities, cityCounts };
 }
 
 export default async function Home() {
-  const t = await getTranslations("home");
-  const tCommon = await getTranslations("common");
-  const { latest, totalCount, verifiedCount, reviews, cityCounts } =
+  const [t, tCommon, tSearch, locale] = await Promise.all([
+    getTranslations("home"),
+    getTranslations("common"),
+    getTranslations("search"),
+    getLocale(),
+  ]);
+  const { latest, totalCount, verifiedCount, reviews, cities, cityCounts } =
     await getStats();
+  const popularCities = [...cityCounts]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  const popularAreas = (await getAllAreas()).slice(0, 24);
 
   return (
     <div className="animate-fade-in">
       {/* ═══════════ HERO ═══════════ */}
-      <section className="relative isolate mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 py-10 text-white sm:mb-12 sm:py-14 md:py-20">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent-400 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
-        </div>
-        <div className="absolute inset-0 opacity-5 pointer-events-none">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern
-                id="grid"
-                width="40"
-                height="40"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 40 0 L 0 0 0 40"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="1"
+      <section className="relative isolate mb-8 overflow-hidden rounded-3xl border border-brand-100 bg-gradient-to-br from-white via-brand-50 to-sky-100 px-4 py-6 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 sm:mb-12 sm:px-8 sm:py-12 lg:px-12 lg:py-14">
+        <div className="pointer-events-none absolute -right-24 -top-32 h-96 w-96 rounded-full bg-brand-200/50 blur-3xl dark:bg-brand-900/30" />
+        <div className="pointer-events-none absolute -bottom-48 left-1/3 h-80 w-80 rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-900/20" />
+
+        <div className="relative grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12">
+          <div className="min-w-0">
+            <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-brand-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm dark:border-slate-700 dark:bg-slate-800/80 dark:text-brand-300 sm:mb-5 sm:px-3.5 sm:text-sm">
+              <Sparkles size={15} className="text-brand-500" />
+              <span className="truncate">{t("topBadge")}</span>
+            </div>
+
+            <h1 className="mb-3 max-w-2xl text-3xl font-extrabold leading-tight tracking-tight text-slate-950 dark:text-white sm:mb-4 sm:text-5xl lg:text-6xl">
+              {t("heroHeading")}
+            </h1>
+            <p className="mb-5 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:mb-7 sm:text-lg">
+              {t("heroDescription")}
+            </p>
+
+            <form
+              action="/properties"
+              method="get"
+              role="search"
+              className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl shadow-brand-900/10 dark:border-slate-700 dark:bg-slate-800 sm:mb-5 sm:grid-cols-[1fr_0.8fr_auto] sm:gap-2 sm:p-2"
+            >
+              <label className="flex min-h-11 min-w-0 items-center gap-2 px-2">
+                <Search size={18} className="shrink-0 text-brand-600" />
+                <span className="sr-only">{tSearch("placeholder")}</span>
+                <input
+                  type="search"
+                  name="q"
+                  placeholder={tSearch("placeholder")}
+                  className="min-h-11 w-full min-w-0 border-0 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 dark:text-white"
                 />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-        </div>
+              </label>
+              <button
+                type="submit"
+                aria-label={tSearch("search")}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:order-last sm:px-5"
+              >
+                <Search size={17} />
+                <span className="hidden sm:inline">{tSearch("search")}</span>
+              </button>
+              <label className="col-span-2 flex min-w-0 items-center gap-2 border-t border-gray-100 px-2 sm:col-span-1 sm:border-l sm:border-t-0 dark:border-slate-700">
+                <MapPin size={18} className="shrink-0 text-brand-600" />
+                <span className="sr-only">{tSearch("city")}</span>
+                <select
+                  name="city"
+                  defaultValue=""
+                  className="min-h-11 w-full min-w-0 border-0 bg-transparent text-sm text-gray-700 outline-none focus:ring-0 dark:text-slate-200"
+                >
+                  <option value="">{tSearch("city")}</option>
+                  {cities.map((city) => (
+                    <option key={city.slug} value={city.name}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </form>
 
-        <div className="relative mx-auto max-w-4xl px-5 text-center sm:px-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-sm font-medium mb-6">
-            <Sparkles size={14} className="text-accent-400" />
-            <span>{t("topBadge")}</span>
+            <div className="-mx-4 mb-5 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:mb-7 sm:flex-wrap sm:overflow-visible sm:px-0">
+              {PROPERTY_TYPES.slice(0, 4).map((propertyType) => (
+                <Link
+                  key={propertyType.value}
+                  href={`/properties?type=${encodeURIComponent(propertyType.value)}`}
+                  className="inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-gray-200 bg-white/85 px-3 py-2 text-xs font-semibold text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:border-brand-700 dark:hover:bg-slate-700 sm:px-3.5 sm:text-sm"
+                >
+                  <span aria-hidden="true">{propertyType.icon}</span>
+                  {getPropertyTypeLabel(propertyType.value, locale)}
+                </Link>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+              <Link
+                href="/properties"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-brand-700 dark:bg-brand-600 dark:hover:bg-brand-500 sm:min-h-12 sm:py-3"
+              >
+                {t("browseBtn")}
+                <ArrowRight size={17} />
+              </Link>
+              <Link
+                href="/properties/new"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white/80 px-5 py-2.5 text-sm font-bold text-gray-800 transition hover:border-brand-300 hover:text-brand-700 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100 sm:min-h-12 sm:py-3"
+              >
+                <PlusCircleIcon />
+                {t("addProperty")}
+              </Link>
+            </div>
+
+            <div className="mt-5 grid max-w-lg grid-cols-3 gap-2 border-t border-brand-200/70 pt-4 dark:border-slate-700 sm:mt-8 sm:gap-3 sm:pt-5">
+              <div>
+                <p className="text-2xl font-extrabold text-slate-950 dark:text-white sm:text-3xl">
+                  <CountUp end={totalCount} suffix="+" />
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("properties")}</p>
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-slate-950 dark:text-white sm:text-3xl">
+                  <CountUp end={cities.length} />
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("cities")}</p>
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-slate-950 dark:text-white sm:text-3xl">
+                  <CountUp end={verifiedCount} />
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("verified")}</p>
+              </div>
+            </div>
           </div>
 
-          <h1 className="mb-5 text-4xl font-extrabold leading-tight tracking-tight sm:mb-6 sm:text-5xl md:text-6xl lg:text-7xl">
-            {t("heroTitle")},
-            <br />
-            <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-400 bg-clip-text text-transparent">
-              Flatova
-            </span>
-          </h1>
-
-          <p className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-brand-100 sm:mb-9 sm:text-lg md:text-xl">
-            {t("heroDescription")}
-          </p>
-
-          {/* Search CTA */}
-          <div className="mb-9 flex flex-col justify-center gap-3 sm:mb-11 sm:flex-row">
-            <Link
-              href="/properties"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-base font-bold text-brand-700 shadow-2xl shadow-brand-900/30 transition-all hover:scale-[1.02] hover:bg-brand-50 sm:px-8 sm:py-4"
-            >
-              <Search size={20} />
-              {t("browseBtn")}
-              <ArrowRight size={18} />
-            </Link>
-            <Link
-              href="/properties/new"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-white/30 bg-white/10 px-6 py-3.5 text-base font-bold text-white backdrop-blur transition-all hover:border-white/50 hover:bg-white/20 sm:px-8 sm:py-4"
-            >
-              <PlusCircleIcon />
-              {t("addProperty")}
-            </Link>
-          </div>
-
-          {/* Stats Row */}
-          <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:gap-4 md:gap-8">
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 sm:px-4 sm:py-4">
-              <p className="text-3xl md:text-4xl font-extrabold">
-                <CountUp end={totalCount} suffix="+" />
-              </p>
-              <p className="mt-1 text-[11px] leading-tight text-brand-200 sm:text-sm">
-                {t("properties")}
-              </p>
+          <div className="relative mx-auto hidden w-full max-w-md lg:block">
+            <div className="absolute -left-8 top-8 h-64 w-64 rounded-full bg-brand-200/70 dark:bg-brand-900/50" />
+            <div className="absolute -bottom-7 -right-5 h-40 w-40 rounded-full border-[18px] border-sky-300/60 dark:border-sky-800/50" />
+            <div className="relative rotate-1 rounded-[2rem] border border-white/80 bg-white p-3 shadow-2xl shadow-brand-950/20 dark:border-slate-700 dark:bg-slate-800">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.4rem] bg-gradient-to-br from-brand-200 via-sky-100 to-brand-300 dark:from-slate-700 dark:via-slate-600 dark:to-brand-900">
+                {latest[0]?.images?.[0] ? (
+                  <Image
+                    src={latest[0].images[0]}
+                    alt={latest[0].title}
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 0px, 400px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-brand-600/70 dark:text-brand-200/70">
+                    <HomeIcon size={112} strokeWidth={1.1} />
+                  </div>
+                )}
+                <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-success-700 shadow-md">
+                  <Shield size={14} />
+                  {tCommon("verifiedListings")}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4 px-2 pb-2 pt-4">
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-gray-900 dark:text-white">
+                    {latest[0]?.title || t("heroTitle")}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1 truncate text-sm text-gray-500 dark:text-slate-400">
+                    <MapPin size={14} className="shrink-0" />
+                    {latest[0]?.area || cities[0]?.name}
+                  </p>
+                </div>
+                {latest[0]?.rent && (
+                  <p className="shrink-0 text-right text-lg font-extrabold text-brand-700 dark:text-brand-300">
+                    ₹{latest[0].rent.toLocaleString("en-IN")}
+                    <span className="block text-xs font-medium text-gray-500 dark:text-slate-400">
+                      {tCommon("perMonth")}
+                    </span>
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 sm:px-4 sm:py-4">
-              <p className="text-3xl md:text-4xl font-extrabold">
-                <CountUp end={CITIES.length} />
-              </p>
-              <p className="mt-1 text-[11px] leading-tight text-brand-200 sm:text-sm">{t("cities")}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 sm:px-4 sm:py-4">
-              <p className="text-3xl font-extrabold sm:text-4xl">
-                <CountUp end={verifiedCount} />
-              </p>
-              <p className="mt-1 text-[11px] leading-tight text-brand-200 sm:text-sm">{t("verified")}</p>
+            <div className="absolute -bottom-5 -left-7 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{tCommon("noBrokerage")}</p>
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">{tCommon("directContact")}</p>
             </div>
           </div>
         </div>
@@ -257,18 +360,18 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {cityCounts.map(({ city, count }) => (
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+          {popularCities.map(({ city, count }) => (
             <Link
               key={city.slug}
               href={`/rent-in/${city.slug}`}
-              className="group relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:border-brand-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              className="group relative min-w-[min(84vw,20rem)] snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:min-w-0 sm:p-6"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-brand-50 dark:from-brand-900/40 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center mb-4 shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform duration-300">
-                  <MapPin size={24} />
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-500/20 transition-transform duration-300 group-hover:scale-110 sm:mb-4 sm:h-14 sm:w-14 sm:rounded-2xl">
+                  <MapPin size={21} />
                 </div>
 
                 <h3 className="font-bold text-xl text-gray-900 group-hover:text-brand-600 transition-colors">
@@ -294,7 +397,7 @@ export default async function Home() {
 
       {/* ═══════════ LATEST LISTINGS ═══════════ */}
       <section className="mb-14">
-        <div className="flex items-end justify-between mb-6">
+        <div className="mb-4 flex items-end justify-between sm:mb-6">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold mb-1">
               {t("latest")}
@@ -310,11 +413,11 @@ export default async function Home() {
         </div>
 
         {latest.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scrollbar-hide sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
             {latest.map((p: any, i: number) => (
               <div
                 key={p._id.toString()}
-                className="animate-card-enter"
+                className="min-w-[min(86vw,24rem)] snap-start animate-card-enter sm:min-w-0"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <PropertyCard property={JSON.parse(JSON.stringify(p))} />
@@ -517,7 +620,7 @@ export default async function Home() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {getAllAreas().map((a) => (
+          {popularAreas.map((a) => (
             <Link
               key={a.href}
               href={a.href}

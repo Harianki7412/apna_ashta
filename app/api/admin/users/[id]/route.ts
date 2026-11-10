@@ -12,11 +12,11 @@ import { AdminNote } from "@/models/AdminNote";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasAdminAccess(s?.user?.role) ? s : null;
+  return hasFullAdminAccess(s?.user?.role) ? s : null;
 }
 
 export async function GET(

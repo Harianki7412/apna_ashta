@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { api } from "@/lib/api-client";
+import { hasFullAdminAccess } from "@/lib/role-access";
 import {
   LayoutDashboard,
   Users,
@@ -83,6 +84,7 @@ const OTHER_ITEMS = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const isAdmin = hasFullAdminAccess(session?.user?.role);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({
@@ -144,7 +146,7 @@ export default function AdminSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-extrabold text-gray-900 dark:text-slate-100 leading-tight">
-                Admin Panel
+                {isAdmin ? "Admin Panel" : "Management Team"}
               </p>
               <p className="text-[10px] text-gray-500 dark:text-slate-400">
                 Flatova
@@ -176,7 +178,11 @@ export default function AdminSidebar() {
 
       {/* Nav items */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter(
+          (item) =>
+            isAdmin ||
+            ["/admin", "/admin/kyc", "/admin/messages"].includes(item.href),
+        ).map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href, (item as any).exact);
           const badgeCount = getBadge(item.badge);

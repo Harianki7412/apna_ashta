@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
+import { City } from "@/models/City";
 import { propertySchema } from "@/lib/validators";
 import { getOwnerResponseScore } from "@/lib/response-score";
 import { analyzePropertyForScams } from "@/lib/anti-scam";
@@ -16,6 +17,8 @@ export async function GET(req: Request) {
     const { page, limit, skip } = paginate(sp);
 
     const city = sp.get("city");
+    const state = sp.get("state");
+    const district = sp.get("district");
     const area = sp.get("area");
     const type = sp.get("type");
     const bhk = sp.get("bhk");
@@ -39,6 +42,8 @@ export async function GET(req: Request) {
         query.city = city;
       }
     }
+    if (state) query.state = state;
+    if (district) query.district = district;
 
     if (area)
       query.area = new RegExp(area.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
@@ -113,6 +118,19 @@ export async function POST(req: Request) {
     const data = propertySchema.parse(await req.json());
     await connectDB();
 
+    if (!data.state || !data.district) {
+      return fail("Select an approved state, district, and city", 400);
+    }
+    const approvedCity = await City.findOne({
+      name: data.city,
+      district: data.district,
+      stateName: data.state,
+      active: true,
+    }).select("_id");
+    if (!approvedCity) {
+      return fail("This city is not approved for listings yet", 400);
+    }
+
     const property = await Property.create({
       title: data.title,
       description: data.description,
@@ -126,6 +144,8 @@ export async function POST(req: Request) {
       availableFrom: data.availableFrom
         ? new Date(data.availableFrom)
         : new Date(),
+      state: data.state,
+      district: data.district,
       city: data.city,
       rent: data.rent,
       deposit: data.deposit,

@@ -5,14 +5,19 @@ import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import PropertyCard from "@/components/PropertyCard";
 import { EmptyState } from "@/components/EmptyState";
-import { getCityBySlug } from "@/lib/cities";
+import { getCityBySlug, getAllCities, CityData } from "@/lib/cities-server";
+import { CITIES as LEGACY_CITIES } from "@/lib/cities";
 import { MapPin, Home as HomeIcon } from "lucide-react";
 import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
 import { createPageMetadata } from "@/lib/metadata";
 
 export async function generateStaticParams() {
-  const { CITIES } = await import("@/lib/cities");
-  return CITIES.map((c) => ({ city: c.slug }));
+  const cities = await getAllCities();
+  const slugs = new Set([
+    ...LEGACY_CITIES.map((city) => city.slug),
+    ...cities.map((city) => city.slug),
+  ]);
+  return [...slugs].map((city) => ({ city }));
 }
 
 export async function generateMetadata({
@@ -21,7 +26,7 @@ export async function generateMetadata({
   params: Promise<{ city: string }>;
 }): Promise<Metadata> {
   const { city: slug } = await params;
-  const city = getCityBySlug(slug);
+  const city = await getCityBySlug(slug);
   if (!city) return { title: "Not Found" };
   const title = `Rent in ${city.name} — Rooms, Flats & Homes`;
   const description = `Find verified rooms, flats, and homes for rent in ${city.name}, ${city.state}. Browse current listings and connect directly with property owners.`;
@@ -32,18 +37,26 @@ export async function generateMetadata({
   });
 }
 
-async function getProperties(cityName: string) {
+async function getProperties(city: CityData) {
   await connectDB();
   const query: any = {
     status: "approved",
     $and: [getPublicListingFreshnessFilter()],
   };
-  if (cityName === "Ashta") {
+  if (city.name === "Ashta") {
     query.$and.push({
       $or: [{ city: "Ashta" }, { city: { $exists: false } }],
     });
   } else {
-    query.city = cityName;
+    query.city = city.name;
+  }
+  if (city.district && city.stateName) {
+    query.$and.push({
+      $or: [
+        { state: city.stateName, district: city.district },
+        { state: { $in: [null, ""] } },
+      ],
+    });
   }
   return Property.find(query)
     .populate("owner", "name")
@@ -58,10 +71,16 @@ export default async function CityPage({
   params: Promise<{ city: string }>;
 }) {
   const { city: slug } = await params;
-  const city = getCityBySlug(slug);
+  const city = await getCityBySlug(slug);
   if (!city) notFound();
 
-  const properties = await getProperties(city.name);
+  const properties = await getProperties(city);
+  const otherCities = [...LEGACY_CITIES, ...(await getAllCities())]
+    .filter((other, index, all) =>
+      all.findIndex((candidate) => candidate.slug === other.slug) === index,
+    )
+    .filter((other) => other.slug !== city.slug)
+    .slice(0, 12);
 
   return (
     <>
@@ -109,7 +128,7 @@ export default async function CityPage({
           Popular Areas in {city.name}
         </h2>
         <div className="flex flex-wrap gap-2">
-          {city.areas.map((a) => (
+          {city.areas.filter((area) => area.active !== false).map((a) => (
             <Link
               key={a.slug}
               href={`/rent-in/${city.slug}/${a.slug}`}
@@ -125,9 +144,7 @@ export default async function CityPage({
       <div className="mt-12">
         <h2 className="text-xl font-semibold mb-3">Other Cities</h2>
         <div className="flex flex-wrap gap-2">
-          {(await import("@/lib/cities")).CITIES.filter(
-            (c) => c.slug !== city.slug,
-          ).map((c) => (
+          {otherCities.map((c) => (
             <Link
               key={c.slug}
               href={`/rent-in/${c.slug}`}

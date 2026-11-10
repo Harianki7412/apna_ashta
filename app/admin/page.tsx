@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasAdminAccess, hasFullAdminAccess } from "@/lib/role-access";
 import {
   LayoutDashboard,
   Building2,
@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const isAdmin = hasFullAdminAccess(session?.user?.role);
   const [items, setItems] = useState<any[]>([]);
   const [stat, setStat] = useState("pending");
   const [loading, setLoading] = useState(true);
@@ -280,7 +281,14 @@ export default function AdminDashboard() {
       color: "gray",
       isNew: false,
     },
-  ];
+  ].filter(
+    (item) =>
+      isAdmin ||
+      ["/admin", "/admin/kyc", "/admin/messages"].includes(item.href),
+  );
+  const visibleTabs = isAdmin
+    ? TABS
+    : TABS.filter((tab) => tab.key !== "rented");
 
   return (
     <div>
@@ -297,10 +305,12 @@ export default function AdminDashboard() {
           )}
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100">
-              Admin Dashboard
+              {isAdmin ? "Admin Dashboard" : "Management Team Dashboard"}
             </h1>
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Manage properties, users, plans, and settings
+              {isAdmin
+                ? "Manage properties, users, plans, and settings"
+                : "Review property listings, verify KYC, and help users"}
             </p>
           </div>
         </div>
@@ -358,7 +368,7 @@ export default function AdminDashboard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const active = stat === tab.key;
           const colors: any = {
@@ -432,7 +442,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const Icon = tab.icon;
               const active = stat === tab.key;
               return (
@@ -622,7 +632,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions Bottom */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
+      {isAdmin && <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
         <Link
           href="/admin/analytics"
           className="card p-5 hover:border-accent-300 dark:hover:border-accent-600 transition-all group"
@@ -686,6 +696,7 @@ export default function AdminDashboard() {
           </p>
         </Link>
       </div>
+      }
     </div>
   );
 }

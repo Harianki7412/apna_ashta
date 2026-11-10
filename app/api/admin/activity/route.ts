@@ -3,12 +3,12 @@ import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { ActivityLog } from "@/models/ActivityLog";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 export async function GET(req: Request) {
   try {
     const s = await getServerSession(authOptions);
-    if (!hasAdminAccess(s?.user?.role)) return fail("Forbidden", 403);
+    if (!hasFullAdminAccess(s?.user?.role)) return fail("Forbidden", 403);
 
     const sp = new URL(req.url).searchParams;
     const page = Math.max(1, Number(sp.get("page") || 1));

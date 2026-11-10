@@ -10,6 +10,7 @@ const UserSchema = new Schema({
     unique: true,
   },
   phone: { type: String, index: true, sparse: true, unique: true },
+  state: { type: String, trim: true, default: "" },
   password: { type: String, required: true, select: false },
   emailVerified: { type: Boolean, default: false },
   phoneVerified: { type: Boolean, default: false },

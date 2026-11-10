@@ -5,7 +5,7 @@ export const revalidate = 60;
 
 export async function GET() {
   try {
-    const states = await getAllStates();
+    const states = await getAllStates(true);
     return ok(states);
   } catch (e) {
     return handleError(e);

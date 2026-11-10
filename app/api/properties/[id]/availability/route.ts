@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess, hasOwnerAccess } from "@/lib/role-access";
+import { hasFullAdminAccess, hasOwnerAccess } from "@/lib/role-access";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,7 +19,7 @@ export async function POST(_: Request, ctx: Ctx) {
 
     await connectDB();
     const filter =
-      hasAdminAccess(session.user.role)
+      hasFullAdminAccess(session.user.role)
         ? { _id: id, status: "approved" }
         : { _id: id, owner: session.user.id, status: "approved" };
     const property = await Property.findOneAndUpdate(

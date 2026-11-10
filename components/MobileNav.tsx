@@ -27,9 +27,9 @@ export default function MobileNav() {
   return (
     <nav
       aria-label={t("mobileNavigation")}
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-gray-100 dark:border-slate-800 z-40 pb-safe"
+      className="mobile-bottom-nav md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 bg-white/95 pb-safe backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95"
     >
-      <div className="flex justify-around">
+      <div className="mx-auto grid min-h-[4.25rem] max-w-lg grid-cols-5 items-center px-1">
         {items.map((item) => {
           const active =
             pathname === item.href ||
@@ -40,10 +40,10 @@ export default function MobileNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-col items-center gap-1 py-2.5 px-3 text-xs transition-colors ${
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[11px] leading-none transition-colors ${
                 active
-                  ? "text-brand-600 dark:text-brand-400 font-semibold"
-                  : "text-gray-500 dark:text-slate-400"
+                  ? "bg-brand-50 font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                  : "text-gray-500 hover:bg-gray-50 dark:text-slate-400 dark:hover:bg-slate-800"
               }`}
             >
               <Icon size={20} strokeWidth={active ? 2.5 : 2} />

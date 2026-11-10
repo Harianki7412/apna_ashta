@@ -16,7 +16,7 @@ import ReportButton from "@/components/ReportButton";
 import StartChatButton from "./StartChatButton";
 import VisitRequestButton from "./VisitRequestButton";
 import AvailabilityConfirmationButton from "@/components/AvailabilityConfirmationButton";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasAdminAccess, hasFullAdminAccess } from "@/lib/role-access";
 import PropertyGallery from "@/components/PropertyGallery";
 import { getListingFreshness } from "@/lib/property-freshness";
 import { getTranslations } from "next-intl/server";
@@ -134,14 +134,15 @@ export default async function PropertyDetail({
       : ownerPhoneDigits.startsWith("91") && ownerPhoneDigits.length === 12
         ? ownerPhoneDigits
         : "";
-  const canManage = me === ownerId || hasAdminAccess(role);
+  const canReview = hasAdminAccess(role);
+  const canManage = me === ownerId || hasFullAdminAccess(role);
 
-  if (property.status !== "approved" && !canManage) notFound();
+  if (property.status !== "approved" && me !== ownerId && !canReview) notFound();
   const freshness = getListingFreshness(
     property.createdAt,
     property.lastAvailabilityConfirmedAt,
   );
-  if (freshness.isHidden && !canManage) notFound();
+  if (freshness.isHidden && me !== ownerId && !canReview) notFound();
 
   // Increment view count (fire and forget)
   try {

@@ -6,16 +6,16 @@ import { Property } from "@/models/Property";
 import { clearCityCache } from "@/lib/cities-server";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasAdminAccess(s?.user?.role) ? s : null;
+  return hasFullAdminAccess(s?.user?.role) ? s : null;
 }
 
 /* ═══════════════════════════════════════════════════════════
    PATCH: Update city
-   Body: { lat?, lng?, description?, active?, displayOrder? }
+   Body: { district?, lat?, lng?, description?, active?, displayOrder? }
    Note: name is immutable after creation
    ═══════════════════════════════════════════════════════════ */
 export async function PATCH(
@@ -28,12 +28,21 @@ export async function PATCH(
 
     const { id } = await ctx.params;
     const body = await req.json();
-    const { lat, lng, description, active, displayOrder } = body;
+    const { district, lat, lng, description, active, displayOrder } = body;
+    if (active !== undefined && typeof active !== "boolean") {
+      return fail("Active must be a boolean", 400);
+    }
 
     await connectDB();
     const city = await City.findById(id);
     if (!city) return fail("City not found", 404);
 
+    if (district !== undefined) {
+      if (typeof district !== "string" || district.trim().length < 2) {
+        return fail("District name required (min 2 chars)", 400);
+      }
+      city.district = district.trim();
+    }
     if (lat !== undefined) city.lat = lat;
     if (lng !== undefined) city.lng = lng;
     if (description !== undefined)

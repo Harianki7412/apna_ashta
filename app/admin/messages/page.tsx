@@ -66,10 +66,10 @@ export default function AdminMessagesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-          <Mail className="text-brand-600" /> Contact Messages
+          <Mail className="text-brand-600" /> Management Team Inbox
         </h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-          Manage messages from contact form
+          Help owners and tenants with their questions and issues
         </p>
       </div>
 

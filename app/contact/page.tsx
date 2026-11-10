@@ -59,10 +59,10 @@ export default function ContactPage() {
         <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4">
           <MessageCircle size={32} className="text-brand-600" />
         </div>
-        <h1 className="text-4xl font-bold mb-3">Get in Touch</h1>
+        <h1 className="text-4xl font-bold mb-3">Contact the Management Team</h1>
         <p className="text-gray-500 max-w-lg mx-auto">
-          Koi sawal, suggestion, ya problem? Neeche diye gaye form se humein
-          message bhejein.
+          Owner ya tenant account, property verification, KYC, payment, ya kisi
+          bhi problem ke liye Management Team ko yahan message bhejein.
         </p>
       </div>
 
@@ -108,7 +108,7 @@ export default function ContactPage() {
             onSubmit={submit}
             className="card p-6 md:p-8 space-y-4"
           >
-            <h2 className="text-xl font-bold">Send us a message</h2>
+            <h2 className="text-xl font-bold">Send a message to our Management Team</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>

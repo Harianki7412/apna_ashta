@@ -2,7 +2,8 @@ import { MetadataRoute } from "next";
 import { connectDB } from "@/lib/mongodb";
 import { Property } from "@/models/Property";
 import { getPublicListingFreshnessFilter } from "@/lib/property-freshness";
-import { CITIES, getAllAreas } from "@/lib/cities";
+import { CITIES as LEGACY_CITIES, getAllAreas as getLegacyAreas } from "@/lib/cities";
+import { getAllAreas, getAllCities } from "@/lib/cities-server";
 import { SITE_URL } from "@/lib/site-url";
 
 const BASE = SITE_URL.origin;
@@ -84,16 +85,26 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // City pages (no DB needed)
-  const cityPages: MetadataRoute.Sitemap = CITIES.map((c) => ({
+  const [cities, areas] = await Promise.all([getAllCities(), getAllAreas()]);
+  const allCities = [
+    ...new Map(
+      [...LEGACY_CITIES, ...cities].map((city) => [city.slug, city]),
+    ).values(),
+  ];
+  const allAreas = [
+    ...new Map(
+      [...getLegacyAreas(), ...areas].map((area) => [area.href, area]),
+    ).values(),
+  ];
+
+  const cityPages: MetadataRoute.Sitemap = allCities.map((c) => ({
     url: `${BASE}/rent-in/${c.slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.9,
   }));
 
-  // Area pages (no DB needed)
-  const areaPages: MetadataRoute.Sitemap = getAllAreas().map((a) => ({
+  const areaPages: MetadataRoute.Sitemap = allAreas.map((a) => ({
     url: `${BASE}${a.href}`,
     lastModified: new Date(),
     changeFrequency: "weekly",

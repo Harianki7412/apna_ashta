@@ -4,10 +4,10 @@ import { useSession, signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Menu,
   X,
-  Home,
   Search,
   PlusCircle,
   MessageCircle,
@@ -56,7 +56,14 @@ export default function Navbar() {
   // Admin sees minimal nav
   const mainLinks = isAdmin
     ? [
-        { href: "/admin", label: t("adminPanel"), icon: Shield },
+        {
+          href: "/admin",
+          label:
+            role === "management_team"
+              ? t("managementTeam")
+              : t("adminPanel"),
+          icon: Shield,
+        },
         { href: "/properties", label: t("browseSite"), icon: Search },
       ]
     : [
@@ -122,10 +129,10 @@ export default function Navbar() {
             aria-label={`Flatova - ${t("home")}`}
             className="flex items-center gap-2.5 font-extrabold text-lg text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-all group"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all">
-              <Home size={18} className="text-white" />
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all overflow-hidden">
+              <Image src="/icons/icon.svg" alt="" width={36} height={36} />
             </div>
-            <span className="hidden sm:inline tracking-tight">Flatova</span>
+            <span className="tracking-tight">Flatova</span>
             {isAdmin && (
               <span className="hidden sm:inline text-[10px] bg-danger-100 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300 px-2 py-0.5 rounded font-bold uppercase">
                 Admin

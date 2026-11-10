@@ -5,7 +5,7 @@ export const revalidate = 60; // Cache response for 60 seconds
 
 export async function GET() {
   try {
-    const cities = await getAllCities();
+    const cities = await getAllCities(true);
     return ok(cities);
   } catch (e) {
     return handleError(e);

@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from './auth';
-import { hasAdminAccess, hasOwnerAccess } from './role-access';
+import { hasFullAdminAccess, hasOwnerAccess } from './role-access';
 
 export async function requireAuth(callbackUrl?: string) {
   const session = await getServerSession(authOptions);
@@ -26,7 +26,7 @@ export async function requireOwner(callbackUrl?: string) {
 export async function requireAdmin(callbackUrl?: string) {
   const session = await requireAuth(callbackUrl);
   const role = session.user?.role;
-  if (!hasAdminAccess(role)) {
+  if (!hasFullAdminAccess(role)) {
     redirect('/');
   }
   return session;

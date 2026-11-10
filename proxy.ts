@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { hasAdminAccess, hasOwnerAccess } from "@/lib/role-access";
+import {
+  canAccessManagementRoute,
+  hasAdminAccess,
+  hasOwnerAccess,
+} from "@/lib/role-access";
 
 const LOCALES = ["en", "hi"];
 const DEFAULT_LOCALE = "en";
@@ -142,8 +146,13 @@ export default async function proxy(request: NextRequest) {
     }
 
     // 🔒 Admin-only routes: non-admin users blocked
-    if (matches(ADMIN_ONLY, pathname) && !hasAdminAccess(role)) {
-      const res = NextResponse.redirect(new URL("/", request.url));
+    if (
+      matches(ADMIN_ONLY, pathname) &&
+      !canAccessManagementRoute(role, pathname)
+    ) {
+      const destination =
+        role === "management_team" ? "/admin" : "/";
+      const res = NextResponse.redirect(new URL(destination, request.url));
       return secureResponse(res, request, csp);
     }
 

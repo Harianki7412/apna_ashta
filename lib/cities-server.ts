@@ -1,6 +1,8 @@
 import { connectDB } from "./mongodb";
 import { State } from "@/models/State";
 import { City } from "@/models/City";
+import { CITIES as LEGACY_CITIES } from "./cities";
+import { revalidatePath } from "next/cache";
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
@@ -28,6 +30,7 @@ export interface CityData {
   _id: string;
   name: string;
   slug: string;
+  district?: string;
   state: string; // state ObjectId as string
   stateName: string;
   stateSlug?: string;
@@ -61,6 +64,7 @@ interface LeanCity {
   _id: { toString(): string };
   name: string;
   slug: string;
+  district?: string;
   state?: string | { toString(): string } | null;
   stateName?: string;
   lat?: number;
@@ -179,6 +183,7 @@ export async function getAllCities(forceRefresh = false): Promise<CityData[]> {
         _id: c._id.toString(),
         name: c.name,
         slug: c.slug,
+        district: c.district || "",
         state: stateIdStr,
         stateName: stateInfo?.name || c.stateName || "",
         stateSlug: stateInfo?.slug,
@@ -226,7 +231,23 @@ export async function getCityBySlug(
     );
   }
 
-  return cities.find((c) => c.slug === slug) || null;
+  const city = cities.find((c) => c.slug === slug);
+  if (city) return city;
+
+  const legacyCity = LEGACY_CITIES.find((c) => c.slug === slug);
+  if (!legacyCity) return null;
+  return {
+    _id: "",
+    name: legacyCity.name,
+    slug: legacyCity.slug,
+    state: "",
+    stateName: legacyCity.state,
+    lat: legacyCity.lat,
+    lng: legacyCity.lng,
+    description: legacyCity.description,
+    areas: legacyCity.areas.map((area) => ({ ...area, active: true })),
+    active: true,
+  };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -321,6 +342,8 @@ export function clearCityCache(): void {
     states: [],
     timestamp: 0,
   };
+  revalidatePath("/api/cities");
+  revalidatePath("/api/states");
 }
 
 /* ═══════════════════════════════════════════════════════════

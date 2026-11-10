@@ -4,17 +4,18 @@ import { connectDB } from "@/lib/mongodb";
 import { City } from "@/models/City";
 import { clearCityCache } from "@/lib/cities-server";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasAdminAccess(s?.user?.role) ? s : null;
+  return hasFullAdminAccess(s?.user?.role) ? s : null;
 }
 
 const SEED_CITIES = [
   {
     name: "Ashta",
     slug: "ashta",
+    district: "Sehore",
     state: "Madhya Pradesh",
     lat: 23.0167,
     lng: 76.7167,
@@ -33,6 +34,7 @@ const SEED_CITIES = [
   {
     name: "Kothri",
     slug: "kothri",
+    district: "Sehore",
     state: "Madhya Pradesh",
     lat: 23.0833,
     lng: 76.8333,
@@ -49,6 +51,7 @@ const SEED_CITIES = [
   {
     name: "Sehore",
     slug: "sehore",
+    district: "Sehore",
     state: "Madhya Pradesh",
     lat: 23.2,
     lng: 77.0833,
@@ -78,6 +81,10 @@ export async function POST() {
       const c = SEED_CITIES[i];
       const exists = await City.findOne({ slug: c.slug });
       if (exists) {
+        if (!exists.district) {
+          exists.district = c.district;
+          await exists.save();
+        }
         skipped++;
         continue;
       }

@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
       "Find verified rooms, flats, and homes for rent in Ashta. Browse listings and connect directly with owners.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f8fafc",
+    background_color: "#ffffff",
     theme_color: "#2563eb",
     orientation: "portrait",
     scope: "/",

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasFullAdminAccess } from "@/lib/role-access";
 import {
   ArrowLeft,
   Search,
@@ -41,7 +41,7 @@ export default function AdminUsers() {
     }
     if (status === "authenticated") {
       const r = (session?.user as any)?.role;
-      if (!hasAdminAccess(r)) {
+      if (!hasFullAdminAccess(r)) {
         toast.error("Admin access required");
         router.push("/");
       }
@@ -71,7 +71,7 @@ export default function AdminUsers() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      hasAdminAccess(session?.user?.role)
+      hasFullAdminAccess(session?.user?.role)
     ) {
       load(1);
     }

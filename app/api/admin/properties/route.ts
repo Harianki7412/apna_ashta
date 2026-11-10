@@ -5,7 +5,7 @@ import { Property } from "@/models/Property";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasAdminAccess, hasFullAdminAccess } from "@/lib/role-access";
 
 interface UpdatedProperty {
   title: string;
@@ -82,6 +82,12 @@ export async function PATCH(req: Request) {
     if (!["approved", "rejected", "rented"].includes(status)) {
       return fail("Invalid status");
     }
+    if (
+      session.user.role === "management_team" &&
+      !["approved", "rejected"].includes(status)
+    ) {
+      return fail("Management Team can only approve or reject properties", 403);
+    }
 
     await connectDB();
 
@@ -141,7 +147,9 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await requireAdmin();
-    if (!session) return fail("Forbidden", 403);
+    if (!session || !hasFullAdminAccess(session.user.role)) {
+      return fail("Forbidden", 403);
+    }
 
     const id = new URL(req.url).searchParams.get("id");
     if (!id) return fail("Property ID required");

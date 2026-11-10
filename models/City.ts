@@ -19,7 +19,7 @@ const AreaSchema = new Schema(
 
 const CitySchema = new Schema(
   {
-    name: { type: String, required: true, unique: true, index: true },
+    name: { type: String, required: true },
     slug: {
       type: String,
       required: true,
@@ -27,13 +27,17 @@ const CitySchema = new Schema(
       index: true,
       lowercase: true,
     },
+    district: { type: String, trim: true, default: "" },
     state: { type: String, default: "Madhya Pradesh" },
+    stateName: { type: String, trim: true },
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
     description: String,
     areas: [AreaSchema],
     active: { type: Boolean, default: true, index: true },
     displayOrder: { type: Number, default: 0, index: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    isOwnerAdded: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
@@ -41,5 +45,6 @@ const CitySchema = new Schema(
 );
 
 CitySchema.index({ active: 1, displayOrder: 1 });
+CitySchema.index({ state: 1, district: 1, name: 1 });
 
 export const City = models.City || mongoose.model("City", CitySchema);

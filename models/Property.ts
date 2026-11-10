@@ -63,6 +63,8 @@ const PropertySchema = new Schema({
     default: "Ashta",
     index: true,
   },
+  district: { type: String, trim: true, index: true },
+  state: { type: String, trim: true, index: true },
   area: { type: String, required: true, index: true },
   address: { type: String, required: true },
   location: {
@@ -107,6 +109,7 @@ PropertySchema.index({ location: "2dsphere" });
 PropertySchema.index({ title: "text", description: "text", area: "text" });
 PropertySchema.index({ status: 1, featured: -1, createdAt: -1 });
 PropertySchema.index({ city: 1, status: 1, createdAt: -1 });
+PropertySchema.index({ state: 1, district: 1, city: 1, status: 1 });
 PropertySchema.index({ propertyType: 1, bhk: 1, status: 1 });
 PropertySchema.index({ verified: 1, status: 1 });
 
