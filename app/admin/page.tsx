@@ -6,7 +6,11 @@ import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess, hasFullAdminAccess } from "@/lib/role-access";
+import {
+  canAccessManagementRoute,
+  hasAdminAccess,
+  hasFullAdminAccess,
+} from "@/lib/role-access";
 import {
   LayoutDashboard,
   Building2,
@@ -281,10 +285,8 @@ export default function AdminDashboard() {
       color: "gray",
       isNew: false,
     },
-  ].filter(
-    (item) =>
-      isAdmin ||
-      ["/admin", "/admin/kyc", "/admin/messages"].includes(item.href),
+  ].filter((item) =>
+    canAccessManagementRoute(session?.user?.role, item.href),
   );
   const visibleTabs = isAdmin
     ? TABS
@@ -310,7 +312,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500 dark:text-slate-400">
               {isAdmin
                 ? "Manage properties, users, plans, and settings"
-                : "Review property listings, verify KYC, and help users"}
+                : "Review listings and KYC, manage users and locations, and handle messages and settings"}
             </p>
           </div>
         </div>

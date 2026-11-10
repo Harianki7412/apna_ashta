@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasManagementTeamAccess } from "@/lib/role-access";
 import { ArrowLeft } from "lucide-react";
 
 type KycUser = {
@@ -29,8 +29,8 @@ export default function AdminKyc() {
       return;
     }
     if (status === "authenticated") {
-      if (!hasAdminAccess(session?.user.role)) {
-        toast.error("Admin access required");
+      if (!hasManagementTeamAccess(session?.user.role)) {
+        toast.error("Management Team access required");
         router.push("/");
       }
     }
@@ -46,7 +46,11 @@ export default function AdminKyc() {
   }
 
   useEffect(() => {
-    if (status !== "authenticated" || !hasAdminAccess(session?.user.role)) return;
+    if (
+      status !== "authenticated" ||
+      !hasManagementTeamAccess(session?.user.role)
+    )
+      return;
     let active = true;
     api.get<KycUser[]>("/api/admin/kyc")
       .then((data) => {

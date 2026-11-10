@@ -4,11 +4,11 @@ import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { notifyUser } from "@/lib/notify";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import { hasManagementTeamAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasAdminAccess(s?.user?.role) ? s : null;
+  return hasManagementTeamAccess(s?.user?.role) ? s : null;
 }
 
 export async function GET() {

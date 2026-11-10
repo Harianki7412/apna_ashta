@@ -29,10 +29,10 @@ export async function GET(req: Request) {
 
     if (type === "users") {
       const users = await User.find({})
-        .select("name email phone role kycStatus blocked createdAt")
+        .select("name email phone role blocked createdAt")
         .lean();
       csv =
-        "Name,Email,Phone,Role,KYC,Blocked,Joined\n" +
+        "Name,Email,Phone,Role,Blocked,Joined\n" +
         users
           .map((u: any) =>
             [
@@ -40,7 +40,6 @@ export async function GET(req: Request) {
               escapeCSV(u.email),
               escapeCSV(u.phone),
               escapeCSV(u.role),
-              escapeCSV(u.kycStatus),
               u.blocked ? "Yes" : "No",
               escapeCSV(u.createdAt?.toISOString?.()),
             ].join(","),

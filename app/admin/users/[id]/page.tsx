@@ -1,10 +1,15 @@
 "use client";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
+import {
+  hasFullAdminAccess,
+  hasManagementTeamAccess,
+} from "@/lib/role-access";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -30,6 +35,9 @@ export default function UserDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = hasFullAdminAccess(session?.user?.role);
+  const isManagementTeam = hasManagementTeamAccess(session?.user?.role);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -143,16 +151,18 @@ export default function UserDetailPage({
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-gray-100 dark:border-slate-700">
-          <select
-            value={user.role}
-            onChange={(e) => act("change-role", { role: e.target.value })}
-            className="input w-40 text-sm"
-          >
-            <option value="tenant">Tenant</option>
-            <option value="owner">Owner</option>
-            <option value="admin">Admin</option>
-            <option value="management_team">Management Team</option>
-          </select>
+          {isAdmin && (
+            <select
+              value={user.role}
+              onChange={(e) => act("change-role", { role: e.target.value })}
+              className="input w-40 text-sm"
+            >
+              <option value="tenant">Tenant</option>
+              <option value="owner">Owner</option>
+              <option value="admin">Admin</option>
+              <option value="management_team">Management Team</option>
+            </select>
+          )}
 
           {!user.blocked ? (
             <button
@@ -172,15 +182,17 @@ export default function UserDetailPage({
             </button>
           )}
 
-          <button
-            onClick={() => act("reset-password")}
-            disabled={!!actionLoading}
-            className="btn btn-secondary btn-sm"
-          >
-            <Key size={14} /> Reset Password
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => act("reset-password")}
+              disabled={!!actionLoading}
+              className="btn btn-secondary btn-sm"
+            >
+              <Key size={14} /> Reset Password
+            </button>
+          )}
 
-          {user.kycStatus === "pending" && (
+          {isManagementTeam && user.kycStatus === "pending" && (
             <>
               <button
                 onClick={() => act("verify-kyc")}
@@ -199,13 +211,15 @@ export default function UserDetailPage({
             </>
           )}
 
-          <button
-            onClick={() => act("delete")}
-            disabled={!!actionLoading}
-            className="btn btn-ghost btn-sm text-danger-600 ml-auto"
-          >
-            <Trash2 size={14} /> Delete User
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => act("delete")}
+              disabled={!!actionLoading}
+              className="btn btn-ghost btn-sm text-danger-600 ml-auto"
+            >
+              <Trash2 size={14} /> Delete User
+            </button>
+          )}
         </div>
       </div>
 

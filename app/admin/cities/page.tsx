@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import { hasManagementTeamAccess } from "@/lib/role-access";
 import {
   MapPin,
   Plus,
@@ -71,7 +71,7 @@ export default function AdminCitiesPage() {
       router.push("/login?callbackUrl=/admin/cities");
     } else if (
       status === "authenticated" &&
-      !hasFullAdminAccess(session?.user?.role)
+      !hasManagementTeamAccess(session?.user?.role)
     ) {
       toast.error("Admin access required");
       router.push("/");
@@ -106,7 +106,7 @@ export default function AdminCitiesPage() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      hasFullAdminAccess(session?.user?.role)
+      hasManagementTeamAccess(session?.user?.role)
     ) {
       loadStates();
     }
@@ -115,7 +115,7 @@ export default function AdminCitiesPage() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      hasFullAdminAccess(session?.user?.role)
+      hasManagementTeamAccess(session?.user?.role)
     ) {
       loadCities();
     }

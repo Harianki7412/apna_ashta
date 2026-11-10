@@ -5,7 +5,10 @@ import { Property } from "@/models/Property";
 import { User } from "@/models/User";
 import { ContactMessage } from "@/models/ContactMessage";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasAdminAccess } from "@/lib/role-access";
+import {
+  hasAdminAccess,
+  hasManagementTeamAccess,
+} from "@/lib/role-access";
 
 export async function GET() {
   try {
@@ -15,7 +18,9 @@ export async function GET() {
     await connectDB();
     const [pendingProps, pendingKyc, newMessages] = await Promise.all([
       Property.countDocuments({ status: "pending" }),
-      User.countDocuments({ kycStatus: "pending" }),
+      hasManagementTeamAccess(session.user.role)
+        ? User.countDocuments({ kycStatus: "pending" })
+        : Promise.resolve(0),
       ContactMessage.countDocuments({ status: "new" }),
     ]);
 

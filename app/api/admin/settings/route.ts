@@ -6,11 +6,11 @@ import {
   DEFAULT_SETTINGS,
 } from "@/lib/plan-helpers";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import { hasAdminAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasFullAdminAccess(s?.user?.role) ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 export async function GET() {

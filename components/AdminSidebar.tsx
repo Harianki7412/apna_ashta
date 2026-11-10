@@ -4,7 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { api } from "@/lib/api-client";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import {
+  canAccessManagementRoute,
+  hasFullAdminAccess,
+} from "@/lib/role-access";
 import {
   LayoutDashboard,
   Users,
@@ -180,8 +183,7 @@ export default function AdminSidebar() {
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {NAV_ITEMS.filter(
           (item) =>
-            isAdmin ||
-            ["/admin", "/admin/kyc", "/admin/messages"].includes(item.href),
+            canAccessManagementRoute(session?.user?.role, item.href),
         ).map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href, (item as any).exact);

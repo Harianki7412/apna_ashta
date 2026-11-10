@@ -4,11 +4,11 @@ import { connectDB } from "@/lib/mongodb";
 import { City } from "@/models/City";
 import { clearCityCache } from "@/lib/cities-server";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import { hasManagementTeamAccess } from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasFullAdminAccess(s?.user?.role) ? s : null;
+  return hasManagementTeamAccess(s?.user?.role) ? s : null;
 }
 
 /* ═══ GET: List owner-added cities and areas ═══ */

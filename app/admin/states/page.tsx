@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import { hasManagementTeamAccess } from "@/lib/role-access";
 import {
   MapPin,
   Plus,
@@ -46,7 +46,7 @@ export default function AdminStatesPage() {
       router.push("/login?callbackUrl=/admin/states");
     else if (
       status === "authenticated" &&
-      !hasFullAdminAccess(session?.user?.role)
+      !hasManagementTeamAccess(session?.user?.role)
     )
       router.push("/");
   }, [status, session, router]);
@@ -64,7 +64,10 @@ export default function AdminStatesPage() {
   }
 
   useEffect(() => {
-    if (status === "authenticated" && hasFullAdminAccess(session?.user?.role))
+    if (
+      status === "authenticated" &&
+      hasManagementTeamAccess(session?.user?.role)
+    )
       load();
   }, [status, session]);
 

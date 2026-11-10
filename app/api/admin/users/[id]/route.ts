@@ -11,11 +11,15 @@ import { AdminNote } from "@/models/AdminNote";
 import { notifyUser } from "@/lib/notify";
 import { logActivity } from "@/lib/activity-logger";
 import { ok, fail, handleError } from "@/lib/api-helpers";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import {
+  hasAdminAccess,
+  hasFullAdminAccess,
+  hasManagementTeamAccess,
+} from "@/lib/role-access";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasFullAdminAccess(s?.user?.role) ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 export async function GET(
@@ -23,14 +27,25 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    if (!(await requireAdmin())) return fail("Forbidden", 403);
+    const session = await requireAdmin();
+    if (!session) return fail("Forbidden", 403);
     const { id } = await ctx.params;
 
     await connectDB();
     const user = await User.findById(id)
-      .select("-password -resetToken -resetTokenExpiry")
+      .select(
+        hasManagementTeamAccess(session.user.role)
+          ? "-password -resetToken -resetTokenExpiry"
+          : "-password -resetToken -resetTokenExpiry -kycStatus -kycDocument -kycDocumentFront -kycDocumentBack",
+      )
       .lean();
     if (!user) return fail("Not found", 404);
+    if (
+      hasManagementTeamAccess(session.user.role) &&
+      !["owner", "tenant"].includes(user.role)
+    ) {
+      return fail("Management Team can only manage owners and tenants", 403);
+    }
 
     const [properties, agreements, subscriptions, notes] = await Promise.all([
         Property.find({ owner: id }).sort({ createdAt: -1 }).limit(20).lean(),
@@ -70,11 +85,25 @@ export async function PATCH(
     if (!s) return fail("Forbidden", 403);
     const { id } = await ctx.params;
     const { action, role, reason, password } = await req.json();
+    const isFullAdmin = hasFullAdminAccess(s.user.role);
+    const isManagementTeam = hasManagementTeamAccess(s.user.role);
+    if (
+      !isFullAdmin &&
+      !["block", "unblock", "verify-kyc", "reject-kyc"].includes(action)
+    ) {
+      return fail("Management Team cannot perform this user action", 403);
+    }
 
     await connectDB();
     const target = await User.findById(id);
     if (!target) return fail("Not found", 404);
     if (id === s.user.id) return fail("Cannot modify yourself");
+    if (
+      isManagementTeam &&
+      !["owner", "tenant"].includes(target.role)
+    ) {
+      return fail("Management Team can only manage owners and tenants", 403);
+    }
 
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     const ua = req.headers.get("user-agent") || "";
@@ -112,6 +141,7 @@ export async function PATCH(
     }
 
     if (
+      isFullAdmin &&
       action === "change-role" &&
       ["owner", "tenant", "admin", "management_team"].includes(role)
     ) {
@@ -131,7 +161,7 @@ export async function PATCH(
       return ok({ role });
     }
 
-    if (action === "reset-password") {
+    if (isFullAdmin && action === "reset-password") {
       const newPassword = password || crypto.randomBytes(8).toString("hex");
       target.password = await bcrypt.hash(newPassword, 10);
       await target.save();
@@ -149,7 +179,7 @@ export async function PATCH(
       return ok({ newPassword });
     }
 
-    if (action === "verify-kyc") {
+    if (isManagementTeam && action === "verify-kyc") {
       target.kycStatus = "verified";
       await target.save();
       await notifyUser(id, {
@@ -162,7 +192,7 @@ export async function PATCH(
       return ok({ kycStatus: "verified" });
     }
 
-    if (action === "reject-kyc") {
+    if (isManagementTeam && action === "reject-kyc") {
       target.kycStatus = "rejected";
       await target.save();
       await notifyUser(id, {
@@ -175,7 +205,7 @@ export async function PATCH(
       return ok({ kycStatus: "rejected" });
     }
 
-    if (action === "delete") {
+    if (isFullAdmin && action === "delete") {
       await logActivity({
         actor: s.user.id,
         action: "delete",

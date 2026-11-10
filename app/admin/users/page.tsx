@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api-client";
-import { hasFullAdminAccess } from "@/lib/role-access";
+import {
+  hasAdminAccess,
+  hasFullAdminAccess,
+} from "@/lib/role-access";
 import {
   ArrowLeft,
   Search,
@@ -25,6 +28,7 @@ import {
 export default function AdminUsers() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const isAdmin = hasFullAdminAccess(session?.user?.role);
   const [users, setUsers] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
@@ -41,7 +45,7 @@ export default function AdminUsers() {
     }
     if (status === "authenticated") {
       const r = (session?.user as any)?.role;
-      if (!hasFullAdminAccess(r)) {
+      if (!hasAdminAccess(r)) {
         toast.error("Admin access required");
         router.push("/");
       }
@@ -71,7 +75,7 @@ export default function AdminUsers() {
   useEffect(() => {
     if (
       status === "authenticated" &&
-      hasFullAdminAccess(session?.user?.role)
+      hasAdminAccess(session?.user?.role)
     ) {
       load(1);
     }
@@ -131,9 +135,11 @@ export default function AdminUsers() {
             {total} total users
           </p>
         </div>
-        <button onClick={exportCSV} className="btn btn-secondary btn-sm">
-          <Download size={14} /> Export CSV
-        </button>
+        {isAdmin && (
+          <button onClick={exportCSV} className="btn btn-secondary btn-sm">
+            <Download size={14} /> Export CSV
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -159,8 +165,12 @@ export default function AdminUsers() {
           <option value="">All Roles</option>
           <option value="owner">Owners</option>
           <option value="tenant">Tenants</option>
-          <option value="admin">Admins</option>
-          <option value="management_team">Management Team</option>
+          {isAdmin && (
+            <>
+              <option value="admin">Admins</option>
+              <option value="management_team">Management Team</option>
+            </>
+          )}
         </select>
         <button onClick={() => load(1)} className="btn btn-primary">
           Search
@@ -222,9 +232,11 @@ export default function AdminUsers() {
                   <th className="p-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase hidden md:table-cell">
                     Status
                   </th>
-                  <th className="p-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase hidden md:table-cell">
-                    KYC
-                  </th>
+                  {!isAdmin && (
+                    <th className="p-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase hidden md:table-cell">
+                      KYC
+                    </th>
+                  )}
                   <th className="p-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">
                     Actions
                   </th>
@@ -251,18 +263,24 @@ export default function AdminUsers() {
                       {u.phone || "—"}
                     </td>
                     <td className="p-3">
-                      <select
-                        value={u.role}
-                        onChange={(e) =>
-                          action(u._id, "change-role", { role: e.target.value })
-                        }
-                        className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-2 py-1 text-xs"
-                      >
-                        <option value="tenant">Tenant</option>
-                        <option value="owner">Owner</option>
-                        <option value="admin">Admin</option>
-                        <option value="management_team">Management Team</option>
-                      </select>
+                      {isAdmin ? (
+                        <select
+                          value={u.role}
+                          onChange={(e) =>
+                            action(u._id, "change-role", {
+                              role: e.target.value,
+                            })
+                          }
+                          className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-2 py-1 text-xs"
+                        >
+                          <option value="tenant">Tenant</option>
+                          <option value="owner">Owner</option>
+                          <option value="admin">Admin</option>
+                          <option value="management_team">Management Team</option>
+                        </select>
+                      ) : (
+                        <span className="capitalize">{u.role}</span>
+                      )}
                     </td>
                     <td className="p-3 hidden md:table-cell">
                       {u.blocked ? (
@@ -275,21 +293,23 @@ export default function AdminUsers() {
                         </span>
                       )}
                     </td>
-                    <td className="p-3 hidden md:table-cell">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                          u.kycStatus === "verified"
-                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
-                            : u.kycStatus === "pending"
-                              ? "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400"
-                              : u.kycStatus === "rejected"
-                                ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
-                                : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
-                        }`}
-                      >
-                        {u.kycStatus || "none"}
-                      </span>
-                    </td>
+                    {!isAdmin && (
+                      <td className="p-3 hidden md:table-cell">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded font-semibold ${
+                            u.kycStatus === "verified"
+                              ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                              : u.kycStatus === "pending"
+                                ? "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400"
+                                : u.kycStatus === "rejected"
+                                  ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                                  : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
+                          }`}
+                        >
+                          {u.kycStatus || "none"}
+                        </span>
+                      </td>
+                    )}
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-1">
                         <Link
@@ -316,13 +336,15 @@ export default function AdminUsers() {
                             <Ban size={14} />
                           </button>
                         )}
-                        <button
-                          onClick={() => action(u._id, "delete")}
-                          className="p-1.5 rounded border border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          title="Delete"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => action(u._id, "delete")}
+                            className="p-1.5 rounded border border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

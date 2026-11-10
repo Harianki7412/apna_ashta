@@ -3,16 +3,21 @@ import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { ok, fail, handleError } from '@/lib/api-helpers';
-import { hasFullAdminAccess } from '@/lib/role-access';
+import {
+  hasAdminAccess,
+  hasFullAdminAccess,
+  hasManagementTeamAccess,
+} from '@/lib/role-access';
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
-  return hasFullAdminAccess(s?.user?.role) ? s : null;
+  return hasAdminAccess(s?.user?.role) ? s : null;
 }
 
 export async function GET(req: Request) {
   try {
-    if (!(await requireAdmin())) return fail('Forbidden', 403);
+    const adminSession = await requireAdmin();
+    if (!adminSession) return fail('Forbidden', 403);
 
     const sp = new URL(req.url).searchParams;
     const q = sp.get('q');
@@ -21,7 +26,14 @@ export async function GET(req: Request) {
     const limit = 20;
 
     const query: any = {};
-    if (role) query.role = role;
+    if (hasManagementTeamAccess(adminSession.user.role)) {
+      if (role && !["owner", "tenant"].includes(role)) {
+        return fail("Management Team can only manage owners and tenants", 403);
+      }
+      query.role = role || { $in: ["owner", "tenant"] };
+    } else if (role) {
+      query.role = role;
+    }
     if (q) {
       query.$or = [
         { name: new RegExp(q, 'i') },
@@ -33,7 +45,11 @@ export async function GET(req: Request) {
     await connectDB();
     const [users, total] = await Promise.all([
       User.find(query)
-        .select('name email phone role blocked kycStatus createdAt')
+        .select(
+          hasManagementTeamAccess(adminSession.user.role)
+            ? "name email phone role blocked kycStatus createdAt"
+            : "name email phone role blocked createdAt",
+        )
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -58,6 +74,14 @@ export async function PATCH(req: Request) {
     }
 
     await connectDB();
+    const target = await User.findById(userId).select("role").lean();
+    if (!target) return fail("User not found", 404);
+    if (
+      hasManagementTeamAccess(adminSession.user.role) &&
+      !["owner", "tenant"].includes(target.role)
+    ) {
+      return fail("Management Team can only manage owners and tenants", 403);
+    }
 
     if (action === 'block') {
       await User.findByIdAndUpdate(
@@ -71,13 +95,17 @@ export async function PATCH(req: Request) {
         { blocked: false, blockedReason: null },
         { returnDocument: 'after' }
       );
-    } else if (action === 'change-role' && ['owner', 'tenant', 'admin', 'management_team'].includes(role)) {
+    } else if (
+      hasFullAdminAccess(adminSession.user.role) &&
+      action === 'change-role' &&
+      ['owner', 'tenant', 'admin', 'management_team'].includes(role)
+    ) {
       await User.findByIdAndUpdate(
         userId,
         { role },
         { returnDocument: 'after' }
       );
-    } else if (action === 'delete') {
+    } else if (hasFullAdminAccess(adminSession.user.role) && action === 'delete') {
       await User.findByIdAndDelete(userId);
     } else {
       return fail('Invalid action');
